@@ -164,3 +164,111 @@ Memory Read 节点
 ```
 
 这样项目就会从“官方 ReactAgent 接入”继续演进到“官方 Graph 编排接入”。
+
+## 官方 Graph 编排阶段
+
+本阶段继续新增了独立的官方 `StateGraph` 链路：
+
+```text
+POST /minimax/chat-client/official-graph/chat
+```
+
+新增包：
+
+```text
+com.alibaba.cloud.ai.officialgraph
+```
+
+包含：
+
+```text
+OfficialLearningGraphService
+OfficialLearningGraphResult
+```
+
+当前官方 Graph 节点：
+
+```text
+START
+ -> memory_read
+ -> planner
+ -> react_agent
+ -> memory_write
+ -> response
+ -> END
+```
+
+每个节点职责：
+
+```text
+memory_read
+ -> 根据 userId 从 LearningMemoryService 读取长期学习记忆
+
+planner
+ -> 使用 LearningIntentPlanner 识别用户意图
+
+react_agent
+ -> 调用官方 ReactAgent
+ -> ReactAgent 内部继续决定是否触发 ToolCallback
+
+memory_write
+ -> 根据本轮问题和意图更新长期 Memory
+
+response
+ -> 汇总 content、graphSteps、toolCalls、memoryBefore、memoryAfter、rawState
+```
+
+这条链路和前一个官方 ReactAgent 接口的区别是：
+
+```text
+official-agent/chat
+ -> 直接调用官方 ReactAgent
+
+official-graph/chat
+ -> 先进入官方 StateGraph
+ -> 再由 Graph 的 react_agent 节点调用官方 ReactAgent
+```
+
+也就是说，现在项目里已经有三套可对比链路：
+
+```text
+1. /conversation/chat
+   手写 LearningAgentService + 轻量 Graph 调试
+
+2. /official-agent/chat
+   官方 ReactAgent
+
+3. /official-graph/chat
+   官方 StateGraph + 官方 ReactAgent 节点
+```
+
+### 官方 Graph 测试
+
+使用：
+
+```text
+minimax-official-agent.http
+```
+
+新增用例：
+
+```text
+04 官方 Graph Framework：StateGraph 编排调用
+05 官方 Graph Framework：检索当前项目资料
+```
+
+关键观察点：
+
+```text
+graphSteps
+ -> 应包含 memory_read、planner、react_agent、memory_write、response
+
+toolCalls
+ -> 应显示 ReactAgent 节点内触发的工具
+
+graphDefinition
+ -> 应返回 Mermaid 图定义，说明 StateGraph 已成功编译
+
+memoryAfter
+ -> 应显示长期学习记忆被更新
+```

@@ -9,19 +9,19 @@
   },
   "user-a" : {
     "level" : "初学者",
-    "topics" : [ "Agent" ],
+    "topics" : [ "Agent", "Graph" ],
     "lastIntent" : "MIXED",
-    "lastQuestion" : "现在北京时间几点？然后给我一个 30 分钟 Agent 学习计划。",
-    "conversationCount" : 1,
-    "updatedAt" : "2026-05-02T23:18:00.2593123"
+    "lastQuestion" : "基于当前 minimax-chat 项目，解释官方 ReactAgent 和官方 StateGraph 的区别。",
+    "conversationCount" : 3,
+    "updatedAt" : "2026-05-06T22:19:49.2204745"
   },
   "default-user" : {
     "level" : "初学者",
     "topics" : [ "Tool Calling", "Skill", "Agent", "Graph", "RAG" ],
     "lastIntent" : "MIXED",
-    "lastQuestion" : "根据当前 minimax-chat 项目，解释 Tool、Skill、Agent、Memory、RAG 和 Graph 的调用关系。",
-    "conversationCount" : 3,
-    "updatedAt" : "2026-05-02T00:29:16.5387936"
+    "lastQuestion" : "现在北京时间几点？然后给我一个今天 30 分钟的 Agent 学习计划。",
+    "conversationCount" : 4,
+    "updatedAt" : "2026-05-06T22:14:43.4611787"
   },
   "user-b" : {
     "level" : "进阶",

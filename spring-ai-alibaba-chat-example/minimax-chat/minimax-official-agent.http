@@ -36,3 +36,29 @@ Content-Type: application/json; charset=utf-8
   "message": "现在北京时间几点？然后给我一个 30 分钟 Agent 学习计划。",
   "history": []
 }
+
+### 04 官方 Graph Framework：StateGraph 编排调用
+# 目标：验证 Memory Read、Planner、ReactAgent、Memory Write、Response 已被官方 StateGraph 编排。
+# 观察点：
+# - graphSteps 依次包含 memory_read、planner、react_agent、memory_write、response。
+# - toolCalls 显示 ReactAgent 在 graph 节点内触发的工具。
+# - graphDefinition 返回 Mermaid 图定义。
+POST {{baseUrl}}/minimax/chat-client/official-graph/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{userA}}",
+  "message": "请用官方 StateGraph 告诉我现在北京时间，并给我一个 30 分钟 Agent 学习计划。",
+  "history": []
+}
+
+### 05 官方 Graph Framework：检索当前项目资料
+# 目标：验证官方 StateGraph 中的 ReactAgent 节点可以继续复用 searchLearningDocs 工具。
+POST {{baseUrl}}/minimax/chat-client/official-graph/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{userA}}",
+  "message": "基于当前 minimax-chat 项目，解释官方 ReactAgent 和官方 StateGraph 的区别。",
+  "history": []
+}

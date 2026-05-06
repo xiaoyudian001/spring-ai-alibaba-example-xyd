@@ -27,6 +27,8 @@ import com.alibaba.cloud.ai.memory.LearningMemory;
 import com.alibaba.cloud.ai.memory.LearningMemoryService;
 import com.alibaba.cloud.ai.official.OfficialLearningAgentResult;
 import com.alibaba.cloud.ai.official.OfficialLearningAgentService;
+import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphResult;
+import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -62,11 +64,15 @@ public class MiniMaxChatClientController {
 
 	private final OfficialLearningAgentService officialLearningAgentService;
 
+	private final OfficialLearningGraphService officialLearningGraphService;
+
 	public MiniMaxChatClientController(ChatModel chatModel, LearningAgentService learningAgentService,
-			LearningMemoryService learningMemoryService, OfficialLearningAgentService officialLearningAgentService) {
+			LearningMemoryService learningMemoryService, OfficialLearningAgentService officialLearningAgentService,
+			OfficialLearningGraphService officialLearningGraphService) {
 		this.learningAgentService = learningAgentService;
 		this.learningMemoryService = learningMemoryService;
 		this.officialLearningAgentService = officialLearningAgentService;
+		this.officialLearningGraphService = officialLearningGraphService;
 		this.chatClient = ChatClient.builder(chatModel)
 				.defaultAdvisors(new SimpleLoggerAdvisor())
 				.defaultOptions(defaultOptions())
@@ -103,6 +109,11 @@ public class MiniMaxChatClientController {
 	@PostMapping(value = "/official-agent/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public OfficialLearningAgentResult officialAgentChat(@RequestBody ChatRequest request) {
 		return this.officialLearningAgentService.chat(extractUserId(request), extractMessage(request));
+	}
+
+	@PostMapping(value = "/official-graph/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public OfficialLearningGraphResult officialGraphChat(@RequestBody ChatRequest request) {
+		return this.officialLearningGraphService.chat(extractUserId(request), extractMessage(request));
 	}
 
 	@GetMapping("/memory")

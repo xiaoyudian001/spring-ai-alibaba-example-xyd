@@ -62,3 +62,36 @@ Content-Type: application/json; charset=utf-8
   "message": "基于当前 minimax-chat 项目，解释官方 ReactAgent 和官方 StateGraph 的区别。",
   "history": []
 }
+
+### 06 Mock MCP：手写 Agent 触发 MCP 学习资源工具
+# 目标：验证模型可以通过 searchMcpLearningResources 获取 mock MCP 学习资源。
+POST {{baseUrl}}/minimax/chat-client/conversation/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{userA}}",
+  "message": "通过 MCP 给我列出 Agent 和 Graph 的学习资源，并说明下一步怎么学。",
+  "history": []
+}
+
+### 07 Mock MCP：官方 ReactAgent 触发 MCP 学习资源工具
+# 目标：验证官方 ReactAgent 可以调用 searchMcpLearningResources。
+POST {{baseUrl}}/minimax/chat-client/official-agent/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{userA}}",
+  "message": "请通过 MCP 查询 Spring AI Alibaba Agent 学习资源。",
+  "history": []
+}
+
+### 08 Mock MCP：官方 StateGraph 包含 mcp_node
+# 目标：验证 graphSteps 中出现 mcp_node，并且 ReactAgent 仍可调用 MCP Tool。
+POST {{baseUrl}}/minimax/chat-client/official-graph/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{userA}}",
+  "message": "通过 MCP 给我推荐 MCP Node、Tool 和 Graph 的学习资料。",
+  "history": []
+}

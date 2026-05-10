@@ -37,6 +37,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.mcp.LearningMcpService;
 import com.alibaba.cloud.ai.memory.LearningMemory;
 import com.alibaba.cloud.ai.memory.LearningMemoryService;
 import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphResult.OfficialGraphStep;
@@ -62,6 +63,8 @@ public class OfficialLearningGraphService {
 
 	private final LearningIntentPlanner intentPlanner;
 
+	private final LearningMcpService mcpService;
+
 	private final ToolCallDebugRecorder debugRecorder;
 
 	private final CompiledGraph compiledGraph;
@@ -69,10 +72,12 @@ public class OfficialLearningGraphService {
 	private final String graphDefinition;
 
 	public OfficialLearningGraphService(ReactAgent officialLearningAgent, LearningMemoryService memoryService,
-			LearningIntentPlanner intentPlanner, ToolCallDebugRecorder debugRecorder) throws GraphStateException {
+			LearningIntentPlanner intentPlanner, LearningMcpService mcpService,
+			ToolCallDebugRecorder debugRecorder) throws GraphStateException {
 		this.officialLearningAgent = officialLearningAgent;
 		this.memoryService = memoryService;
 		this.intentPlanner = intentPlanner;
+		this.mcpService = mcpService;
 		this.debugRecorder = debugRecorder;
 		StateGraph graph = buildGraph();
 		this.graphDefinition = graph.getGraph(GraphRepresentation.Type.MERMAID, "official learning graph").content();
@@ -111,6 +116,7 @@ public class OfficialLearningGraphService {
 				.addPatternStrategy("intent", new ReplaceStrategy())
 				.addPatternStrategy("content", new ReplaceStrategy())
 				.addPatternStrategy("agentState", new ReplaceStrategy())
+				.addPatternStrategy("mcpContext", new ReplaceStrategy())
 				.addPatternStrategy("toolCalls", new ReplaceStrategy())
 				.addPatternStrategy("graphSteps", new ReplaceStrategy())
 				.build();
@@ -118,12 +124,14 @@ public class OfficialLearningGraphService {
 		return new StateGraph(keyStrategyFactory)
 				.addNode("memory_read", node_async(memoryReadNode()))
 				.addNode("planner", node_async(plannerNode()))
+				.addNode("mcp_node", node_async(mcpNode()))
 				.addNode("react_agent", node_async(reactAgentNode()))
 				.addNode("memory_write", node_async(memoryWriteNode()))
 				.addNode("response", node_async(responseNode()))
 				.addEdge(START, "memory_read")
 				.addEdge("memory_read", "planner")
-				.addEdge("planner", "react_agent")
+				.addEdge("planner", "mcp_node")
+				.addEdge("mcp_node", "react_agent")
 				.addEdge("react_agent", "memory_write")
 				.addEdge("memory_write", "response")
 				.addEdge("response", END);
@@ -146,18 +154,28 @@ public class OfficialLearningGraphService {
 		};
 	}
 
+	private NodeAction mcpNode() {
+		return state -> {
+			String message = stringValue(state, "message", "");
+			String mcpContext = this.mcpService.searchProjectKnowledge(message, 2);
+			return Map.of("mcpContext", mcpContext, "graphSteps",
+					appendStep(state, "mcp_node", "Mock MCP prepared learning resources for ReactAgent."));
+		};
+	}
+
 	private NodeAction reactAgentNode() {
 		return state -> {
 			this.debugRecorder.clear();
 			String userId = stringValue(state, "userId", "default-user");
 			String message = stringValue(state, "message", "");
+			String mcpContext = stringValue(state, "mcpContext", "");
 			LearningIntent intent = intentValue(state, "intent");
 			LearningMemory memory = memoryValue(state, "memoryBefore", this.memoryService.read(userId));
 			RunnableConfig config = RunnableConfig.builder()
 					.threadId(userId + "-official-react-agent")
 					.build();
 			Optional<NodeOutput> output = this.officialLearningAgent.invokeAndGetOutput(buildAgentPrompt(message,
-					intent, memory), config);
+					intent, memory, mcpContext), config);
 			OverAllState agentState = output.map(NodeOutput::state).orElse(null);
 			String content = extractContent(agentState);
 			List<ToolCallDebugRecorder.ToolCallDebug> toolCalls = this.debugRecorder.snapshot();
@@ -195,7 +213,7 @@ public class OfficialLearningGraphService {
 				state.data(), this.graphDefinition);
 	}
 
-	private String buildAgentPrompt(String message, LearningIntent intent, LearningMemory memory) {
+	private String buildAgentPrompt(String message, LearningIntent intent, LearningMemory memory, String mcpContext) {
 		return """
 				用户问题：
 				%s
@@ -206,8 +224,11 @@ public class OfficialLearningGraphService {
 				用户长期学习记忆：
 				%s
 
-				请结合用户问题和记忆回答。需要真实时间、学习建议、学习计划、概念解释或当前项目资料时，请调用可用工具。
-				""".formatted(message, intent, memory.summary());
+				Graph MCP Node 预取资源：
+				%s
+
+				请结合用户问题、记忆和 MCP 预取资源回答。需要真实时间、学习建议、学习计划、概念解释或当前项目资料时，请调用可用工具。
+				""".formatted(message, intent, memory.summary(), mcpContext);
 	}
 
 	private String extractContent(OverAllState state) {

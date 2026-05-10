@@ -41,7 +41,7 @@ public class OfficialLearningToolCallbacks {
 
 	public ToolCallback[] all() {
 		return new ToolCallback[] { currentTime(), learningAdvice(), dailyPlan(), conceptExplain(),
-				learningDocsSearch() };
+				learningDocsSearch(), mcpLearningResourcesSearch() };
 	}
 
 	private ToolCallback currentTime() {
@@ -89,10 +89,27 @@ public class OfficialLearningToolCallbacks {
 				.build();
 	}
 
+	private ToolCallback mcpLearningResourcesSearch() {
+		Function<SearchMcpLearningResourcesRequest, String> function = request -> this.learningTools
+				.searchMcpLearningResources(request.query(), request.limit());
+		return FunctionToolCallback.builder("searchMcpLearningResources", function)
+				.description("通过 mock MCP 获取 Spring AI Alibaba 学习资源。用户询问 MCP、外部工具协议、资源发现、MCP Node 或通过 MCP 查找资料时使用。")
+				.inputType(SearchMcpLearningResourcesRequest.class)
+				.build();
+	}
+
 	@JsonClassDescription("Request to get current time by zone id")
 	public record GetCurrentTimeRequest(
 			@JsonProperty(value = "zoneId", required = true)
 			@JsonPropertyDescription("时区 ID，例如 Asia/Shanghai、UTC、America/New_York。") String zoneId) {
+	}
+
+	@JsonClassDescription("Request to search mock MCP learning resources")
+	public record SearchMcpLearningResourcesRequest(
+			@JsonProperty(value = "query", required = true)
+			@JsonPropertyDescription("MCP resource query, such as Agent, Graph, Tool, Memory, RAG, MCP.") String query,
+			@JsonProperty(value = "limit")
+			@JsonPropertyDescription("Number of resources to return, recommended 1 to 5.") Integer limit) {
 	}
 
 	@JsonClassDescription("Request to generate Spring AI Alibaba learning advice")

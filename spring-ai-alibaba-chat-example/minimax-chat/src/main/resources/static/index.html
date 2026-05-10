@@ -28,7 +28,7 @@
 		}
 
 		* { box-sizing: border-box; }
-		html, body { height: 100%; overflow: hidden; }
+		html, body { height: 100%; overflow: auto; }
 
 		body {
 			margin: 0;
@@ -399,6 +399,7 @@
 			gap: 8px;
 			align-items: center;
 			align-self: end;
+			flex-wrap: wrap;
 		}
 
 		.composer-actions {
@@ -431,6 +432,10 @@
 			background: var(--surface-soft);
 		}
 
+		.agent-mode-radio {
+			grid-template-columns: repeat(3, minmax(74px, 1fr));
+		}
+
 		.mode-radio label {
 			position: relative;
 			display: inline-flex;
@@ -460,6 +465,11 @@
 
 		.mode-radio label:focus-within {
 			box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+		}
+
+		.mode-radio label:has(input:disabled) {
+			cursor: not-allowed;
+			opacity: 0.48;
 		}
 
 		button {
@@ -557,6 +567,20 @@
 				<textarea id="messageInput" placeholder="输入问题，按 Ctrl + Enter 发送">现在北京时间几点？然后给我一个今天 30 分钟的 Agent 学习计划。</textarea>
 			</label>
 			<div class="composer-tools">
+				<div class="mode-radio agent-mode-radio" role="radiogroup" aria-label="Agent 链路模式">
+					<label>
+						<input type="radio" name="agentModeSelect" value="handwritten" checked>
+						<span>手写</span>
+					</label>
+					<label>
+						<input type="radio" name="agentModeSelect" value="official-agent">
+						<span>官方 Agent</span>
+					</label>
+					<label>
+						<input type="radio" name="agentModeSelect" value="official-graph">
+						<span>官方 Graph</span>
+					</label>
+				</div>
 				<div class="mode-radio" role="radiogroup" aria-label="响应模式">
 					<label>
 						<input type="radio" name="modeSelect" value="simple" checked>
@@ -587,6 +611,7 @@
 	const composer = document.getElementById("composer");
 	const userIdInput = document.getElementById("userIdInput");
 	const input = document.getElementById("messageInput");
+	const agentModeInputs = Array.from(document.querySelectorAll("input[name='agentModeSelect']"));
 	const modeInputs = Array.from(document.querySelectorAll("input[name='modeSelect']"));
 	const debugToggle = document.getElementById("debugToggle");
 	const viewMemoryButton = document.getElementById("viewMemoryButton");
@@ -756,7 +781,7 @@
 		return `用户：${memory.userId || currentUserId()}\n阶段：${memory.level || "初学者"}\n关注：${topics}\n轮次：${memory.conversationCount ?? 0}\n上次意图：${memory.lastIntent || "GENERAL_CHAT"}\n上次问题：${memory.lastQuestion || "暂无"}`;
 	}
 
-	function renderDebug(messageNode, intent, toolCalls, graphSteps, agentSteps, memoryBefore, memoryAfter) {
+	function renderDebug(messageNode, intent, toolCalls, graphSteps, agentSteps, memoryBefore, memoryAfter, chainMode, graphDefinition) {
 		if (!debugToggle.checked) return;
 		const existing = messageNode.querySelector(":scope > .debug-panel");
 		if (existing) existing.remove();
@@ -764,6 +789,7 @@
 		panel.className = "debug-panel";
 		panel.innerHTML = `
 			<div class="debug-title">本轮调试信息</div>
+			<div>链路模式：${escapeHtml(chainMode || currentAgentModeLabel())}</div>
 			<div class="debug-intent">识别意图：${escapeHtml(intent || "UNKNOWN")}</div>
 			<div>Graph 节点：${graphSteps && graphSteps.length ? graphSteps.length : 0} 个</div>
 			<div>Agent 执行步骤：${agentSteps && agentSteps.length ? agentSteps.length : 0} 步</div>
@@ -789,13 +815,18 @@
 				const item = document.createElement("div");
 				item.className = "graph-step";
 				item.innerHTML = `
-					<div class="graph-step-name">${escapeHtml(step.name || step.id || "Node")}</div>
+					<div class="graph-step-name">${escapeHtml(step.name || step.node || step.id || "Node")}</div>
 					<div class="graph-step-status">${escapeHtml(step.status || "READY")}</div>
 					<div class="graph-step-detail">${escapeHtml(step.detail || "")}</div>
 				`;
 				graph.appendChild(item);
 			}
 			panel.appendChild(graph);
+		}
+		if (graphDefinition) {
+			const graphText = document.createElement("pre");
+			graphText.textContent = `Graph Definition:\n${graphDefinition}`;
+			panel.appendChild(graphText);
 		}
 		if (agentSteps && agentSteps.length) {
 			const steps = document.createElement("div");
@@ -846,13 +877,46 @@
 		return selected ? selected.value : "simple";
 	}
 
+	function currentAgentMode() {
+		const selected = agentModeInputs.find(item => item.checked);
+		return selected ? selected.value : "handwritten";
+	}
+
+	function currentAgentModeLabel() {
+		return {
+			"handwritten": "手写 LearningAgent",
+			"official-agent": "官方 ReactAgent",
+			"official-graph": "官方 StateGraph"
+		}[currentAgentMode()] || "手写 LearningAgent";
+	}
+
+	function endpointForAgentMode() {
+		return {
+			"handwritten": "/minimax/chat-client/conversation/chat",
+			"official-agent": "/minimax/chat-client/official-agent/chat",
+			"official-graph": "/minimax/chat-client/official-graph/chat"
+		}[currentAgentMode()] || "/minimax/chat-client/conversation/chat";
+	}
+
+	function syncResponseModeAvailability() {
+		const streamInput = modeInputs.find(item => item.value === "stream");
+		const simpleInput = modeInputs.find(item => item.value === "simple");
+		const officialMode = currentAgentMode() !== "handwritten";
+		if (streamInput) {
+			streamInput.disabled = officialMode;
+		}
+		if (officialMode && streamInput?.checked && simpleInput) {
+			simpleInput.checked = true;
+		}
+	}
+
 	function setBusy(busy) {
 		sendButton.disabled = busy;
 		sendButton.textContent = busy ? "发送中" : "发送";
 	}
 
 	async function sendConversation(message) {
-		const response = await fetch("/minimax/chat-client/conversation/chat", {
+		const response = await fetch(endpointForAgentMode(), {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(buildPayload(message))
@@ -915,7 +979,7 @@
 				else if (type === "done") {
 					renderDebug(messageNode, debugData.intent, payload.toolCalls || [],
 						payload.graphSteps || debugData.graphSteps || [], payload.agentSteps || debugData.agentSteps || [],
-						debugData.memoryBefore, payload.memoryAfter);
+						debugData.memoryBefore, payload.memoryAfter, currentAgentModeLabel(), payload.graphDefinition);
 				}
 				else {
 					rawText += payload.content || "";
@@ -942,7 +1006,7 @@
 		setBusy(true);
 		try {
 			let answer;
-			if (currentMode() === "stream") {
+			if (currentMode() === "stream" && currentAgentMode() === "handwritten") {
 				answer = await sendConversationStream(message, assistant, assistantNode);
 			}
 			else {
@@ -950,7 +1014,7 @@
 				answer = cleanAssistantText(data.content || "");
 				setAssistantContent(assistant, answer);
 				renderDebug(assistantNode, data.intent, data.toolCalls || [], data.graphSteps || [],
-					data.agentSteps || [], data.memoryBefore, data.memoryAfter);
+					data.agentSteps || [], data.memoryBefore, data.memoryAfter, currentAgentModeLabel(), data.graphDefinition);
 			}
 			addHistory("user", message);
 			addHistory("assistant", answer);
@@ -969,6 +1033,14 @@
 	input.addEventListener("keydown", (event) => {
 		if (event.key === "Enter" && event.ctrlKey) composer.requestSubmit();
 	});
+
+	for (const agentModeInput of agentModeInputs) {
+		agentModeInput.addEventListener("change", () => {
+			syncResponseModeAvailability();
+			appendMessage("assistant", `已切换到 ${currentAgentModeLabel()} 链路。你可以用同一个问题对比 Tool、Memory 和 Graph 调试信息。`);
+		});
+	}
+	syncResponseModeAvailability();
 
 	clearButton.addEventListener("click", () => {
 		currentHistory().length = 0;

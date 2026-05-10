@@ -272,3 +272,80 @@ graphDefinition
 memoryAfter
  -> 应显示长期学习记忆被更新
 ```
+
+## Mock MCP Node 阶段
+
+本阶段新增了本地 mock MCP 能力，用于先理解 MCP 在 Agent/Graph 中的位置，不启动真实 MCP Server。
+
+新增包：
+
+```text
+com.alibaba.cloud.ai.mcp
+```
+
+包含：
+
+```text
+LearningMcpService
+McpLearningResource
+```
+
+新增 Tool：
+
+```text
+searchMcpLearningResources
+```
+
+调用关系：
+
+```text
+用户问题
+ -> 模型判断需要 MCP 学习资源
+ -> searchMcpLearningResources
+ -> LearningMcpService
+ -> 返回 mock MCP 资源
+ -> 模型整合成最终回答
+```
+
+官方 Graph 现在增加了 `mcp_node`：
+
+```text
+START
+ -> memory_read
+ -> planner
+ -> mcp_node
+ -> react_agent
+ -> memory_write
+ -> response
+ -> END
+```
+
+`mcp_node` 负责模拟 MCP 资源预取，`react_agent` 仍然可以按需继续调用 `searchMcpLearningResources` 工具。
+
+测试用例：
+
+```text
+minimax-official-agent.http
+```
+
+新增：
+
+```text
+06 Mock MCP：手写 Agent 触发 MCP 学习资源工具
+07 Mock MCP：官方 ReactAgent 触发 MCP 学习资源工具
+08 Mock MCP：官方 StateGraph 包含 mcp_node
+```
+
+推荐问题：
+
+```text
+通过 MCP 给我列出 Agent 和 Graph 的学习资源，并说明下一步怎么学。
+```
+
+预期：
+
+```text
+toolCalls 中出现 searchMcpLearningResources
+官方 Graph 的 graphSteps 中出现 mcp_node
+回答中出现 mock MCP 学习资源
+```

@@ -41,7 +41,14 @@ public class LearningResourceController {
 				"server", "minimax-learning-mcp-server",
 				"mcpSseUrl", "http://localhost:19000/sse",
 				"mcpMessageEndpoint", "/mcp/messages",
+				"resourceSource", this.repository.resourceSource(),
+				"resourceCount", this.repository.all().size(),
 				"topics", this.repository.listTopics());
+	}
+
+	@GetMapping("/resources")
+	public List<LearningResource> all() {
+		return this.repository.all();
 	}
 
 	@GetMapping("/resources/search")

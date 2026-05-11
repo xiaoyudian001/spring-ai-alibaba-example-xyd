@@ -20,8 +20,8 @@
     "topics" : [ "Tool Calling", "Skill", "Agent", "Graph", "RAG", "MCP" ],
     "lastIntent" : "MIXED",
     "lastQuestion" : "通过 MCP 查询 Agent 和 Graph 的学习资源，并说明下一步怎么学。",
-    "conversationCount" : 11,
-    "updatedAt" : "2026-05-11T13:37:35.8669923"
+    "conversationCount" : 12,
+    "updatedAt" : "2026-05-11T15:23:12.510051"
   },
   "user-b" : {
     "level" : "进阶",

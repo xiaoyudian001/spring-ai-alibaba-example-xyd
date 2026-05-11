@@ -10,7 +10,7 @@
 minimax-learning-mcp-server
  -> 端口 19000
  -> 暴露 MCP Tools
- -> 提供 Spring AI Alibaba 学习资源
+ -> 从 learning-resources.json 读取 Spring AI Alibaba 学习资源
 
 minimax-chat
  -> 端口 8080
@@ -28,6 +28,30 @@ getLearningResource(resourceId)
 ```
 
 其中 `searchLearningResources` 是 `minimax-chat` 最常调用的工具。
+
+## JSON 资源文件
+
+学习资源放在：
+
+```text
+src/main/resources/learning-resources.json
+```
+
+每条资源结构如下：
+
+```json
+{
+  "id": "mcp-agent",
+  "topic": "Agent",
+  "title": "ReactAgent 调用链",
+  "summary": "Agent 负责把模型、工具、上下文和执行状态组织起来。",
+  "nextAction": "测试 /minimax/chat-client/official-agent/chat 并观察 toolCalls。"
+}
+```
+
+启动时 `LearningResourceRepository` 会优先读取 `learning-resources.json`。如果文件不存在、为空或格式错误，会自动使用 Java 内置兜底资源，保证 MCP Server 仍然可以启动。
+
+新增学习资源时，只需要修改 `learning-resources.json`，然后重启 `minimax-learning-mcp-server`。
 
 ## 启动顺序
 
@@ -49,13 +73,27 @@ http://localhost:19000/learning-mcp/health
 ```json
 {
   "status": "UP",
-  "server": "minimax-learning-mcp-server"
+  "server": "minimax-learning-mcp-server",
+  "resourceSource": "classpath:learning-resources.json",
+  "resourceCount": 7
 }
+```
+
+也可以直接查看全部资源：
+
+```text
+http://localhost:19000/learning-mcp/resources
+```
+
+或者测试普通 REST 检索：
+
+```text
+http://localhost:19000/learning-mcp/resources/search?query=Agent%20Graph%20MCP&limit=3
 ```
 
 ### 2. 开启 minimax-chat 的 MCP Client
 
-推荐使用 `mcp` profile 启动，不需要手动改主配置：
+推荐使用 `mcp` profile 启动：
 
 ```bash
 cd spring-ai-alibaba-chat-example/minimax-chat
@@ -63,32 +101,6 @@ mvn spring-boot:run -Dspring-boot.run.profiles=mcp
 ```
 
 `application-mcp.yml` 会把 MCP Client 开启：
-
-```yaml
-spring:
-  ai:
-    mcp:
-      client:
-        enabled: true
-```
-
-也可以手动修改：
-
-```text
-spring-ai-alibaba-chat-example/minimax-chat/src/main/resources/application.yml
-```
-
-把：
-
-```yaml
-spring:
-  ai:
-    mcp:
-      client:
-        enabled: false
-```
-
-改成：
 
 ```yaml
 spring:
@@ -111,14 +123,7 @@ spring:
               url: http://localhost:19000
 ```
 
-### 3. 启动 minimax-chat
-
-```bash
-cd spring-ai-alibaba-chat-example/minimax-chat
-mvn spring-boot:run -Dspring-boot.run.profiles=mcp
-```
-
-### 4. 检查 MCP Client 状态
+### 3. 检查 MCP Client 状态
 
 ```text
 http://localhost:8080/minimax/chat-client/mcp/status
@@ -145,11 +150,12 @@ minimax-learning-mcp-server.http
 
 ```text
 01 MCP Server 健康检查
-02 MCP Server 普通 REST 资源检索
-03 minimax-chat MCP Client 状态检查
-04 通过手写 Agent 调用真实 MCP Server
-05 通过官方 ReactAgent 调用真实 MCP Server
-06 通过官方 StateGraph 调用真实 MCP Server
+02 MCP Server 查看全部 JSON 学习资源
+03 MCP Server 普通 REST 资源检索
+04 minimax-chat MCP Client 状态检查
+05 通过手写 Agent 调用真实 MCP Server
+06 通过官方 ReactAgent 调用真实 MCP Server
+07 通过官方 StateGraph 调用真实 MCP Server
 ```
 
 Graph 测试时重点观察：
@@ -174,7 +180,9 @@ toolCalls
  -> LearningMcpService
  -> Spring AI MCP Client ToolCallbackProvider
  -> minimax-learning-mcp-server
- -> searchLearningResources
+ -> LearningResourceTool
+ -> LearningResourceRepository
+ -> learning-resources.json
  -> 返回真实 MCP 工具结果
  -> MiniMax-M2.7 整合回答
  -> 前端展示回答和调试信息

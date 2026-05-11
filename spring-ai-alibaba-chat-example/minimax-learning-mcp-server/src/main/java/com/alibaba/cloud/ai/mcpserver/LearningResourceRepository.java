@@ -16,67 +16,62 @@
 
 package com.alibaba.cloud.ai.mcpserver;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class LearningResourceRepository {
 
-	private final List<LearningResource> resources = List.of(
-			new LearningResource("mcp-tool", "Tool",
-					"Tool Calling 基础",
-					"Tool 是模型可以调用的具体函数入口，适合从 getCurrentTime、generateDailyPlan 这类小工具开始理解。",
-					"在 minimax-chat 中观察 MiniMaxLearningTools 和 OfficialLearningToolCallbacks。"),
-			new LearningResource("mcp-skill", "Skill",
-					"Skill 业务封装",
-					"Skill 负责稳定业务逻辑，Tool 只负责暴露给模型调用。这样以后接 Agent 或 MCP 时业务逻辑可以复用。",
-					"阅读 LearningSkillService，确认 Tool 如何委托给 Skill。"),
-			new LearningResource("mcp-agent", "Agent",
-					"ReactAgent 调用链",
-					"Agent 负责把模型、工具、上下文和执行状态组织起来，让模型可以按需调用工具后再回答。",
-					"测试 /minimax/chat-client/official-agent/chat 并观察 toolCalls。"),
-			new LearningResource("mcp-graph", "Graph",
-					"StateGraph 编排",
-					"Graph 用节点显式编排流程，例如 memory_read、planner、mcp_node、react_agent、memory_write。",
-					"测试 /minimax/chat-client/official-graph/chat 并查看 graphSteps 与 graphDefinition。"),
-			new LearningResource("mcp-memory", "Memory",
-					"多用户 Memory",
-					"Memory 记录用户阶段、关注主题、历史轮次和上次意图，适合做个性化学习助手。",
-					"分别使用 user-a 和 user-b 测试长期记忆隔离。"),
-			new LearningResource("mcp-rag", "RAG",
-					"项目知识检索",
-					"RAG 把 README、源码结构和项目说明作为上下文提供给模型，适合回答当前项目实现细节。",
-					"询问当前 minimax-chat 调用链，观察 searchLearningDocs。"),
-			new LearningResource("mcp-mcp", "MCP",
-					"MCP Server / Client",
-					"MCP 把外部工具和资源作为协议化能力提供给 Agent。minimax-chat 是 Client，本模块是 Server。",
-					"启动本模块后访问 /minimax/chat-client/mcp/status，确认 REAL_MCP_READY。"));
+	private static final String RESOURCE_FILE = "learning-resources.json";
+
+	private final List<LearningResource> resources;
+
+	private final String resourceSource;
+
+	public LearningResourceRepository(ObjectMapper objectMapper) {
+		ResourceLoadResult loadResult = loadResources(objectMapper);
+		this.resources = loadResult.resources();
+		this.resourceSource = loadResult.resourceSource();
+	}
+
+	public List<LearningResource> all() {
+		return this.resources;
+	}
+
+	public String resourceSource() {
+		return this.resourceSource;
+	}
 
 	public List<String> listTopics() {
 		return this.resources.stream()
-				.map(LearningResource::topic)
-				.distinct()
-				.toList();
+			.map(LearningResource::topic)
+			.distinct()
+			.toList();
 	}
 
 	public LearningResource getById(String id) {
 		String safeId = normalize(id);
 		return this.resources.stream()
-				.filter(resource -> normalize(resource.id()).equals(safeId))
-				.findFirst()
-				.orElse(this.resources.get(0));
+			.filter(resource -> normalize(resource.id()).equals(safeId))
+			.findFirst()
+			.orElse(this.resources.get(0));
 	}
 
 	public List<LearningResource> search(String query, Integer limit) {
 		String safeQuery = normalize(query);
 		int safeLimit = limit == null || limit < 1 ? 3 : Math.min(limit, 5);
 		List<LearningResource> hits = this.resources.stream()
-				.filter(resource -> matches(resource, safeQuery))
-				.limit(safeLimit)
-				.toList();
+			.filter(resource -> matches(resource, safeQuery))
+			.limit(safeLimit)
+			.toList();
 		if (hits.isEmpty()) {
 			return this.resources.stream().limit(safeLimit).toList();
 		}
@@ -88,14 +83,58 @@ public class LearningResourceRepository {
 		return """
 				真实 MCP Server 调用结果
 				- Server：minimax-learning-mcp-server
+				- 资源来源：%s
 				- 查询：%s
 				- 可用主题：%s
 				- 命中资源数：%s
 
 				%s
-				""".formatted(query == null || query.isBlank() ? "全部" : query,
+				""".formatted(this.resourceSource, query == null || query.isBlank() ? "全部" : query,
 				String.join("、", listTopics()), hits.size(),
 				hits.stream().map(this::format).collect(Collectors.joining("\n\n")));
+	}
+
+	private ResourceLoadResult loadResources(ObjectMapper objectMapper) {
+		ClassPathResource resource = new ClassPathResource(RESOURCE_FILE);
+		if (resource.exists()) {
+			try (InputStream inputStream = resource.getInputStream()) {
+				List<LearningResource> loadedResources = objectMapper.readValue(inputStream,
+						new TypeReference<List<LearningResource>>() {
+						});
+				if (loadedResources != null && !loadedResources.isEmpty()) {
+					return new ResourceLoadResult(List.copyOf(loadedResources), "classpath:" + RESOURCE_FILE);
+				}
+			}
+			catch (IOException ex) {
+				// 资源文件损坏时仍允许 MCP Server 启动，方便本地学习环境继续验证链路。
+			}
+		}
+		return new ResourceLoadResult(fallbackResources(), "fallback:built-in");
+	}
+
+	private List<LearningResource> fallbackResources() {
+		return List.of(
+				new LearningResource("mcp-tool", "Tool", "Tool Calling 基础",
+						"Tool 是模型可以调用的具体函数入口，适合从 getCurrentTime、generateDailyPlan 这类小工具开始理解。",
+						"在 minimax-chat 中观察 MiniMaxLearningTools 和 OfficialLearningToolCallbacks。"),
+				new LearningResource("mcp-skill", "Skill", "Skill 业务封装",
+						"Skill 负责稳定业务逻辑，Tool 只负责暴露给模型调用。这样以后接 Agent 或 MCP 时业务逻辑可以复用。",
+						"阅读 LearningSkillService，确认 Tool 如何委托给 Skill。"),
+				new LearningResource("mcp-agent", "Agent", "ReactAgent 调用链",
+						"Agent 负责把模型、工具、上下文和执行状态组织起来，让模型可以按需调用工具后再回答。",
+						"测试 /minimax/chat-client/official-agent/chat 并观察 toolCalls。"),
+				new LearningResource("mcp-graph", "Graph", "StateGraph 编排",
+						"Graph 用节点显式编排流程，例如 memory_read、planner、mcp_node、react_agent、memory_write。",
+						"测试 /minimax/chat-client/official-graph/chat 并查看 graphSteps 和 graphDefinition。"),
+				new LearningResource("mcp-memory", "Memory", "多用户 Memory",
+						"Memory 记录用户阶段、关注主题、历史轮次和上次意图，适合做个性化学习助手。",
+						"分别使用 user-a 和 user-b 测试长期记忆隔离。"),
+				new LearningResource("mcp-rag", "RAG", "项目知识检索",
+						"RAG 把 README、源码结构和项目说明作为上下文提供给模型，适合回答当前项目实现细节。",
+						"询问当前 minimax-chat 调用链，观察 searchLearningDocs。"),
+				new LearningResource("mcp-mcp", "MCP", "MCP Server / Client",
+						"MCP 把外部工具和资源作为协议化能力提供给 Agent。minimax-chat 是 Client，本模块是 Server。",
+						"启动本模块后访问 /minimax/chat-client/mcp/status，确认 REAL_MCP_READY。"));
 	}
 
 	private boolean matches(LearningResource resource, String query) {
@@ -125,6 +164,9 @@ public class LearningResourceRepository {
 
 	private String normalize(String value) {
 		return value == null ? "" : value.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ").trim();
+	}
+
+	private record ResourceLoadResult(List<LearningResource> resources, String resourceSource) {
 	}
 
 }

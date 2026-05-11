@@ -1,5 +1,11 @@
 # Spring AI Alibaba MiniMax Chat 示例
 
+完整学习流测试手册：
+
+```text
+README-LEARNING-FLOW.md
+```
+
 本模块是一个基于 Spring AI Alibaba 和 MiniMax-M2.7 的聊天示例。
 
 当前它被用作学习 Chat、Tool Calling、Skill、Planner、Agent 和 Memory 开发的渐进式示例。

@@ -1,0 +1,51 @@
+[
+  {
+    "id": "mcp-tool",
+    "topic": "Tool",
+    "title": "Tool Calling 基础",
+    "summary": "Tool 是模型可以调用的具体函数入口，适合从 getCurrentTime、generateDailyPlan、searchLearningResources 这类小工具开始理解。",
+    "nextAction": "在 minimax-chat 中观察 MiniMaxLearningTools、OfficialLearningToolCallbacks，以及 MCP Server 暴露出的 LearningResourceTool。"
+  },
+  {
+    "id": "mcp-skill",
+    "topic": "Skill",
+    "title": "Skill 业务封装",
+    "summary": "Skill 负责稳定业务逻辑，Tool 只负责暴露给模型调用。这样以后接 Agent、Graph 或 MCP 时，业务逻辑可以继续复用。",
+    "nextAction": "阅读 LearningSkillService，确认学习建议、计划生成、概念解释是如何被 Tool 和 Agent 复用的。"
+  },
+  {
+    "id": "mcp-agent",
+    "topic": "Agent",
+    "title": "ReactAgent 调用链",
+    "summary": "Agent 负责把模型、工具、上下文和执行状态组织起来，让模型可以按需调用工具，再基于工具结果生成最终回答。",
+    "nextAction": "测试 /minimax/chat-client/official-agent/chat，并观察 agentSteps、toolCalls 和最终 content 的关系。"
+  },
+  {
+    "id": "mcp-graph",
+    "topic": "Graph",
+    "title": "StateGraph 编排",
+    "summary": "Graph 用节点显式编排流程，例如 memory_read、planner、mcp_node、react_agent、memory_write，适合把复杂流程拆成可观察步骤。",
+    "nextAction": "测试 /minimax/chat-client/official-graph/chat，并查看 graphSteps、graphDefinition 和 MCP 调用节点。"
+  },
+  {
+    "id": "mcp-memory",
+    "topic": "Memory",
+    "title": "多用户 Memory",
+    "summary": "Memory 记录用户阶段、关注主题、历史轮次和上次意图，适合做个性化学习助手，并通过 userId 隔离不同用户状态。",
+    "nextAction": "分别使用 default-user、user-a 和 user-b 测试长期记忆隔离与更新。"
+  },
+  {
+    "id": "mcp-rag",
+    "topic": "RAG",
+    "title": "项目知识检索",
+    "summary": "RAG 把 README、源码结构和项目说明作为上下文提供给模型，适合回答当前项目实现细节，而不是只依赖模型通用知识。",
+    "nextAction": "询问当前 minimax-chat 调用链，观察 searchLearningDocs 或相关 RAG 调试信息。"
+  },
+  {
+    "id": "mcp-mcp",
+    "topic": "MCP",
+    "title": "MCP Server / Client",
+    "summary": "MCP 把外部工具和资源作为协议化能力提供给 Agent。minimax-chat 是 MCP Client，本模块是真实 MCP Server。",
+    "nextAction": "启动本模块后访问 /minimax/chat-client/mcp/status，确认 mode 为 REAL_MCP_READY。"
+  }
+]

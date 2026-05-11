@@ -39,6 +39,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.mcp.LearningMcpService;
 import com.alibaba.cloud.ai.mcp.LearningMcpService.McpSearchResult;
+import com.alibaba.cloud.ai.mcp.McpDebugInfo;
 import com.alibaba.cloud.ai.memory.LearningMemory;
 import com.alibaba.cloud.ai.memory.LearningMemoryService;
 import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphResult.OfficialGraphStep;
@@ -87,6 +88,7 @@ public class OfficialLearningGraphService {
 
 	public OfficialLearningGraphResult chat(String userId, String message) {
 		this.debugRecorder.clear();
+		this.mcpService.clearDebugInfo();
 		String normalizedUserId = normalizeUserId(userId);
 		try {
 			RunnableConfig config = RunnableConfig.builder()
@@ -101,10 +103,12 @@ public class OfficialLearningGraphService {
 			LearningMemory memory = this.memoryService.read(normalizedUserId);
 			return new OfficialLearningGraphResult("官方 StateGraph 调用失败：" + ex.getMessage(),
 					LearningIntent.GENERAL_CHAT, memory, memory, List.of(step("error", ex.getMessage())),
-					this.debugRecorder.snapshot(), Map.of(), this.graphDefinition);
+					this.debugRecorder.snapshot(), this.mcpService.snapshotDebugInfo(), Map.of(),
+					this.graphDefinition);
 		}
 		finally {
 			this.debugRecorder.remove();
+			this.mcpService.clearDebugInfo();
 		}
 	}
 
@@ -118,6 +122,7 @@ public class OfficialLearningGraphService {
 				.addPatternStrategy("content", new ReplaceStrategy())
 				.addPatternStrategy("agentState", new ReplaceStrategy())
 				.addPatternStrategy("mcpContext", new ReplaceStrategy())
+				.addPatternStrategy("mcpDebugInfo", new ReplaceStrategy())
 				.addPatternStrategy("toolCalls", new ReplaceStrategy())
 				.addPatternStrategy("graphSteps", new ReplaceStrategy())
 				.build();
@@ -159,7 +164,9 @@ public class OfficialLearningGraphService {
 		return state -> {
 			String message = stringValue(state, "message", "");
 			McpSearchResult mcpResult = this.mcpService.searchProjectKnowledgeWithStatus(message, 2);
-			return Map.of("mcpContext", mcpResult.content(), "graphSteps",
+			return Map.of("mcpContext", mcpResult.content(),
+					"mcpDebugInfo", toDebugInfo(message, 2, mcpResult),
+					"graphSteps",
 					appendStep(state, "mcp_node", "MCP Node 使用 " + mcpResult.source()
 							+ " 准备学习资源，真实 MCP 可用：" + mcpResult.realMcpAvailable() + "。"));
 		};
@@ -211,8 +218,9 @@ public class OfficialLearningGraphService {
 		String content = stringValue(state, "content", "官方 StateGraph 没有返回内容。");
 		List<OfficialGraphStep> steps = steps(state);
 		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls = toolCalls(state);
+		McpDebugInfo mcpDebugInfo = mcpDebugInfo(state);
 		return new OfficialLearningGraphResult(content, intent, memoryBefore, memoryAfter, steps, toolCalls,
-				state.data(), this.graphDefinition);
+				mcpDebugInfo, state.data(), this.graphDefinition);
 	}
 
 	private String buildAgentPrompt(String message, LearningIntent intent, LearningMemory memory, String mcpContext) {
@@ -231,6 +239,52 @@ public class OfficialLearningGraphService {
 
 				请结合用户问题、记忆和 MCP 预取资源回答。需要真实时间、学习建议、学习计划、概念解释或当前项目资料时，请调用可用工具。
 				""".formatted(message, intent, memory.summary(), mcpContext);
+	}
+
+	private McpDebugInfo toDebugInfo(String query, Integer limit, McpSearchResult result) {
+		return new McpDebugInfo(result.source(), result.realMcpAvailable(), result.selectedToolName(),
+				result.availableToolNames(), result.fallbackReason(), query == null ? "" : query, limit);
+	}
+
+	private McpDebugInfo mcpDebugInfo(OverAllState state) {
+		Optional<Object> value = state.value("mcpDebugInfo");
+		if (value.isEmpty()) {
+			return this.mcpService.snapshotDebugInfo();
+		}
+		Object raw = value.get();
+		if (raw instanceof McpDebugInfo debugInfo) {
+			return debugInfo;
+		}
+		if (raw instanceof Map<?, ?> map) {
+			List<String> toolNames = map.get("availableToolNames") instanceof List<?> list
+					? list.stream().map(String::valueOf).toList() : List.of();
+			return new McpDebugInfo(stringValue(map, "mode", "UNKNOWN"),
+					Boolean.parseBoolean(stringValue(map, "realMcpAvailable", "false")),
+					stringValue(map, "selectedToolName", ""), toolNames,
+					stringValue(map, "fallbackReason", ""),
+					stringValue(map, "query", ""), integerValue(map.get("limit")));
+		}
+		return McpDebugInfo.none();
+	}
+
+	private String stringValue(Map<?, ?> map, String key, String fallback) {
+		Object value = map.get(key);
+		return value == null ? fallback : String.valueOf(value);
+	}
+
+	private Integer integerValue(Object value) {
+		if (value instanceof Number number) {
+			return number.intValue();
+		}
+		if (value == null) {
+			return null;
+		}
+		try {
+			return Integer.parseInt(String.valueOf(value));
+		}
+		catch (NumberFormatException ex) {
+			return null;
+		}
 	}
 
 	private String extractContent(OverAllState state) {

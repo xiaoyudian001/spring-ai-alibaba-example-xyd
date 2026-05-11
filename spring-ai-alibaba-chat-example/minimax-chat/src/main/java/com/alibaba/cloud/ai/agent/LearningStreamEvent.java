@@ -20,6 +20,7 @@ import java.util.List;
 
 import com.alibaba.cloud.ai.agent.LearningAgentResult.LearningAgentStep;
 import com.alibaba.cloud.ai.graph.LearningGraphStep;
+import com.alibaba.cloud.ai.mcp.McpDebugInfo;
 import com.alibaba.cloud.ai.memory.LearningMemory;
 import com.alibaba.cloud.ai.planner.LearningIntent;
 import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
@@ -29,20 +30,24 @@ import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
  */
 public record LearningStreamEvent(String type, String content, LearningIntent intent, LearningMemory memoryBefore,
 		LearningMemory memoryAfter, List<LearningGraphStep> graphSteps, List<LearningAgentStep> agentSteps,
-		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls) {
+		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls, McpDebugInfo mcpDebugInfo) {
 
 	public static LearningStreamEvent debug(LearningIntent intent, LearningMemory memoryBefore,
 			List<LearningGraphStep> graphSteps, List<LearningAgentStep> agentSteps) {
-		return new LearningStreamEvent("debug", "", intent, memoryBefore, null, graphSteps, agentSteps, List.of());
+		return new LearningStreamEvent("debug", "", intent, memoryBefore, null, graphSteps, agentSteps, List.of(),
+				McpDebugInfo.none());
 	}
 
 	public static LearningStreamEvent message(String content) {
-		return new LearningStreamEvent("message", content, null, null, null, List.of(), List.of(), List.of());
+		return new LearningStreamEvent("message", content, null, null, null, List.of(), List.of(), List.of(),
+				McpDebugInfo.none());
 	}
 
 	public static LearningStreamEvent done(LearningMemory memoryAfter, List<LearningGraphStep> graphSteps,
-			List<LearningAgentStep> agentSteps, List<ToolCallDebugRecorder.ToolCallDebug> toolCalls) {
-		return new LearningStreamEvent("done", "", null, null, memoryAfter, graphSteps, agentSteps, toolCalls);
+			List<LearningAgentStep> agentSteps, List<ToolCallDebugRecorder.ToolCallDebug> toolCalls,
+			McpDebugInfo mcpDebugInfo) {
+		return new LearningStreamEvent("done", "", null, null, memoryAfter, graphSteps, agentSteps, toolCalls,
+				mcpDebugInfo);
 	}
 
 }

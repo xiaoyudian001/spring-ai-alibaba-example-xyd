@@ -472,3 +472,58 @@ minimax-official-agent.http
 ```text
 spring-ai-alibaba-chat-example/minimax-learning-mcp-server/minimax-learning-mcp-server.http
 ```
+
+## MCP 可观测性阶段
+
+本阶段新增了 `McpDebugInfo`，让每一轮对话都能明确看到 MCP 调用状态。
+
+新增返回字段：
+
+```text
+mcpDebugInfo
+```
+
+包含：
+
+```text
+mode
+ -> REAL_MCP / MOCK_MCP / NOT_USED
+
+realMcpAvailable
+ -> 当前是否发现真实 MCP ToolCallback
+
+selectedToolName
+ -> 本轮选中的真实 MCP Tool
+
+availableToolNames
+ -> 当前 MCP Client 发现的全部 MCP Tools
+
+fallbackReason
+ -> 如果回退 mock MCP，这里显示原因
+
+query / limit
+ -> 本轮 MCP 查询参数
+```
+
+前端调试区新增：
+
+```text
+MCP 调试信息
+```
+
+测试真实 MCP 时，预期显示：
+
+```text
+模式：REAL_MCP
+真实 MCP 可用：true
+选中 Tool：...searchLearningResources
+Fallback 原因：无
+```
+
+如果未启动真实 MCP Server，预期显示：
+
+```text
+模式：MOCK_MCP
+真实 MCP 可用：false
+Fallback 原因：未发现 Spring AI MCP ToolCallbackProvider...
+```

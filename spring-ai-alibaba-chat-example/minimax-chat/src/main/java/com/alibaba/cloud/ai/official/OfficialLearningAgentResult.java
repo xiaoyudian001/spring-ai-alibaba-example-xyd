@@ -19,13 +19,15 @@ package com.alibaba.cloud.ai.official;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.mcp.McpDebugInfo;
 import com.alibaba.cloud.ai.memory.LearningMemory;
 import com.alibaba.cloud.ai.planner.LearningIntent;
 import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
 
 public record OfficialLearningAgentResult(String content, LearningIntent intent, LearningMemory memoryBefore,
 		LearningMemory memoryAfter, List<OfficialAgentStep> agentSteps,
-		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls, Map<String, Object> rawState) {
+		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls, McpDebugInfo mcpDebugInfo,
+		Map<String, Object> rawState) {
 
 	public record OfficialAgentStep(String name, String detail) {
 	}

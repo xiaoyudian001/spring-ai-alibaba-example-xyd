@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.agent;
 import java.util.List;
 
 import com.alibaba.cloud.ai.graph.LearningGraphStep;
+import com.alibaba.cloud.ai.mcp.McpDebugInfo;
 import com.alibaba.cloud.ai.memory.LearningMemory;
 import com.alibaba.cloud.ai.planner.LearningIntent;
 import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
@@ -28,7 +29,7 @@ import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
  */
 public record LearningAgentResult(String content, LearningIntent intent, LearningMemory memoryBefore,
 		LearningMemory memoryAfter, List<LearningGraphStep> graphSteps, List<LearningAgentStep> agentSteps,
-		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls) {
+		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls, McpDebugInfo mcpDebugInfo) {
 
 	public record LearningAgentStep(String name, String detail) {
 	}

@@ -46,6 +46,8 @@ public class LearningMcpService {
 
 	private final ObjectMapper objectMapper;
 
+	private final ThreadLocal<McpDebugInfo> debugInfoHolder = ThreadLocal.withInitial(McpDebugInfo::none);
+
 	private final List<McpLearningResource> resources = List.of(
 			new McpLearningResource("mcp-tool", "Tool",
 					"Tool Calling 基础",
@@ -100,15 +102,27 @@ public class LearningMcpService {
 		List<String> toolNames = availableToolNames();
 		Optional<McpSearchResult> realResult = invokeRealMcp(query, limit, toolNames);
 		if (realResult.isPresent()) {
-			return realResult.get();
+			McpSearchResult result = realResult.get();
+			recordDebug(query, limit, result);
+			return result;
 		}
-		return mockSearch(query, limit, toolNames, fallbackReason(toolNames));
+		McpSearchResult result = mockSearch(query, limit, toolNames, fallbackReason(toolNames));
+		recordDebug(query, limit, result);
+		return result;
 	}
 
 	public LearningMcpStatus status() {
 		List<String> toolNames = availableToolNames();
 		return new LearningMcpStatus(!toolNames.isEmpty(), toolNames.size(), toolNames,
 				toolNames.isEmpty() ? "MOCK_FALLBACK" : "REAL_MCP_READY");
+	}
+
+	public McpDebugInfo snapshotDebugInfo() {
+		return this.debugInfoHolder.get();
+	}
+
+	public void clearDebugInfo() {
+		this.debugInfoHolder.remove();
 	}
 
 	private Optional<McpSearchResult> invokeRealMcp(String query, Integer limit, List<String> toolNames) {
@@ -230,6 +244,12 @@ public class LearningMcpService {
 
 	private int normalizeLimit(Integer limit) {
 		return limit == null || limit < 1 ? 3 : Math.min(limit, 5);
+	}
+
+	private void recordDebug(String query, Integer limit, McpSearchResult result) {
+		this.debugInfoHolder.set(new McpDebugInfo(result.source(), result.realMcpAvailable(),
+				result.selectedToolName(), result.availableToolNames(), result.fallbackReason(),
+				query == null ? "" : query, normalizeLimit(limit)));
 	}
 
 	private String normalize(String value) {

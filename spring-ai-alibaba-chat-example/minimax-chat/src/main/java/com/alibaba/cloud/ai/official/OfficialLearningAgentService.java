@@ -25,6 +25,8 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.mcp.LearningMcpService;
+import com.alibaba.cloud.ai.mcp.McpDebugInfo;
 import com.alibaba.cloud.ai.memory.LearningMemory;
 import com.alibaba.cloud.ai.memory.LearningMemoryService;
 import com.alibaba.cloud.ai.official.OfficialLearningAgentResult.OfficialAgentStep;
@@ -49,16 +51,20 @@ public class OfficialLearningAgentService {
 
 	private final ToolCallDebugRecorder debugRecorder;
 
+	private final LearningMcpService mcpService;
+
 	public OfficialLearningAgentService(ReactAgent officialLearningAgent, LearningIntentPlanner intentPlanner,
-			LearningMemoryService memoryService, ToolCallDebugRecorder debugRecorder) {
+			LearningMemoryService memoryService, ToolCallDebugRecorder debugRecorder, LearningMcpService mcpService) {
 		this.officialLearningAgent = officialLearningAgent;
 		this.intentPlanner = intentPlanner;
 		this.memoryService = memoryService;
 		this.debugRecorder = debugRecorder;
+		this.mcpService = mcpService;
 	}
 
 	public OfficialLearningAgentResult chat(String userId, String message) {
 		this.debugRecorder.clear();
+		this.mcpService.clearDebugInfo();
 		LearningMemory memoryBefore = this.memoryService.read(userId);
 		LearningIntent intent = this.intentPlanner.plan(message);
 		List<OfficialAgentStep> steps = new ArrayList<>();
@@ -80,17 +86,20 @@ public class OfficialLearningAgentService {
 							+ toolCalls.size() + " 次工具调用。"));
 			LearningMemory memoryAfter = this.memoryService.update(userId, message, intent);
 			steps.add(new OfficialAgentStep("MEMORY_WRITE", "根据本轮问题和意图更新用户长期学习记忆。"));
+			McpDebugInfo mcpDebugInfo = this.mcpService.snapshotDebugInfo();
 			return new OfficialLearningAgentResult(content, intent, memoryBefore, memoryAfter, List.copyOf(steps),
-					toolCalls, state == null ? Map.of() : state.data());
+					toolCalls, mcpDebugInfo, state == null ? Map.of() : state.data());
 		}
 		catch (Exception ex) {
 			steps.add(new OfficialAgentStep("ERROR", "官方 ReactAgent 调用失败：" + ex.getMessage()));
 			LearningMemory memoryAfter = this.memoryService.read(userId);
 			return new OfficialLearningAgentResult("官方 ReactAgent 调用失败：" + ex.getMessage(), intent, memoryBefore,
-					memoryAfter, List.copyOf(steps), this.debugRecorder.snapshot(), Map.of());
+					memoryAfter, List.copyOf(steps), this.debugRecorder.snapshot(),
+					this.mcpService.snapshotDebugInfo(), Map.of());
 		}
 		finally {
 			this.debugRecorder.remove();
+			this.mcpService.clearDebugInfo();
 		}
 	}
 

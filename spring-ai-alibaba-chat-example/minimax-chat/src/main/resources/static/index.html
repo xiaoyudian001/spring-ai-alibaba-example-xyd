@@ -782,7 +782,27 @@
 		return `用户：${memory.userId || currentUserId()}\n阶段：${memory.level || "初学者"}\n关注：${topics}\n轮次：${memory.conversationCount ?? 0}\n上次意图：${memory.lastIntent || "GENERAL_CHAT"}\n上次问题：${memory.lastQuestion || "暂无"}`;
 	}
 
-	function renderDebug(messageNode, intent, toolCalls, graphSteps, agentSteps, memoryBefore, memoryAfter, chainMode, graphDefinition) {
+	function formatMcpDebug(mcpDebugInfo, toolCalls) {
+		const mcpCall = (toolCalls || []).find(call => call.name === "searchMcpLearningResources");
+		const args = mcpCall?.arguments || {};
+		const info = mcpDebugInfo || {};
+		const mode = info.mode || args.source || "NOT_USED";
+		if (mode === "NOT_USED" && !mcpCall) return "";
+		const tools = Array.isArray(info.availableToolNames) && info.availableToolNames.length
+			? info.availableToolNames.join("、") : "暂无";
+		return `
+			<div class="memory-card">
+				<div class="memory-card-title">MCP 调试信息</div>
+				<div>模式：${escapeHtml(mode)}</div>
+				<div>真实 MCP 可用：${escapeHtml(info.realMcpAvailable ?? args.realMcpAvailable ?? false)}</div>
+				<div>选中 Tool：${escapeHtml(info.selectedToolName || args.selectedToolName || "暂无")}</div>
+				<div>可用 Tools：${escapeHtml(tools)}</div>
+				<div>Fallback 原因：${escapeHtml(info.fallbackReason || "无")}</div>
+			</div>
+		`;
+	}
+
+	function renderDebug(messageNode, intent, toolCalls, graphSteps, agentSteps, memoryBefore, memoryAfter, chainMode, graphDefinition, mcpDebugInfo) {
 		if (!debugToggle.checked) return;
 		const existing = messageNode.querySelector(":scope > .debug-panel");
 		if (existing) existing.remove();
@@ -809,6 +829,13 @@
 			</div>
 		`;
 		panel.appendChild(memory);
+		const mcpDebugHtml = formatMcpDebug(mcpDebugInfo, toolCalls);
+		if (mcpDebugHtml) {
+			const mcpDebug = document.createElement("div");
+			mcpDebug.className = "memory-grid";
+			mcpDebug.innerHTML = mcpDebugHtml;
+			panel.appendChild(mcpDebug);
+		}
 		if (graphSteps && graphSteps.length) {
 			const graph = document.createElement("div");
 			graph.className = "graph-steps";
@@ -980,7 +1007,8 @@
 				else if (type === "done") {
 					renderDebug(messageNode, debugData.intent, payload.toolCalls || [],
 						payload.graphSteps || debugData.graphSteps || [], payload.agentSteps || debugData.agentSteps || [],
-						debugData.memoryBefore, payload.memoryAfter, currentAgentModeLabel(), payload.graphDefinition);
+						debugData.memoryBefore, payload.memoryAfter, currentAgentModeLabel(), payload.graphDefinition,
+						payload.mcpDebugInfo || debugData.mcpDebugInfo);
 				}
 				else {
 					rawText += payload.content || "";
@@ -1015,7 +1043,8 @@
 				answer = cleanAssistantText(data.content || "");
 				setAssistantContent(assistant, answer);
 				renderDebug(assistantNode, data.intent, data.toolCalls || [], data.graphSteps || [],
-					data.agentSteps || [], data.memoryBefore, data.memoryAfter, currentAgentModeLabel(), data.graphDefinition);
+					data.agentSteps || [], data.memoryBefore, data.memoryAfter, currentAgentModeLabel(),
+					data.graphDefinition, data.mcpDebugInfo);
 			}
 			addHistory("user", message);
 			addHistory("assistant", answer);

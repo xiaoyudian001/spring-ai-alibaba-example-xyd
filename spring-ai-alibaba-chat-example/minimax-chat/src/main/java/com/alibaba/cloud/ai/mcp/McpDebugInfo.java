@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.officialgraph;
+package com.alibaba.cloud.ai.mcp;
 
 import java.util.List;
-import java.util.Map;
 
-import com.alibaba.cloud.ai.mcp.McpDebugInfo;
-import com.alibaba.cloud.ai.memory.LearningMemory;
-import com.alibaba.cloud.ai.planner.LearningIntent;
-import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
+public record McpDebugInfo(String mode, boolean realMcpAvailable, String selectedToolName,
+		List<String> availableToolNames, String fallbackReason, String query, Integer limit) {
 
-public record OfficialLearningGraphResult(String content, LearningIntent intent, LearningMemory memoryBefore,
-		LearningMemory memoryAfter, List<OfficialGraphStep> graphSteps,
-		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls, McpDebugInfo mcpDebugInfo,
-		Map<String, Object> rawState, String graphDefinition) {
-
-	public record OfficialGraphStep(String node, String detail) {
+	public static McpDebugInfo none() {
+		return new McpDebugInfo("NOT_USED", false, "", List.of(), "", "", null);
 	}
 
 }

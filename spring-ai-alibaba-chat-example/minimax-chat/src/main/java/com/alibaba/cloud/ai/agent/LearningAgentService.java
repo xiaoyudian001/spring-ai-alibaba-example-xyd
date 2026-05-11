@@ -22,6 +22,8 @@ import java.util.List;
 import com.alibaba.cloud.ai.agent.LearningAgentResult.LearningAgentStep;
 import com.alibaba.cloud.ai.graph.LearningGraphResult;
 import com.alibaba.cloud.ai.graph.LearningGraphService;
+import com.alibaba.cloud.ai.mcp.LearningMcpService;
+import com.alibaba.cloud.ai.mcp.McpDebugInfo;
 import com.alibaba.cloud.ai.memory.LearningMemory;
 import com.alibaba.cloud.ai.memory.LearningMemoryService;
 import com.alibaba.cloud.ai.planner.LearningIntent;
@@ -74,14 +76,17 @@ public class LearningAgentService {
 
 	private final LearningGraphService graphService;
 
+	private final LearningMcpService mcpService;
+
 	public LearningAgentService(ChatModel chatModel, MiniMaxLearningTools learningTools,
 			ToolCallDebugRecorder debugRecorder, LearningIntentPlanner intentPlanner,
-			LearningMemoryService memoryService, LearningGraphService graphService) {
+			LearningMemoryService memoryService, LearningGraphService graphService, LearningMcpService mcpService) {
 		this.learningTools = learningTools;
 		this.debugRecorder = debugRecorder;
 		this.intentPlanner = intentPlanner;
 		this.memoryService = memoryService;
 		this.graphService = graphService;
+		this.mcpService = mcpService;
 		this.chatClient = ChatClient.builder(chatModel)
 				.defaultAdvisors(new SimpleLoggerAdvisor())
 				.defaultOptions(defaultOptions())
@@ -90,6 +95,7 @@ public class LearningAgentService {
 
 	public LearningAgentResult chat(String userId, String message, List<LearningAgentMessage> history) {
 		this.debugRecorder.clear();
+		this.mcpService.clearDebugInfo();
 		LearningMemory memoryBefore = this.memoryService.read(userId);
 		LearningIntent intent = this.intentPlanner.plan(message);
 		LearningGraphResult graph = this.graphService.plan(userId, message, intent);
@@ -109,11 +115,13 @@ public class LearningAgentService {
 							"本轮模型触发了 " + toolCalls.size() + " 次工具调用，并基于工具结果生成最终回答。"));
 			LearningMemory memoryAfter = this.memoryService.update(userId, message, intent);
 			steps.add(new LearningAgentStep("MEMORY_WRITE", "已更新用户学习阶段、关注主题、最近意图和对话轮次，并写回 JSON 文件。"));
+			McpDebugInfo mcpDebugInfo = this.mcpService.snapshotDebugInfo();
 			return new LearningAgentResult(content, intent, memoryBefore, memoryAfter, graph.steps(),
-					List.copyOf(steps), toolCalls);
+					List.copyOf(steps), toolCalls, mcpDebugInfo);
 		}
 		finally {
 			this.debugRecorder.remove();
+			this.mcpService.clearDebugInfo();
 		}
 	}
 
@@ -125,6 +133,7 @@ public class LearningAgentService {
 
 	public Flux<LearningStreamEvent> streamEvents(String userId, String message, List<LearningAgentMessage> history) {
 		this.debugRecorder.clear();
+		this.mcpService.clearDebugInfo();
 		LearningMemory memoryBefore = this.memoryService.read(userId);
 		LearningIntent intent = this.intentPlanner.plan(message);
 		LearningGraphResult graph = this.graphService.plan(userId, message, intent);
@@ -147,10 +156,14 @@ public class LearningAgentService {
 							"本轮模型触发了 " + toolCalls.size() + " 次工具调用，并基于工具结果生成最终回答。"));
 			LearningMemory memoryAfter = this.memoryService.update(userId, message, intent);
 			steps.add(new LearningAgentStep("MEMORY_WRITE", "已更新用户学习阶段、关注主题、最近意图和对话轮次，并写回 JSON 文件。"));
-			return LearningStreamEvent.done(memoryAfter, graph.steps(), List.copyOf(steps), toolCalls);
+			return LearningStreamEvent.done(memoryAfter, graph.steps(), List.copyOf(steps), toolCalls,
+					this.mcpService.snapshotDebugInfo());
 		});
 		return Flux.concat(debugEvent, messageEvents, doneEvent)
-				.doFinally(signalType -> this.debugRecorder.remove());
+				.doFinally(signalType -> {
+					this.debugRecorder.remove();
+					this.mcpService.clearDebugInfo();
+				});
 	}
 
 	private List<LearningAgentStep> planSteps(String message, LearningIntent intent, LearningMemory memory) {

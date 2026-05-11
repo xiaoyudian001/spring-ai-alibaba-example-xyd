@@ -16,3 +16,17 @@ spring:
         options:
           model: MiniMax-M2.7
           temperature: 0.7
+    mcp:
+      client:
+        # 默认关闭真实 MCP Client，保证 minimax-chat 不依赖外部 MCP Server 也能启动。
+        # 要测试真实 MCP 时改为 true，并启动对应的 MCP Server。
+        enabled: false
+        name: minimax-learning-mcp-client
+        version: 1.0.0
+        request-timeout: 30s
+        type: ASYNC
+        sse:
+          connections:
+            learning:
+              # 对应 minimax-learning-mcp-server，启动后地址为 http://localhost:19000。
+              url: http://localhost:19000

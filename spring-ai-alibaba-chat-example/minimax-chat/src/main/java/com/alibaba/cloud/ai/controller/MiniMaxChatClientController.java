@@ -23,6 +23,8 @@ import com.alibaba.cloud.ai.agent.LearningAgentResult;
 import com.alibaba.cloud.ai.agent.LearningAgentService;
 import com.alibaba.cloud.ai.agent.LearningAgentService.LearningAgentMessage;
 import com.alibaba.cloud.ai.agent.LearningStreamEvent;
+import com.alibaba.cloud.ai.mcp.LearningMcpService;
+import com.alibaba.cloud.ai.mcp.LearningMcpService.LearningMcpStatus;
 import com.alibaba.cloud.ai.memory.LearningMemory;
 import com.alibaba.cloud.ai.memory.LearningMemoryService;
 import com.alibaba.cloud.ai.official.OfficialLearningAgentResult;
@@ -62,15 +64,19 @@ public class MiniMaxChatClientController {
 
 	private final LearningMemoryService learningMemoryService;
 
+	private final LearningMcpService learningMcpService;
+
 	private final OfficialLearningAgentService officialLearningAgentService;
 
 	private final OfficialLearningGraphService officialLearningGraphService;
 
 	public MiniMaxChatClientController(ChatModel chatModel, LearningAgentService learningAgentService,
-			LearningMemoryService learningMemoryService, OfficialLearningAgentService officialLearningAgentService,
+			LearningMemoryService learningMemoryService, LearningMcpService learningMcpService,
+			OfficialLearningAgentService officialLearningAgentService,
 			OfficialLearningGraphService officialLearningGraphService) {
 		this.learningAgentService = learningAgentService;
 		this.learningMemoryService = learningMemoryService;
+		this.learningMcpService = learningMcpService;
 		this.officialLearningAgentService = officialLearningAgentService;
 		this.officialLearningGraphService = officialLearningGraphService;
 		this.chatClient = ChatClient.builder(chatModel)
@@ -124,6 +130,11 @@ public class MiniMaxChatClientController {
 	@DeleteMapping("/memory")
 	public LearningMemory clearMemory(@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
 		return this.learningMemoryService.clear(userId);
+	}
+
+	@GetMapping("/mcp/status")
+	public LearningMcpStatus mcpStatus() {
+		return this.learningMcpService.status();
 	}
 
 	private String extractUserId(ChatRequest request) {

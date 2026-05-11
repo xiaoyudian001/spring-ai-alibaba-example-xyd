@@ -16,22 +16,35 @@
 
 package com.alibaba.cloud.ai.mcp;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 /**
- * Mock MCP layer for learning purposes.
+ * Learning MCP facade.
  *
  * <p>
- * This service simulates capabilities normally discovered from an external MCP
- * server. Keeping it local lets the demo teach the call position before adding
- * stdio/SSE MCP transport and server lifecycle concerns.
+ * This service tries a real Spring AI MCP ToolCallbackProvider first. If no MCP
+ * server is configured, or the MCP call fails, it falls back to the local mock
+ * resource list so the learning demo remains runnable.
  */
 @Service
 public class LearningMcpService {
+
+	private final ObjectProvider<ToolCallbackProvider> toolCallbackProvider;
+
+	private final ObjectMapper objectMapper;
 
 	private final List<McpLearningResource> resources = List.of(
 			new McpLearningResource("mcp-tool", "Tool",
@@ -44,7 +57,7 @@ public class LearningMcpService {
 					"测试 /official-agent/chat 并观察 toolCalls。"),
 			new McpLearningResource("mcp-graph", "Graph",
 					"StateGraph 编排",
-					"理解 StateGraph 如何把 memory_read、planner、react_agent、memory_write 串成节点流。",
+					"理解 StateGraph 如何把 memory_read、planner、mcp_node、react_agent、memory_write 串成节点流。",
 					"测试 /official-graph/chat 并查看 graphDefinition。"),
 			new McpLearningResource("mcp-memory", "Memory",
 					"多用户 Memory",
@@ -56,8 +69,13 @@ public class LearningMcpService {
 					"询问当前项目调用链并观察 searchLearningDocs。"),
 			new McpLearningResource("mcp-mcp", "MCP",
 					"MCP Node 入门",
-					"理解 MCP 是外部工具和资源接入协议，本阶段先用 mock MCP 模拟资源发现和调用。",
-					"询问通过 MCP 获取 Agent 学习资源。"));
+					"理解 MCP 是外部工具和资源接入协议，本阶段先接入真实 MCP Client，再保留 mock fallback。",
+					"配置 MCP Server 后询问通过 MCP 获取 Agent 学习资源。"));
+
+	public LearningMcpService(ObjectProvider<ToolCallbackProvider> toolCallbackProvider, ObjectMapper objectMapper) {
+		this.toolCallbackProvider = toolCallbackProvider;
+		this.objectMapper = objectMapper;
+	}
 
 	public List<String> listLearningTopics() {
 		return this.resources.stream()
@@ -75,8 +93,83 @@ public class LearningMcpService {
 	}
 
 	public String searchProjectKnowledge(String query, Integer limit) {
+		return searchProjectKnowledgeWithStatus(query, limit).content();
+	}
+
+	public McpSearchResult searchProjectKnowledgeWithStatus(String query, Integer limit) {
+		List<String> toolNames = availableToolNames();
+		Optional<McpSearchResult> realResult = invokeRealMcp(query, limit, toolNames);
+		if (realResult.isPresent()) {
+			return realResult.get();
+		}
+		return mockSearch(query, limit, toolNames, fallbackReason(toolNames));
+	}
+
+	public LearningMcpStatus status() {
+		List<String> toolNames = availableToolNames();
+		return new LearningMcpStatus(!toolNames.isEmpty(), toolNames.size(), toolNames,
+				toolNames.isEmpty() ? "MOCK_FALLBACK" : "REAL_MCP_READY");
+	}
+
+	private Optional<McpSearchResult> invokeRealMcp(String query, Integer limit, List<String> toolNames) {
+		ToolCallback callback = selectMcpSearchTool();
+		if (callback == null) {
+			return Optional.empty();
+		}
+		try {
+			String arguments = this.objectMapper.writeValueAsString(Map.of(
+					"query", query == null ? "" : query,
+					"limit", normalizeLimit(limit)));
+			String content = callback.call(arguments);
+			if (content == null || content.isBlank()) {
+				return Optional.empty();
+			}
+			return Optional.of(new McpSearchResult(content, "REAL_MCP", true,
+					callback.getToolDefinition().name(), toolNames, ""));
+		}
+		catch (JsonProcessingException ex) {
+			return Optional.of(mockSearch(query, limit, toolNames, "MCP 参数序列化失败：" + ex.getMessage()));
+		}
+		catch (Exception ex) {
+			return Optional.of(mockSearch(query, limit, toolNames, "真实 MCP 调用失败：" + ex.getMessage()));
+		}
+	}
+
+	private ToolCallback selectMcpSearchTool() {
+		ToolCallback[] callbacks = toolCallbacks();
+		ToolCallback fallback = null;
+		for (ToolCallback callback : callbacks) {
+			String name = normalize(callback.getToolDefinition().name());
+			String description = normalize(callback.getToolDefinition().description());
+			if (name.contains("search") || name.contains("resource") || name.contains("learning")
+					|| description.contains("search") || description.contains("resource")
+					|| description.contains("learning")) {
+				return callback;
+			}
+			if (fallback == null) {
+				fallback = callback;
+			}
+		}
+		return fallback;
+	}
+
+	private ToolCallback[] toolCallbacks() {
+		return this.toolCallbackProvider.orderedStream()
+				.flatMap(provider -> Arrays.stream(provider.getToolCallbacks()))
+				.toArray(ToolCallback[]::new);
+	}
+
+	private List<String> availableToolNames() {
+		List<String> names = new ArrayList<>();
+		for (ToolCallback callback : toolCallbacks()) {
+			names.add(callback.getToolDefinition().name());
+		}
+		return List.copyOf(names);
+	}
+
+	private McpSearchResult mockSearch(String query, Integer limit, List<String> toolNames, String fallbackReason) {
 		String safeQuery = normalize(query);
-		int safeLimit = limit == null || limit < 1 ? 3 : Math.min(limit, 5);
+		int safeLimit = normalizeLimit(limit);
 		List<McpLearningResource> hits = this.resources.stream()
 				.filter(resource -> matches(resource, safeQuery))
 				.limit(safeLimit)
@@ -84,7 +177,8 @@ public class LearningMcpService {
 		if (hits.isEmpty()) {
 			hits = this.resources.stream().limit(safeLimit).toList();
 		}
-		return format(query, hits);
+		return new McpSearchResult(formatMock(query, hits, fallbackReason), "MOCK_MCP", !toolNames.isEmpty(),
+				"", toolNames, fallbackReason);
 	}
 
 	private boolean matches(McpLearningResource resource, String query) {
@@ -101,15 +195,19 @@ public class LearningMcpService {
 		return false;
 	}
 
-	private String format(String query, List<McpLearningResource> hits) {
+	private String formatMock(String query, List<McpLearningResource> hits, String fallbackReason) {
+		String reason = fallbackReason == null || fallbackReason.isBlank() ? "未配置真实 MCP Server，使用本地 mock 资源。"
+				: fallbackReason;
 		return """
 				Mock MCP 调用结果
+				- 来源：MOCK_MCP
+				- 兜底原因：%s
 				- 查询：%s
 				- 可用主题：%s
 				- 命中资源数：%s
 
 				%s
-				""".formatted(query == null || query.isBlank() ? "全部" : query,
+				""".formatted(reason, query == null || query.isBlank() ? "全部" : query,
 				String.join("、", listLearningTopics()), hits.size(),
 				hits.stream().map(this::format).collect(Collectors.joining("\n\n")));
 	}
@@ -125,8 +223,24 @@ public class LearningMcpService {
 				resource.nextAction());
 	}
 
+	private String fallbackReason(List<String> toolNames) {
+		return toolNames.isEmpty() ? "未发现 Spring AI MCP ToolCallbackProvider。请启用 spring.ai.mcp.client 并配置 MCP Server。"
+				: "未找到可用的 MCP 查询工具。";
+	}
+
+	private int normalizeLimit(Integer limit) {
+		return limit == null || limit < 1 ? 3 : Math.min(limit, 5);
+	}
+
 	private String normalize(String value) {
 		return value == null ? "" : value.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ").trim();
+	}
+
+	public record LearningMcpStatus(boolean realMcpAvailable, int toolCount, List<String> toolNames, String mode) {
+	}
+
+	public record McpSearchResult(String content, String source, boolean realMcpAvailable, String selectedToolName,
+			List<String> availableToolNames, String fallbackReason) {
 	}
 
 }

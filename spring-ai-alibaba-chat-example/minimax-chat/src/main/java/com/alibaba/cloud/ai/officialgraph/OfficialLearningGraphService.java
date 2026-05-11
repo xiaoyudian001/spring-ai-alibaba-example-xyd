@@ -38,6 +38,7 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.mcp.LearningMcpService;
+import com.alibaba.cloud.ai.mcp.LearningMcpService.McpSearchResult;
 import com.alibaba.cloud.ai.memory.LearningMemory;
 import com.alibaba.cloud.ai.memory.LearningMemoryService;
 import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphResult.OfficialGraphStep;
@@ -157,9 +158,10 @@ public class OfficialLearningGraphService {
 	private NodeAction mcpNode() {
 		return state -> {
 			String message = stringValue(state, "message", "");
-			String mcpContext = this.mcpService.searchProjectKnowledge(message, 2);
-			return Map.of("mcpContext", mcpContext, "graphSteps",
-					appendStep(state, "mcp_node", "Mock MCP prepared learning resources for ReactAgent."));
+			McpSearchResult mcpResult = this.mcpService.searchProjectKnowledgeWithStatus(message, 2);
+			return Map.of("mcpContext", mcpResult.content(), "graphSteps",
+					appendStep(state, "mcp_node", "MCP Node 使用 " + mcpResult.source()
+							+ " 准备学习资源，真实 MCP 可用：" + mcpResult.realMcpAvailable() + "。"));
 		};
 	}
 

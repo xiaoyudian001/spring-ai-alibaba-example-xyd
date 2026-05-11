@@ -93,18 +93,18 @@ public class OfficialLearningToolCallbacks {
 		Function<SearchMcpLearningResourcesRequest, String> function = request -> this.learningTools
 				.searchMcpLearningResources(request.query(), request.limit());
 		return FunctionToolCallback.builder("searchMcpLearningResources", function)
-				.description("通过 mock MCP 获取 Spring AI Alibaba 学习资源。用户询问 MCP、外部工具协议、资源发现、MCP Node 或通过 MCP 查找资料时使用。")
+				.description("通过 MCP 获取 Spring AI Alibaba 学习资源，真实 MCP Client 优先，mock MCP 兜底。用户询问 MCP、外部工具协议、资源发现、MCP Node 或通过 MCP 查找资料时使用。")
 				.inputType(SearchMcpLearningResourcesRequest.class)
 				.build();
 	}
 
-	@JsonClassDescription("Request to get current time by zone id")
+	@JsonClassDescription("根据时区 ID 获取当前时间的请求参数")
 	public record GetCurrentTimeRequest(
 			@JsonProperty(value = "zoneId", required = true)
 			@JsonPropertyDescription("时区 ID，例如 Asia/Shanghai、UTC、America/New_York。") String zoneId) {
 	}
 
-	@JsonClassDescription("Request to search mock MCP learning resources")
+	@JsonClassDescription("查询 mock MCP 学习资源的请求参数")
 	public record SearchMcpLearningResourcesRequest(
 			@JsonProperty(value = "query", required = true)
 			@JsonPropertyDescription("MCP resource query, such as Agent, Graph, Tool, Memory, RAG, MCP.") String query,
@@ -112,7 +112,7 @@ public class OfficialLearningToolCallbacks {
 			@JsonPropertyDescription("Number of resources to return, recommended 1 to 5.") Integer limit) {
 	}
 
-	@JsonClassDescription("Request to generate Spring AI Alibaba learning advice")
+	@JsonClassDescription("生成 Spring AI Alibaba 学习建议的请求参数")
 	public record GenerateLearningAdviceRequest(
 			@JsonProperty(value = "topic", required = true)
 			@JsonPropertyDescription("学习主题，例如 Tool Calling、Skill、Agent、RAG、MCP、Graph。") String topic,
@@ -120,7 +120,7 @@ public class OfficialLearningToolCallbacks {
 			@JsonPropertyDescription("学习者阶段，例如 初学者、进阶、熟练。") String level) {
 	}
 
-	@JsonClassDescription("Request to generate a daily learning plan")
+	@JsonClassDescription("生成每日学习计划的请求参数")
 	public record GenerateDailyPlanRequest(
 			@JsonProperty(value = "topic", required = true)
 			@JsonPropertyDescription("学习主题，例如 Spring AI Alibaba Agent。") String topic,
@@ -130,7 +130,7 @@ public class OfficialLearningToolCallbacks {
 			@JsonPropertyDescription("计划总时长，单位分钟，例如 30、60、90。") Integer minutes) {
 	}
 
-	@JsonClassDescription("Request to explain a learning concept")
+	@JsonClassDescription("解释学习概念的请求参数")
 	public record ExplainConceptRequest(
 			@JsonProperty(value = "concept", required = true)
 			@JsonPropertyDescription("要解释的概念，例如 Tool、Skill、Agent、RAG、MCP、Graph。") String concept,
@@ -138,7 +138,7 @@ public class OfficialLearningToolCallbacks {
 			@JsonPropertyDescription("学习者阶段，例如 初学者、进阶、熟练。") String level) {
 	}
 
-	@JsonClassDescription("Request to search local minimax-chat learning docs")
+	@JsonClassDescription("检索本地 minimax-chat 学习文档的请求参数")
 	public record SearchLearningDocsRequest(
 			@JsonProperty(value = "query", required = true)
 			@JsonPropertyDescription("检索问题或关键词。") String query,

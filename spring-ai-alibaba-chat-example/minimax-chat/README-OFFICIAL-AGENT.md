@@ -349,3 +349,126 @@ toolCalls 中出现 searchMcpLearningResources
 官方 Graph 的 graphSteps 中出现 mcp_node
 回答中出现 mock MCP 学习资源
 ```
+
+## 真实 MCP Client 阶段
+
+本阶段把 `LearningMcpService` 从纯 mock 升级为“真实 MCP 优先，mock 兜底”。
+
+新增依赖：
+
+```xml
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
+</dependency>
+```
+
+默认配置：
+
+```yaml
+spring:
+  ai:
+    mcp:
+      client:
+        enabled: false
+        name: minimax-learning-mcp-client
+        type: ASYNC
+        sse:
+          connections:
+            learning:
+              url: http://localhost:19000
+```
+
+默认关闭真实 MCP Client，是为了保证没有外部 MCP Server 时，`minimax-chat` 仍然可以正常启动和学习。
+
+开启真实 MCP 测试时：
+
+```yaml
+spring:
+  ai:
+    mcp:
+      client:
+        enabled: true
+```
+
+本项目已经新增一个真实 MCP Server：
+
+```text
+spring-ai-alibaba-chat-example/minimax-learning-mcp-server
+```
+
+推荐启动顺序：
+
+```bash
+# 1. 启动 MCP Server，端口 19000
+cd spring-ai-alibaba-chat-example/minimax-learning-mcp-server
+mvn spring-boot:run
+
+# 2. 使用 mcp profile 启动 minimax-chat，端口 8080
+cd ../minimax-chat
+mvn spring-boot:run -Dspring-boot.run.profiles=mcp
+```
+
+并启动一个 SSE MCP Server：
+
+```text
+http://localhost:19000
+```
+
+调用链路：
+
+```text
+用户问题
+ -> searchMcpLearningResources
+ -> LearningMcpService
+ -> 查找 Spring AI MCP ToolCallbackProvider
+ -> 如果发现真实 MCP ToolCallback，则优先调用真实 MCP 工具
+ -> 如果没有发现或调用失败，则回退到本地 mock MCP 资源
+ -> 模型整合 MCP 结果生成最终回答
+```
+
+状态检查：
+
+```http
+GET http://localhost:8080/minimax/chat-client/mcp/status
+```
+
+默认返回：
+
+```json
+{
+  "realMcpAvailable": false,
+  "toolCount": 0,
+  "toolNames": [],
+  "mode": "MOCK_FALLBACK"
+}
+```
+
+真实 MCP Server 可用时，预期：
+
+```json
+{
+  "realMcpAvailable": true,
+  "toolCount": 1,
+  "toolNames": ["..."],
+  "mode": "REAL_MCP_READY"
+}
+```
+
+测试用例：
+
+```text
+minimax-official-agent.http
+```
+
+新增：
+
+```text
+09 真实 MCP Client 状态检查
+```
+
+完整真实 MCP 测试用例：
+
+```text
+spring-ai-alibaba-chat-example/minimax-learning-mcp-server/minimax-learning-mcp-server.http
+```

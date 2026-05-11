@@ -95,3 +95,12 @@ Content-Type: application/json; charset=utf-8
   "message": "通过 MCP 给我推荐 MCP Node、Tool 和 Graph 的学习资料。",
   "history": []
 }
+
+### 09 真实 MCP Client 状态检查
+# 完整真实 MCP 测试请先启动：
+# spring-ai-alibaba-chat-example/minimax-learning-mcp-server
+# 并按 minimax-learning-mcp-server.http 从 01 到 06 执行。
+# 目标：查看当前是否发现真实 MCP Server 暴露的 ToolCallback。
+# 默认 spring.ai.mcp.client.enabled=false 时，mode 应为 MOCK_FALLBACK。
+# 使用 mcp profile 启动 minimax-chat 后，mode 应为 REAL_MCP_READY，并返回 toolNames。
+GET {{baseUrl}}/minimax/chat-client/mcp/status

@@ -1,0 +1,58 @@
+@mcpServer = http://localhost:19000
+@minimaxChat = http://localhost:8080
+@userA = user-a
+
+### 01 MCP Server 健康检查
+# 目标：确认 minimax-learning-mcp-server 已启动。
+GET {{mcpServer}}/learning-mcp/health
+
+### 02 MCP Server 普通 REST 资源检索
+# 目标：不经过 MCP 协议，先确认学习资源数据正常。
+GET {{mcpServer}}/learning-mcp/resources/search?query=Agent Graph MCP&limit=3
+
+### 03 minimax-chat MCP Client 状态检查
+# 前置条件：
+# 1. minimax-learning-mcp-server 已启动，端口 19000。
+# 2. minimax-chat 使用 mcp profile 启动：
+#    mvn spring-boot:run -Dspring-boot.run.profiles=mcp
+# 预期：mode=REAL_MCP_READY，toolNames 中出现 searchLearningResources。
+GET {{minimaxChat}}/minimax/chat-client/mcp/status
+
+### 04 通过手写 Agent 调用真实 MCP Server
+# 预期：
+# - content 中出现“真实 MCP Server 调用结果”
+# - toolCalls[0].arguments.source 为 REAL_MCP
+# - toolCalls[0].arguments.selectedToolName 不为空
+POST {{minimaxChat}}/minimax/chat-client/conversation/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{userA}}",
+  "message": "通过 MCP 查询 Agent 和 Graph 的学习资源，并说明下一步怎么学。",
+  "history": []
+}
+
+### 05 通过官方 ReactAgent 调用真实 MCP Server
+# 预期：toolCalls 中出现 searchMcpLearningResources，工具结果来自真实 MCP Server。
+POST {{minimaxChat}}/minimax/chat-client/official-agent/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{userA}}",
+  "message": "请通过真实 MCP Server 查询 Spring AI Alibaba Agent 学习资源。",
+  "history": []
+}
+
+### 06 通过官方 StateGraph 调用真实 MCP Server
+# 预期：
+# - graphSteps 中出现 mcp_node
+# - mcp_node detail 显示 REAL_MCP
+# - toolCalls 中可能再次出现 searchMcpLearningResources
+POST {{minimaxChat}}/minimax/chat-client/official-graph/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{userA}}",
+  "message": "用官方 Graph 通过 MCP 查询 MCP、Tool 和 Graph 的学习资料。",
+  "history": []
+}

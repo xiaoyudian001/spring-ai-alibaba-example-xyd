@@ -20,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.mcp.LearningMcpService;
+import com.alibaba.cloud.ai.mcp.LearningMcpService.McpSearchResult;
 import com.alibaba.cloud.ai.rag.LearningRagService;
 import com.alibaba.cloud.ai.skill.LearningSkillService;
 import org.springframework.ai.tool.annotation.Tool;
@@ -98,13 +99,16 @@ public class MiniMaxLearningTools {
 		return result;
 	}
 
-	@Tool(description = "通过 mock MCP 获取 Spring AI Alibaba 学习资源。当用户询问 MCP、外部工具协议、学习资源、资源发现、MCP Node 或通过 MCP 查找资料时使用。")
+	@Tool(description = "通过 MCP 获取 Spring AI Alibaba 学习资源，真实 MCP Client 优先，mock MCP 兜底。当用户询问 MCP、外部工具协议、学习资源、资源发现、MCP Node 或通过 MCP 查找资料时使用。")
 	public String searchMcpLearningResources(
 			@ToolParam(description = "MCP 资源查询词，例如 Agent、Graph、Tool、Memory、RAG、MCP。") String query,
 			@ToolParam(description = "返回资源数量，建议 1 到 5。") Integer limit) {
-		String result = this.learningMcpService.searchProjectKnowledge(query, limit);
-		this.debugRecorder.record("searchMcpLearningResources", arguments("query", query, "limit", limit), result);
-		return result;
+		McpSearchResult result = this.learningMcpService.searchProjectKnowledgeWithStatus(query, limit);
+		this.debugRecorder.record("searchMcpLearningResources",
+				arguments("query", query, "limit", limit, "source", result.source(), "realMcpAvailable",
+						result.realMcpAvailable(), "selectedToolName", result.selectedToolName()),
+				result.content());
+		return result.content();
 	}
 
 	private Map<String, Object> arguments(Object... pairs) {

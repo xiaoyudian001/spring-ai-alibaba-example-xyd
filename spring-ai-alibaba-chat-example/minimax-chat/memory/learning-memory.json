@@ -17,11 +17,11 @@
   },
   "default-user" : {
     "level" : "初学者",
-    "topics" : [ "Tool Calling", "Skill", "Agent", "Graph", "RAG" ],
+    "topics" : [ "Tool Calling", "Skill", "Agent", "Graph", "RAG", "MCP" ],
     "lastIntent" : "MIXED",
-    "lastQuestion" : "现在北京时间几点？然后给我一个今天 30 分钟的 Agent 学习计划。",
-    "conversationCount" : 7,
-    "updatedAt" : "2026-05-06T22:55:17.5515692"
+    "lastQuestion" : "通过 MCP 查询 Agent 和 Graph 的学习资源，并说明下一步怎么学。",
+    "conversationCount" : 10,
+    "updatedAt" : "2026-05-11T11:26:13.2490557"
   },
   "user-b" : {
     "level" : "进阶",

@@ -25,9 +25,12 @@ minimax-chat
 searchLearningResources(query, limit)
 listLearningTopics()
 getLearningResource(resourceId)
+createLearningResource(id, topic, title, summary, nextAction)
+updateLearningResource(id, topic, title, summary, nextAction)
 ```
 
 其中 `searchLearningResources` 是 `minimax-chat` 最常调用的工具。
+`createLearningResource` 和 `updateLearningResource` 用于让 Agent 通过 MCP 写入学习资源。
 
 ## JSON 资源文件
 
@@ -223,6 +226,8 @@ minimax-learning-mcp-server.http
 09 通过手写 Agent 调用真实 MCP Server
 10 通过官方 ReactAgent 调用真实 MCP Server
 11 通过官方 StateGraph 调用真实 MCP Server
+12 通过手写 Agent 自动沉淀 MCP 学习资源
+13 验证 Agent 沉淀的资源已经写回 MCP Server
 ```
 
 页面测试可以配合 `.http` 使用：先用页面新增资源，再执行 `06 MCP Server 普通 REST 资源检索` 或 `09/10/11`，观察新增资源是否能被查询和 Agent 使用。
@@ -256,3 +261,30 @@ toolCalls
  -> MiniMax-M2.7 整合回答
  -> 前端展示回答和调试信息
 ```
+
+## Agent 自动沉淀资源
+
+`minimax-chat` 启用 `mcp` profile 后，模型可以通过 MCP 写入工具把学习点保存到 MCP Server：
+
+```text
+用户要求保存学习点
+ -> MiniMax 判断需要调用 createMcpLearningResource
+ -> LearningMcpService 选择真实 MCP ToolCallback
+ -> minimax-learning-mcp-server.createLearningResource
+ -> LearningResourceRepository 写回 learning-resources.json
+ -> 前端调试区显示 createMcpLearningResource 调用结果
+```
+
+推荐测试问题：
+
+```text
+把 Tool 和 MCP 的区别保存成一条学习资源，资源 ID 用 mcp-tool-vs-mcp，主题用 MCP。
+```
+
+保存成功后打开：
+
+```text
+http://localhost:19000/index.html
+```
+
+应该能看到 `mcp-tool-vs-mcp` 这条新资源。

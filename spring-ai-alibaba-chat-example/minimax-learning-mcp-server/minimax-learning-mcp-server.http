@@ -96,3 +96,21 @@ Content-Type: application/json; charset=utf-8
   "message": "用官方 Graph 通过 MCP 查询 MCP、Tool 和 Graph 的学习资料。",
   "history": []
 }
+
+### 12 通过手写 Agent 自动沉淀 MCP 学习资源
+# 预期：
+# - toolCalls 中出现 createMcpLearningResource。
+# - toolCalls 参数 source 为 REAL_MCP。
+# - learning-resources.json 中新增 mcp-tool-vs-mcp。
+POST {{minimaxChat}}/minimax/chat-client/conversation/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{userA}}",
+  "message": "把 Tool 和 MCP 的区别保存成一条学习资源，资源 ID 用 mcp-tool-vs-mcp，主题用 MCP，标题用 Tool 和 MCP 的区别，摘要说明 Tool 是模型可调用的函数入口，MCP 是把外部工具和资源协议化接入 Agent 的方式，下一步建议是先实现一个 Tool，再通过 MCP Server 暴露给 Agent 调用。",
+  "history": []
+}
+
+### 13 验证 Agent 沉淀的资源已经写回 MCP Server
+# 预期：返回 id 为 mcp-tool-vs-mcp 的资源。
+GET {{mcpServer}}/learning-mcp/resources/mcp-tool-vs-mcp

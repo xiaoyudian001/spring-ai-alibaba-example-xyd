@@ -542,6 +542,7 @@
 					<span class="capability">Simple RAG</span>
 					<span class="capability">Graph</span>
 					<span class="capability">MCP Client</span>
+					<span class="capability">MCP 写入</span>
 					<span class="capability">流式调试</span>
 				</div>
 			</div>
@@ -783,7 +784,8 @@
 	}
 
 	function formatMcpDebug(mcpDebugInfo, toolCalls) {
-		const mcpCall = (toolCalls || []).find(call => call.name === "searchMcpLearningResources");
+		const mcpCall = (toolCalls || []).find(call => ["searchMcpLearningResources",
+			"createMcpLearningResource", "updateMcpLearningResource"].includes(call.name));
 		const args = mcpCall?.arguments || {};
 		const info = mcpDebugInfo || {};
 		const mode = info.mode || args.source || "NOT_USED";

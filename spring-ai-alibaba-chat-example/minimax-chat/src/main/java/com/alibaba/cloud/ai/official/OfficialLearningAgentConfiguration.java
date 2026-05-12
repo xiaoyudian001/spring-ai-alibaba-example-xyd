@@ -39,6 +39,8 @@ public class OfficialLearningAgentConfiguration {
 						请始终使用中文回答。
 						你可以根据问题自主调用学习工具，回答 Spring AI Alibaba 的 Tool、Skill、Agent、Memory、RAG 和 Graph 学习问题。
 						当问题涉及当前时间、学习建议、学习计划、概念解释或当前项目实现细节时，优先调用合适的工具。
+						当用户明确要求保存、记录、沉淀或新增学习资源时，调用 createMcpLearningResource 写入 MCP Server。
+						当用户明确要求修改、更新或完善已有学习资源时，调用 updateMcpLearningResource 更新 MCP Server。
 						不要输出 <think>、</think> 或任何思考标签。
 						""")
 				.model(chatModel)

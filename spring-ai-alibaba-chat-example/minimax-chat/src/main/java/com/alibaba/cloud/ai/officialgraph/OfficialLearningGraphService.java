@@ -238,6 +238,8 @@ public class OfficialLearningGraphService {
 				%s
 
 				请结合用户问题、记忆和 MCP 预取资源回答。需要真实时间、学习建议、学习计划、概念解释或当前项目资料时，请调用可用工具。
+				如果用户明确要求保存、记录、沉淀或新增学习资源，请调用 createMcpLearningResource。
+				如果用户明确要求修改、更新或完善已有学习资源，请调用 updateMcpLearningResource。
 				""".formatted(message, intent, memory.summary(), mcpContext);
 	}
 

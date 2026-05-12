@@ -24,6 +24,7 @@ README-LEARNING-FLOW.md
 - Memory 查看和清空管理
 - 本地文档 Simple RAG 检索
 - 轻量 Graph 工作流节点
+- 真实 MCP 学习资源查询和写入
 - 流式模式 SSE 调试事件
 
 ## 当前请求链路
@@ -40,6 +41,7 @@ README-LEARNING-FLOW.md
  -> Planner 判断意图
  -> MiniMax + Tools
  -> searchLearningDocs Tool 按需检索本地文档
+ -> search/create/update MCP Learning Resource Tool 按需查询或沉淀外部学习资源
  -> LearningMemoryService 按 userId 更新记忆并写回 JSON 文件
  -> 前端展示回答 + Graph节点 + Agent步骤 + Tool调用 + 当前用户Memory信息
 ```
@@ -60,6 +62,7 @@ debug -> message -> done
 | Graph | `LearningGraphService` | 把 Agent 执行流程表达成可展示的轻量工作流节点。 |
 | Memory | `LearningMemoryService` | 按 userId 从 JSON 文件读取用户学习记忆，并在每轮对话后写回该用户的学习阶段、关注主题、最近意图和对话轮次。 |
 | RAG | `LearningRagService` | 基于关键词检索当前 minimax-chat 的 README 和关键源码，为模型回答当前项目实现细节提供本地资料。 |
+| MCP | `LearningMcpService` | 通过真实 MCP Client 查询、创建和更新外部学习资源；未启用真实 MCP 时提供 mock fallback。 |
 | Planner | `LearningIntentPlanner` | 把当前用户请求识别成具体学习意图。 |
 | Tool | `MiniMaxLearningTools` | 暴露可以被大模型调用的工具入口。 |
 | Skill | `LearningSkillService` | 承载学习建议、计划生成、概念解释、当前时间等真实业务逻辑。 |
@@ -357,6 +360,45 @@ data: {"memoryAfter":...,"toolCalls":[...],"agentSteps":[...]}
 流式模式：边输出边展示调试信息，适合真实聊天体验。
 ```
 
+### 13. MCP 学习资源写入
+
+在真实 MCP Server 已启动、`minimax-chat` 使用 `mcp` profile 启动时，Agent 不仅可以查询学习资源，还可以把用户要求保存的学习点写入 MCP Server。
+
+新增 Tool：
+
+```text
+createMcpLearningResource(id, topic, title, summary, nextAction)
+updateMcpLearningResource(id, topic, title, summary, nextAction)
+```
+
+调用链路：
+
+```text
+前端问题
+ -> MiniMax 判断用户明确要求保存 / 记录 / 沉淀学习资源
+ -> createMcpLearningResource
+ -> LearningMcpService
+ -> Spring AI MCP Client ToolCallbackProvider
+ -> minimax-learning-mcp-server
+ -> createLearningResource
+ -> learning-resources.json
+ -> 前端调试区展示 MCP 写入工具调用
+```
+
+推荐测试：
+
+```text
+把 Tool 和 MCP 的区别保存成一条学习资源，资源 ID 用 mcp-tool-vs-mcp，主题用 MCP。
+```
+
+预期：
+
+```text
+toolCalls 中出现 createMcpLearningResource。
+MCP 调试信息 mode = REAL_MCP。
+打开 http://localhost:19000/index.html 可以看到新资源。
+```
+
 ## 建议测试用例
 
 打开：
@@ -389,6 +431,7 @@ http://localhost:8080/index.html
 - 点击 `清空记忆` 后，该用户在 JSON 文件中的长期 Memory 会重置。
 - 点击 `清空` 只清空短期上下文，不会重置 JSON 文件中的长期 Memory。
 - 询问当前项目 README、源码结构或调用链时，`toolCalls` 中应出现 `searchLearningDocs`。
+- 明确要求保存学习资源时，`toolCalls` 中应出现 `createMcpLearningResource`，并且 MCP Server 资源管理页面能看到新资源。
 - 同步模式下，调试区应展示 `Graph 节点`，包含 Receive、Memory Read、Planner、Model Call 等节点。
 - 流式模式下，回答应逐步输出，并在调试区展示 Graph、Tool 调用和 Memory 变化。
 

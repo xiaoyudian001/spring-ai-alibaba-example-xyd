@@ -45,13 +45,41 @@ public class LearningResourceTool {
 	public String getLearningResource(
 			@ToolParam(description = "资源 ID，例如 mcp-agent、mcp-graph、mcp-mcp。") String resourceId) {
 		LearningResource resource = this.repository.getById(resourceId);
+		return format("学习资源详情", resource);
+	}
+
+	@Tool(description = "创建新的 Spring AI Alibaba 学习资源，并写回 learning-resources.json。当用户明确要求保存、记录、沉淀、新增学习资源时使用。")
+	public String createLearningResource(
+			@ToolParam(description = "资源 ID，建议使用小写短横线，例如 mcp-tool-vs-skill。") String id,
+			@ToolParam(description = "资源主题，例如 Tool、Skill、Agent、Graph、Memory、RAG、MCP。") String topic,
+			@ToolParam(description = "资源标题。") String title,
+			@ToolParam(description = "资源摘要，说明这条资源解决什么学习问题。") String summary,
+			@ToolParam(description = "下一步学习建议。") String nextAction) {
+		LearningResource resource = this.repository.create(new LearningResource(id, topic, title, summary, nextAction));
+		return format("已创建学习资源", resource);
+	}
+
+	@Tool(description = "更新已有 Spring AI Alibaba 学习资源，并写回 learning-resources.json。当用户明确要求修改、更新、完善某条学习资源时使用。")
+	public String updateLearningResource(
+			@ToolParam(description = "要更新的资源 ID，例如 mcp-agent。") String id,
+			@ToolParam(description = "资源主题，例如 Tool、Skill、Agent、Graph、Memory、RAG、MCP。") String topic,
+			@ToolParam(description = "资源标题。") String title,
+			@ToolParam(description = "资源摘要，说明这条资源解决什么学习问题。") String summary,
+			@ToolParam(description = "下一步学习建议。") String nextAction) {
+		LearningResource resource = this.repository.update(id, new LearningResource(id, topic, title, summary,
+				nextAction)).orElseThrow(() -> new IllegalArgumentException("学习资源不存在：" + id));
+		return format("已更新学习资源", resource);
+	}
+
+	private String format(String title, LearningResource resource) {
 		return """
+				%s
 				### %s
 				- 资源 ID：%s
 				- 主题：%s
 				- 摘要：%s
 				- 下一步：%s
-				""".formatted(resource.title(), resource.id(), resource.topic(), resource.summary(),
+				""".formatted(title, resource.title(), resource.id(), resource.topic(), resource.summary(),
 				resource.nextAction());
 	}
 

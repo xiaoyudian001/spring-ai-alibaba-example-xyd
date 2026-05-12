@@ -21,6 +21,7 @@ import java.util.Map;
 
 import com.alibaba.cloud.ai.mcp.LearningMcpService;
 import com.alibaba.cloud.ai.mcp.LearningMcpService.McpSearchResult;
+import com.alibaba.cloud.ai.mcp.LearningMcpService.McpWriteResult;
 import com.alibaba.cloud.ai.rag.LearningRagService;
 import com.alibaba.cloud.ai.skill.LearningSkillService;
 import org.springframework.ai.tool.annotation.Tool;
@@ -107,6 +108,38 @@ public class MiniMaxLearningTools {
 		this.debugRecorder.record("searchMcpLearningResources",
 				arguments("query", query, "limit", limit, "source", result.source(), "realMcpAvailable",
 						result.realMcpAvailable(), "selectedToolName", result.selectedToolName()),
+				result.content());
+		return result.content();
+	}
+
+	@Tool(description = "通过 MCP 创建并保存一条 Spring AI Alibaba 学习资源。当用户明确要求保存、记录、沉淀、新增学习资源时使用。")
+	public String createMcpLearningResource(
+			@ToolParam(description = "资源 ID，建议使用小写短横线，例如 mcp-tool-vs-skill。") String id,
+			@ToolParam(description = "资源主题，例如 Tool、Skill、Agent、Graph、Memory、RAG、MCP。") String topic,
+			@ToolParam(description = "资源标题。") String title,
+			@ToolParam(description = "资源摘要，说明这条资源解决什么学习问题。") String summary,
+			@ToolParam(description = "下一步学习建议。") String nextAction) {
+		McpWriteResult result = this.learningMcpService.createLearningResource(id, topic, title, summary, nextAction);
+		this.debugRecorder.record("createMcpLearningResource",
+				arguments("id", id, "topic", topic, "title", title, "source", result.source(),
+						"realMcpAvailable", result.realMcpAvailable(), "selectedToolName",
+						result.selectedToolName()),
+				result.content());
+		return result.content();
+	}
+
+	@Tool(description = "通过 MCP 更新一条已有 Spring AI Alibaba 学习资源。当用户明确要求修改、更新、完善已有学习资源时使用。")
+	public String updateMcpLearningResource(
+			@ToolParam(description = "要更新的资源 ID，例如 mcp-agent。") String id,
+			@ToolParam(description = "资源主题，例如 Tool、Skill、Agent、Graph、Memory、RAG、MCP。") String topic,
+			@ToolParam(description = "资源标题。") String title,
+			@ToolParam(description = "资源摘要，说明这条资源解决什么学习问题。") String summary,
+			@ToolParam(description = "下一步学习建议。") String nextAction) {
+		McpWriteResult result = this.learningMcpService.updateLearningResource(id, topic, title, summary, nextAction);
+		this.debugRecorder.record("updateMcpLearningResource",
+				arguments("id", id, "topic", topic, "title", title, "source", result.source(),
+						"realMcpAvailable", result.realMcpAvailable(), "selectedToolName",
+						result.selectedToolName()),
 				result.content());
 		return result.content();
 	}

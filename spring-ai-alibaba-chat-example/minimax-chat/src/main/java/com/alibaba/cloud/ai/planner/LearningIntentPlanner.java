@@ -51,6 +51,10 @@ public class LearningIntentPlanner {
 			matched++;
 			lastIntent = LearningIntent.CONCEPT_EXPLAIN;
 		}
+		if (containsAny(text, "保存", "记录", "沉淀", "新增资源", "学习资源", "写入 mcp", "写入mcp", "更新资源", "修改资源")) {
+			matched++;
+			lastIntent = LearningIntent.MIXED;
+		}
 
 		if (matched > 1) {
 			return LearningIntent.MIXED;
@@ -64,7 +68,7 @@ public class LearningIntentPlanner {
 			case LEARNING_ADVICE -> "本轮 Planner 识别为 LEARNING_ADVICE。回答时优先调用 generateLearningAdvice 工具生成学习建议。";
 			case DAILY_PLAN -> "本轮 Planner 识别为 DAILY_PLAN。回答时优先调用 generateDailyPlan 工具生成可执行计划。";
 			case CONCEPT_EXPLAIN -> "本轮 Planner 识别为 CONCEPT_EXPLAIN。回答概念问题时优先调用 explainConcept 工具；涉及当前项目文档或源码实现时优先调用 searchLearningDocs 工具。";
-			case MIXED -> "本轮 Planner 识别为 MIXED。回答时可以按需组合调用多个工具，并把结果整合成一个自然回答。涉及当前项目实现时优先调用 searchLearningDocs 工具。";
+			case MIXED -> "本轮 Planner 识别为 MIXED。回答时可以按需组合调用多个工具，并把结果整合成一个自然回答。涉及当前项目实现时优先调用 searchLearningDocs 工具；涉及保存、记录、沉淀学习资源时优先调用 createMcpLearningResource 或 updateMcpLearningResource。";
 			case GENERAL_CHAT -> "本轮 Planner 识别为 GENERAL_CHAT。若不需要工具，可以直接回答。";
 		};
 	}

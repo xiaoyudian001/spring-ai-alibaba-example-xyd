@@ -87,6 +87,7 @@ flowchart TD
 | 10 | Mock MCP | 默认配置 | `mcpDebugInfo.mode=MOCK_MCP` |
 | 11 | 真实 MCP | `mcp` profile | `mcpDebugInfo.mode=REAL_MCP` |
 | 12 | MCP 可观测性 | 前端调试区 | MCP Tool、fallback、可用工具 |
+| 13 | MCP 资源写入 | 前端页面 | `createMcpLearningResource` 写回 MCP Server |
 
 ## 1. 基础聊天测试
 
@@ -476,6 +477,44 @@ Fallback 原因：无
 Fallback 原因：真实 MCP 调用失败或未发现 ToolCallbackProvider
 ```
 
+## 13. MCP 资源写入测试
+
+前置条件：
+
+```text
+1. minimax-learning-mcp-server 已启动。
+2. minimax-chat 使用 mcp profile 启动。
+3. /minimax/chat-client/mcp/status 返回 REAL_MCP_READY。
+```
+
+推荐输入：
+
+```text
+把 Tool 和 MCP 的区别保存成一条学习资源，资源 ID 用 mcp-tool-vs-mcp，主题用 MCP，标题用 Tool 和 MCP 的区别，摘要说明 Tool 是模型可调用的函数入口，MCP 是把外部工具和资源协议化接入 Agent 的方式，下一步建议是先实现一个 Tool，再通过 MCP Server 暴露给 Agent 调用。
+```
+
+预期：
+
+```text
+toolCalls 中出现 createMcpLearningResource。
+MCP 调试信息 mode = REAL_MCP。
+selectedToolName 指向 createLearningResource。
+```
+
+验证写入：
+
+```text
+http://localhost:19000/index.html
+```
+
+应该能看到 `mcp-tool-vs-mcp` 这条学习资源。
+
+也可以直接请求：
+
+```http
+GET http://localhost:19000/learning-mcp/resources/mcp-tool-vs-mcp
+```
+
 ## 快速定位问题
 
 | 现象 | 优先检查 |
@@ -488,6 +527,7 @@ Fallback 原因：真实 MCP 调用失败或未发现 ToolCallbackProvider
 | 官方 Agent 失败 | `OfficialLearningAgentConfiguration`、ToolCallback 注册 |
 | Graph 缺节点 | `OfficialLearningGraphService` 节点和边 |
 | MCP 是 MOCK_MCP | MCP Server 未启动或 `mcp` profile 未启用 |
+| MCP 写入没有落盘 | 确认 `toolCalls` 是否出现 `createMcpLearningResource`，并检查 MCP Server 是否真实连接 |
 | MCP Server 启动失败 | 19000 端口、JDK 17、MCP Server 依赖 |
 | Maven 报 `--release` | 当前 Maven 绑定 Java 8，需要切到 JDK 17 |
 
@@ -505,7 +545,7 @@ Fallback 原因：真实 MCP 调用失败或未发现 ToolCallbackProvider
  -> Mock MCP
  -> 真实 MCP Server
  -> MCP 可观测性
+ -> MCP 资源写入
 ```
 
 这条路线跑通后，可以继续进入下一阶段：把 MCP Server 的资源从内存列表升级为文件、数据库或外部知识库。
-

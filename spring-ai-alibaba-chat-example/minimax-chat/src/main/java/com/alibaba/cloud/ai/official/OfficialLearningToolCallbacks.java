@@ -41,7 +41,8 @@ public class OfficialLearningToolCallbacks {
 
 	public ToolCallback[] all() {
 		return new ToolCallback[] { currentTime(), learningAdvice(), dailyPlan(), conceptExplain(),
-				learningDocsSearch(), mcpLearningResourcesSearch() };
+				learningDocsSearch(), mcpLearningResourcesSearch(), mcpLearningResourceCreate(),
+				mcpLearningResourceUpdate() };
 	}
 
 	private ToolCallback currentTime() {
@@ -98,6 +99,26 @@ public class OfficialLearningToolCallbacks {
 				.build();
 	}
 
+	private ToolCallback mcpLearningResourceCreate() {
+		Function<CreateMcpLearningResourceRequest, String> function = request -> this.learningTools
+				.createMcpLearningResource(request.id(), request.topic(), request.title(), request.summary(),
+						request.nextAction());
+		return FunctionToolCallback.builder("createMcpLearningResource", function)
+				.description("通过 MCP 创建并保存一条 Spring AI Alibaba 学习资源。用户明确要求保存、记录、沉淀、新增学习资源时使用。")
+				.inputType(CreateMcpLearningResourceRequest.class)
+				.build();
+	}
+
+	private ToolCallback mcpLearningResourceUpdate() {
+		Function<UpdateMcpLearningResourceRequest, String> function = request -> this.learningTools
+				.updateMcpLearningResource(request.id(), request.topic(), request.title(), request.summary(),
+						request.nextAction());
+		return FunctionToolCallback.builder("updateMcpLearningResource", function)
+				.description("通过 MCP 更新一条已有 Spring AI Alibaba 学习资源。用户明确要求修改、更新、完善已有学习资源时使用。")
+				.inputType(UpdateMcpLearningResourceRequest.class)
+				.build();
+	}
+
 	@JsonClassDescription("根据时区 ID 获取当前时间的请求参数")
 	public record GetCurrentTimeRequest(
 			@JsonProperty(value = "zoneId", required = true)
@@ -107,9 +128,37 @@ public class OfficialLearningToolCallbacks {
 	@JsonClassDescription("查询 mock MCP 学习资源的请求参数")
 	public record SearchMcpLearningResourcesRequest(
 			@JsonProperty(value = "query", required = true)
-			@JsonPropertyDescription("MCP resource query, such as Agent, Graph, Tool, Memory, RAG, MCP.") String query,
+			@JsonPropertyDescription("MCP 资源查询词，例如 Agent、Graph、Tool、Memory、RAG、MCP。") String query,
 			@JsonProperty(value = "limit")
-			@JsonPropertyDescription("Number of resources to return, recommended 1 to 5.") Integer limit) {
+			@JsonPropertyDescription("返回资源数量，建议 1 到 5。") Integer limit) {
+	}
+
+	@JsonClassDescription("创建 MCP 学习资源的请求参数")
+	public record CreateMcpLearningResourceRequest(
+			@JsonProperty(value = "id", required = true)
+			@JsonPropertyDescription("资源 ID，建议使用小写短横线，例如 mcp-tool-vs-skill。") String id,
+			@JsonProperty(value = "topic", required = true)
+			@JsonPropertyDescription("资源主题，例如 Tool、Skill、Agent、Graph、Memory、RAG、MCP。") String topic,
+			@JsonProperty(value = "title", required = true)
+			@JsonPropertyDescription("资源标题。") String title,
+			@JsonProperty(value = "summary", required = true)
+			@JsonPropertyDescription("资源摘要，说明这条资源解决什么学习问题。") String summary,
+			@JsonProperty(value = "nextAction", required = true)
+			@JsonPropertyDescription("下一步学习建议。") String nextAction) {
+	}
+
+	@JsonClassDescription("更新 MCP 学习资源的请求参数")
+	public record UpdateMcpLearningResourceRequest(
+			@JsonProperty(value = "id", required = true)
+			@JsonPropertyDescription("要更新的资源 ID，例如 mcp-agent。") String id,
+			@JsonProperty(value = "topic", required = true)
+			@JsonPropertyDescription("资源主题，例如 Tool、Skill、Agent、Graph、Memory、RAG、MCP。") String topic,
+			@JsonProperty(value = "title", required = true)
+			@JsonPropertyDescription("资源标题。") String title,
+			@JsonProperty(value = "summary", required = true)
+			@JsonPropertyDescription("资源摘要，说明这条资源解决什么学习问题。") String summary,
+			@JsonProperty(value = "nextAction", required = true)
+			@JsonPropertyDescription("下一步学习建议。") String nextAction) {
 	}
 
 	@JsonClassDescription("生成 Spring AI Alibaba 学习建议的请求参数")

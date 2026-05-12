@@ -59,6 +59,8 @@ public class LearningAgentService {
 			当用户要求今日计划、30 分钟学习安排、每日练习或任务拆分时，优先调用 generateDailyPlan 工具。
 			当用户询问概念含义或区别，例如 Tool、Skill、Agent、Graph 是什么时，优先调用 explainConcept 工具。
 			当用户询问当前 minimax-chat 项目文档、README、源码结构、调用链或当前实现细节时，优先调用 searchLearningDocs 工具检索本地资料。
+			当用户明确要求“保存、记录、沉淀、新增学习资源”时，调用 createMcpLearningResource 把学习点写入 MCP Server。
+			当用户明确要求“修改、更新、完善已有学习资源”时，调用 updateMcpLearningResource 更新 MCP Server 中的资源。
 			不要输出 <think>、</think> 或任何思考标签。
 			""";
 

@@ -98,6 +98,34 @@ public class LearningMcpService {
 		return searchProjectKnowledgeWithStatus(query, limit).content();
 	}
 
+	public McpWriteResult createLearningResource(String id, String topic, String title, String summary,
+			String nextAction) {
+		List<String> toolNames = availableToolNames();
+		McpWriteResult result = invokeRealMcpWrite("createLearningResource", Map.of(
+				"id", safeText(id),
+				"topic", safeText(topic),
+				"title", safeText(title),
+				"summary", safeText(summary),
+				"nextAction", safeText(nextAction)), toolNames)
+			.orElseGet(() -> mockWrite("createLearningResource", id, toolNames, fallbackReason(toolNames)));
+		recordWriteDebug(id, result);
+		return result;
+	}
+
+	public McpWriteResult updateLearningResource(String id, String topic, String title, String summary,
+			String nextAction) {
+		List<String> toolNames = availableToolNames();
+		McpWriteResult result = invokeRealMcpWrite("updateLearningResource", Map.of(
+				"id", safeText(id),
+				"topic", safeText(topic),
+				"title", safeText(title),
+				"summary", safeText(summary),
+				"nextAction", safeText(nextAction)), toolNames)
+			.orElseGet(() -> mockWrite("updateLearningResource", id, toolNames, fallbackReason(toolNames)));
+		recordWriteDebug(id, result);
+		return result;
+	}
+
 	public McpSearchResult searchProjectKnowledgeWithStatus(String query, Integer limit) {
 		List<String> toolNames = availableToolNames();
 		Optional<McpSearchResult> realResult = invokeRealMcp(query, limit, toolNames);
@@ -150,21 +178,53 @@ public class LearningMcpService {
 	}
 
 	private ToolCallback selectMcpSearchTool() {
+		return selectMcpTool(List.of("searchlearningresources"), List.of("search"));
+	}
+
+	private ToolCallback selectMcpWriteTool(String toolName) {
+		return selectMcpTool(List.of(normalize(toolName)), List.of(normalize(toolName.replace("LearningResource", ""))));
+	}
+
+	private ToolCallback selectMcpTool(List<String> preferredNames, List<String> requiredKeywords) {
 		ToolCallback[] callbacks = toolCallbacks();
 		ToolCallback fallback = null;
 		for (ToolCallback callback : callbacks) {
 			String name = normalize(callback.getToolDefinition().name());
 			String description = normalize(callback.getToolDefinition().description());
-			if (name.contains("search") || name.contains("resource") || name.contains("learning")
-					|| description.contains("search") || description.contains("resource")
-					|| description.contains("learning")) {
+			if (preferredNames.contains(name) || preferredNames.stream().anyMatch(name::contains)) {
 				return callback;
 			}
-			if (fallback == null) {
+			boolean keywordMatched = requiredKeywords.stream().allMatch(keyword -> name.contains(keyword)
+					|| description.contains(keyword));
+			if (keywordMatched && fallback == null) {
 				fallback = callback;
 			}
 		}
 		return fallback;
+	}
+
+	private Optional<McpWriteResult> invokeRealMcpWrite(String toolName, Map<String, Object> arguments,
+			List<String> toolNames) {
+		ToolCallback callback = selectMcpWriteTool(toolName);
+		if (callback == null) {
+			return Optional.empty();
+		}
+		try {
+			String content = callback.call(this.objectMapper.writeValueAsString(arguments));
+			if (content == null || content.isBlank()) {
+				return Optional.empty();
+			}
+			return Optional.of(new McpWriteResult(content, "REAL_MCP", true,
+					callback.getToolDefinition().name(), toolNames, ""));
+		}
+		catch (JsonProcessingException ex) {
+			return Optional.of(mockWrite(toolName, String.valueOf(arguments.get("id")), toolNames,
+					"MCP 参数序列化失败：" + ex.getMessage()));
+		}
+		catch (Exception ex) {
+			return Optional.of(mockWrite(toolName, String.valueOf(arguments.get("id")), toolNames,
+					"真实 MCP 写入调用失败：" + ex.getMessage()));
+		}
 	}
 
 	private ToolCallback[] toolCallbacks() {
@@ -193,6 +253,22 @@ public class LearningMcpService {
 		}
 		return new McpSearchResult(formatMock(query, hits, fallbackReason), "MOCK_MCP", !toolNames.isEmpty(),
 				"", toolNames, fallbackReason);
+	}
+
+	private McpWriteResult mockWrite(String operation, String resourceId, List<String> toolNames,
+			String fallbackReason) {
+		String reason = fallbackReason == null || fallbackReason.isBlank()
+				? "未配置真实 MCP Server，写入操作不会落盘。"
+				: fallbackReason;
+		String content = """
+				Mock MCP 写入结果
+				- 操作：%s
+				- 资源 ID：%s
+				- 来源：MOCK_MCP
+				- 写入状态：未写入真实 learning-resources.json
+				- 兜底原因：%s
+				""".formatted(operation, safeText(resourceId), reason);
+		return new McpWriteResult(content, "MOCK_MCP", !toolNames.isEmpty(), "", toolNames, reason);
 	}
 
 	private boolean matches(McpLearningResource resource, String query) {
@@ -252,14 +328,28 @@ public class LearningMcpService {
 				query == null ? "" : query, normalizeLimit(limit)));
 	}
 
+	private void recordWriteDebug(String resourceId, McpWriteResult result) {
+		this.debugInfoHolder.set(new McpDebugInfo(result.source(), result.realMcpAvailable(),
+				result.selectedToolName(), result.availableToolNames(), result.fallbackReason(),
+				resourceId == null ? "" : resourceId, null));
+	}
+
 	private String normalize(String value) {
 		return value == null ? "" : value.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ").trim();
+	}
+
+	private String safeText(String value) {
+		return value == null ? "" : value.trim();
 	}
 
 	public record LearningMcpStatus(boolean realMcpAvailable, int toolCount, List<String> toolNames, String mode) {
 	}
 
 	public record McpSearchResult(String content, String source, boolean realMcpAvailable, String selectedToolName,
+			List<String> availableToolNames, String fallbackReason) {
+	}
+
+	public record McpWriteResult(String content, String source, boolean realMcpAvailable, String selectedToolName,
 			List<String> availableToolNames, String fallbackReason) {
 	}
 

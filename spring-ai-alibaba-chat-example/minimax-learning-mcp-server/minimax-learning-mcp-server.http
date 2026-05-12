@@ -4,18 +4,53 @@
 
 ### 01 MCP Server 健康检查
 # 目标：确认 minimax-learning-mcp-server 已启动，并且学习资源来自 learning-resources.json。
-# 预期：status=UP，resourceSource=classpath:learning-resources.json，resourceCount > 0。
+# 预期：status=UP，resourceSource 以 file: 开头，resourceCount > 0。
 GET {{mcpServer}}/learning-mcp/health
 
 ### 02 MCP Server 查看全部 JSON 学习资源
 # 目标：确认 src/main/resources/learning-resources.json 已被加载。
 GET {{mcpServer}}/learning-mcp/resources
 
-### 03 MCP Server 普通 REST 资源检索
+### 03 MCP Server 新增学习资源并写回 JSON
+# 目标：验证 POST /learning-mcp/resources 可以新增资源。
+# 注意：如果重复执行失败，先执行 07 删除测试资源。
+POST {{mcpServer}}/learning-mcp/resources
+Content-Type: application/json; charset=utf-8
+
+{
+  "id": "mcp-managed-resource",
+  "topic": "MCP",
+  "title": "MCP 资源管理接口",
+  "summary": "通过 REST 接口维护 learning-resources.json，让 MCP Server 从只读资源服务升级为可维护资源服务。",
+  "nextAction": "继续测试 GET、PUT、DELETE，并确认 JSON 文件内容发生变化。"
+}
+
+### 04 MCP Server 查看单条学习资源
+# 目标：验证 GET /learning-mcp/resources/{id}。
+GET {{mcpServer}}/learning-mcp/resources/mcp-managed-resource
+
+### 05 MCP Server 修改学习资源并写回 JSON
+# 目标：验证 PUT /learning-mcp/resources/{id}，路径 id 优先，body 中 id 可以保持一致。
+PUT {{mcpServer}}/learning-mcp/resources/mcp-managed-resource
+Content-Type: application/json; charset=utf-8
+
+{
+  "id": "mcp-managed-resource",
+  "topic": "MCP",
+  "title": "MCP 资源管理接口（已更新）",
+  "summary": "通过 REST 接口新增、修改、删除 learning-resources.json 中的学习资源。",
+  "nextAction": "删除测试资源，然后继续测试 minimax-chat 通过真实 MCP Server 查询资源。"
+}
+
+### 06 MCP Server 普通 REST 资源检索
 # 目标：不经过 MCP 协议，先确认学习资源检索逻辑正常。
 GET {{mcpServer}}/learning-mcp/resources/search?query=Agent Graph MCP&limit=3
 
-### 04 minimax-chat MCP Client 状态检查
+### 07 MCP Server 删除测试学习资源并写回 JSON
+# 目标：验证 DELETE /learning-mcp/resources/{id}。
+DELETE {{mcpServer}}/learning-mcp/resources/mcp-managed-resource
+
+### 08 minimax-chat MCP Client 状态检查
 # 前置条件：
 # 1. minimax-learning-mcp-server 已启动，端口 19000。
 # 2. minimax-chat 使用 mcp profile 启动：
@@ -23,7 +58,7 @@ GET {{mcpServer}}/learning-mcp/resources/search?query=Agent Graph MCP&limit=3
 # 预期：mode=REAL_MCP_READY，toolNames 中出现 searchLearningResources。
 GET {{minimaxChat}}/minimax/chat-client/mcp/status
 
-### 05 通过手写 Agent 调用真实 MCP Server
+### 09 通过手写 Agent 调用真实 MCP Server
 # 预期：
 # - content 中出现真实 MCP Server 返回的资源信息。
 # - toolCalls[0].arguments.source 为 REAL_MCP。
@@ -37,7 +72,7 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### 06 通过官方 ReactAgent 调用真实 MCP Server
+### 10 通过官方 ReactAgent 调用真实 MCP Server
 # 预期：toolCalls 中出现 searchMcpLearningResources，工具结果来自真实 MCP Server。
 POST {{minimaxChat}}/minimax/chat-client/official-agent/chat
 Content-Type: application/json; charset=utf-8
@@ -48,7 +83,7 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### 07 通过官方 StateGraph 调用真实 MCP Server
+### 11 通过官方 StateGraph 调用真实 MCP Server
 # 预期：
 # - graphSteps 中出现 mcp_node。
 # - mcp_node detail 显示 REAL_MCP。

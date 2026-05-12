@@ -1,6 +1,10 @@
 server:
   port: 19000
 
+learning:
+  resources:
+    file: src/main/resources/learning-resources.json
+
 spring:
   application:
     name: minimax-learning-mcp-server

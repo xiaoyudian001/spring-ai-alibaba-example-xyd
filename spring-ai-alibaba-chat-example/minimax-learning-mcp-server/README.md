@@ -10,7 +10,7 @@
 minimax-learning-mcp-server
  -> 端口 19000
  -> 暴露 MCP Tools
- -> 从 learning-resources.json 读取 Spring AI Alibaba 学习资源
+ -> 从 learning-resources.json 读取和维护 Spring AI Alibaba 学习资源
 
 minimax-chat
  -> 端口 8080
@@ -49,9 +49,65 @@ src/main/resources/learning-resources.json
 }
 ```
 
-启动时 `LearningResourceRepository` 会优先读取 `learning-resources.json`。如果文件不存在、为空或格式错误，会自动使用 Java 内置兜底资源，保证 MCP Server 仍然可以启动。
+启动时 `LearningResourceRepository` 会优先读取 `learning.resources.file` 指向的 JSON 文件。如果文件不存在、为空或格式错误，会继续尝试 classpath 下的 `learning-resources.json`，最后再使用 Java 内置兜底资源，保证 MCP Server 仍然可以启动。
 
-新增学习资源时，只需要修改 `learning-resources.json`，然后重启 `minimax-learning-mcp-server`。
+默认配置在 `application.yml` 中：
+
+```yaml
+learning:
+  resources:
+    file: src/main/resources/learning-resources.json
+```
+
+新增、修改、删除资源时，接口会把变更写回这个 JSON 文件。
+
+## 资源管理接口
+
+这些接口是普通 REST 接口，用来验证和维护 MCP Server 的学习资源数据：
+
+```text
+GET    /learning-mcp/resources
+GET    /learning-mcp/resources/{id}
+POST   /learning-mcp/resources
+PUT    /learning-mcp/resources/{id}
+DELETE /learning-mcp/resources/{id}
+GET    /learning-mcp/resources/search?query=Agent&limit=3
+```
+
+其中 `POST`、`PUT`、`DELETE` 会写回 `learning-resources.json`。
+
+`PUT /learning-mcp/resources/{id}` 以路径里的 `id` 为准，避免请求体里的 `id` 和 URL 中的 `id` 不一致。
+
+## 资源管理页面
+
+启动 MCP Server 后，可以直接打开：
+
+```text
+http://localhost:19000/index.html
+```
+
+页面能力：
+
+```text
+查看全部学习资源
+按关键词和主题筛选资源
+新增学习资源并写回 learning-resources.json
+编辑学习资源并写回 learning-resources.json
+删除学习资源并写回 learning-resources.json
+查看 MCP Server 状态、资源数量和资源来源
+```
+
+推荐页面测试顺序：
+
+```text
+1. 打开 http://localhost:19000/index.html
+2. 新增一条 topic 为 MCP 的测试资源
+3. 搜索这条资源，确认列表可以过滤出来
+4. 编辑标题或下一步建议，确认页面更新
+5. 打开 learning-resources.json，确认文件已写回
+6. 删除测试资源，确认文件同步删除
+7. 回到 minimax-chat，通过真实 MCP 查询资源，确认 Agent / Graph 仍可正常使用
+```
 
 ## 启动顺序
 
@@ -74,7 +130,8 @@ http://localhost:19000/learning-mcp/health
 {
   "status": "UP",
   "server": "minimax-learning-mcp-server",
-  "resourceSource": "classpath:learning-resources.json",
+  "resourceSource": "file:.../src/main/resources/learning-resources.json",
+  "resourceFile": ".../src/main/resources/learning-resources.json",
   "resourceCount": 7
 }
 ```
@@ -89,6 +146,12 @@ http://localhost:19000/learning-mcp/resources
 
 ```text
 http://localhost:19000/learning-mcp/resources/search?query=Agent%20Graph%20MCP&limit=3
+```
+
+也可以打开资源管理页面：
+
+```text
+http://localhost:19000/index.html
 ```
 
 ### 2. 开启 minimax-chat 的 MCP Client
@@ -151,12 +214,18 @@ minimax-learning-mcp-server.http
 ```text
 01 MCP Server 健康检查
 02 MCP Server 查看全部 JSON 学习资源
-03 MCP Server 普通 REST 资源检索
-04 minimax-chat MCP Client 状态检查
-05 通过手写 Agent 调用真实 MCP Server
-06 通过官方 ReactAgent 调用真实 MCP Server
-07 通过官方 StateGraph 调用真实 MCP Server
+03 MCP Server 新增学习资源并写回 JSON
+04 MCP Server 查看单条学习资源
+05 MCP Server 修改学习资源并写回 JSON
+06 MCP Server 普通 REST 资源检索
+07 MCP Server 删除测试学习资源并写回 JSON
+08 minimax-chat MCP Client 状态检查
+09 通过手写 Agent 调用真实 MCP Server
+10 通过官方 ReactAgent 调用真实 MCP Server
+11 通过官方 StateGraph 调用真实 MCP Server
 ```
+
+页面测试可以配合 `.http` 使用：先用页面新增资源，再执行 `06 MCP Server 普通 REST 资源检索` 或 `09/10/11`，观察新增资源是否能被查询和 Agent 使用。
 
 Graph 测试时重点观察：
 

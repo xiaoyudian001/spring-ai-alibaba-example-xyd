@@ -18,54 +18,75 @@ package com.alibaba.cloud.ai.mcpserver;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class LearningResourceRepository {
 
-	private static final String RESOURCE_FILE = "learning-resources.json";
+	private static final String CLASSPATH_RESOURCE_FILE = "learning-resources.json";
+
+	private final ObjectMapper objectMapper;
+
+	private final Path resourceFilePath;
 
 	private final List<LearningResource> resources;
 
 	private final String resourceSource;
 
-	public LearningResourceRepository(ObjectMapper objectMapper) {
-		ResourceLoadResult loadResult = loadResources(objectMapper);
-		this.resources = loadResult.resources();
+	public LearningResourceRepository(ObjectMapper objectMapper,
+			@Value("${learning.resources.file:src/main/resources/learning-resources.json}") String resourceFile) {
+		this.objectMapper = objectMapper;
+		this.resourceFilePath = resolveResourceFilePath(resourceFile);
+		ResourceLoadResult loadResult = loadResources();
+		this.resources = new ArrayList<>(loadResult.resources());
 		this.resourceSource = loadResult.resourceSource();
 	}
 
-	public List<LearningResource> all() {
-		return this.resources;
+	public synchronized List<LearningResource> all() {
+		return List.copyOf(this.resources);
 	}
 
 	public String resourceSource() {
 		return this.resourceSource;
 	}
 
-	public List<String> listTopics() {
+	public Path resourceFilePath() {
+		return this.resourceFilePath;
+	}
+
+	public synchronized List<String> listTopics() {
 		return this.resources.stream()
 			.map(LearningResource::topic)
 			.distinct()
 			.toList();
 	}
 
-	public LearningResource getById(String id) {
+	public synchronized LearningResource getById(String id) {
+		return findById(id).orElse(this.resources.get(0));
+	}
+
+	public synchronized Optional<LearningResource> findById(String id) {
 		String safeId = normalize(id);
 		return this.resources.stream()
 			.filter(resource -> normalize(resource.id()).equals(safeId))
-			.findFirst()
-			.orElse(this.resources.get(0));
+			.findFirst();
 	}
 
-	public List<LearningResource> search(String query, Integer limit) {
+	public synchronized List<LearningResource> search(String query, Integer limit) {
 		String safeQuery = normalize(query);
 		int safeLimit = limit == null || limit < 1 ? 3 : Math.min(limit, 5);
 		List<LearningResource> hits = this.resources.stream()
@@ -78,7 +99,38 @@ public class LearningResourceRepository {
 		return hits;
 	}
 
-	public String formatSearchResult(String query, Integer limit) {
+	public synchronized LearningResource create(LearningResource resource) {
+		LearningResource sanitizedResource = sanitize(resource.id(), resource);
+		if (findById(sanitizedResource.id()).isPresent()) {
+			throw new IllegalArgumentException("资源 ID 已存在：" + sanitizedResource.id());
+		}
+		this.resources.add(sanitizedResource);
+		saveResources();
+		return sanitizedResource;
+	}
+
+	public synchronized Optional<LearningResource> update(String id, LearningResource resource) {
+		String safeId = requireText(id, "id");
+		for (int i = 0; i < this.resources.size(); i++) {
+			if (normalize(this.resources.get(i).id()).equals(normalize(safeId))) {
+				LearningResource sanitizedResource = sanitize(safeId, resource);
+				this.resources.set(i, sanitizedResource);
+				saveResources();
+				return Optional.of(sanitizedResource);
+			}
+		}
+		return Optional.empty();
+	}
+
+	public synchronized boolean delete(String id) {
+		boolean removed = this.resources.removeIf(resource -> normalize(resource.id()).equals(normalize(id)));
+		if (removed) {
+			saveResources();
+		}
+		return removed;
+	}
+
+	public synchronized String formatSearchResult(String query, Integer limit) {
 		List<LearningResource> hits = search(query, limit);
 		return """
 				真实 MCP Server 调用结果
@@ -94,15 +146,26 @@ public class LearningResourceRepository {
 				hits.stream().map(this::format).collect(Collectors.joining("\n\n")));
 	}
 
-	private ResourceLoadResult loadResources(ObjectMapper objectMapper) {
-		ClassPathResource resource = new ClassPathResource(RESOURCE_FILE);
+	private ResourceLoadResult loadResources() {
+		if (Files.exists(this.resourceFilePath)) {
+			try (InputStream inputStream = Files.newInputStream(this.resourceFilePath)) {
+				List<LearningResource> loadedResources = readResources(inputStream);
+				if (!loadedResources.isEmpty()) {
+					return new ResourceLoadResult(loadedResources,
+							"file:" + this.resourceFilePath.toAbsolutePath().normalize());
+				}
+			}
+			catch (IOException ex) {
+				// 外部资源文件损坏时继续尝试 classpath 资源，保证本地学习流程不中断。
+			}
+		}
+
+		ClassPathResource resource = new ClassPathResource(CLASSPATH_RESOURCE_FILE);
 		if (resource.exists()) {
 			try (InputStream inputStream = resource.getInputStream()) {
-				List<LearningResource> loadedResources = objectMapper.readValue(inputStream,
-						new TypeReference<List<LearningResource>>() {
-						});
-				if (loadedResources != null && !loadedResources.isEmpty()) {
-					return new ResourceLoadResult(List.copyOf(loadedResources), "classpath:" + RESOURCE_FILE);
+				List<LearningResource> loadedResources = readResources(inputStream);
+				if (!loadedResources.isEmpty()) {
+					return new ResourceLoadResult(loadedResources, "classpath:" + CLASSPATH_RESOURCE_FILE);
 				}
 			}
 			catch (IOException ex) {
@@ -110,6 +173,52 @@ public class LearningResourceRepository {
 			}
 		}
 		return new ResourceLoadResult(fallbackResources(), "fallback:built-in");
+	}
+
+	private List<LearningResource> readResources(InputStream inputStream) throws IOException {
+		List<LearningResource> loadedResources = this.objectMapper.readValue(inputStream,
+				new TypeReference<List<LearningResource>>() {
+				});
+		return loadedResources == null ? List.of() : List.copyOf(loadedResources);
+	}
+
+	private void saveResources() {
+		try {
+			Path parent = this.resourceFilePath.getParent();
+			if (parent != null) {
+				Files.createDirectories(parent);
+			}
+			this.objectMapper.writerWithDefaultPrettyPrinter().writeValue(this.resourceFilePath.toFile(), this.resources);
+		}
+		catch (IOException ex) {
+			throw new UncheckedIOException("写回学习资源 JSON 文件失败：" + this.resourceFilePath, ex);
+		}
+	}
+
+	private Path resolveResourceFilePath(String resourceFile) {
+		Path configuredPath = Paths.get(resourceFile);
+		if (Files.exists(configuredPath) || configuredPath.isAbsolute()) {
+			return configuredPath;
+		}
+		Path rootModulePath = Paths.get("spring-ai-alibaba-chat-example", "minimax-learning-mcp-server")
+			.resolve(resourceFile);
+		if (Files.exists(rootModulePath)) {
+			return rootModulePath;
+		}
+		return configuredPath;
+	}
+
+	private LearningResource sanitize(String id, LearningResource resource) {
+		return new LearningResource(requireText(id, "id"), requireText(resource.topic(), "topic"),
+				requireText(resource.title(), "title"), requireText(resource.summary(), "summary"),
+				requireText(resource.nextAction(), "nextAction"));
+	}
+
+	private String requireText(String value, String fieldName) {
+		if (value == null || value.isBlank()) {
+			throw new IllegalArgumentException("资源字段不能为空：" + fieldName);
+		}
+		return value.trim();
 	}
 
 	private List<LearningResource> fallbackResources() {

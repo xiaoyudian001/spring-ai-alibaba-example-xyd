@@ -9,11 +9,11 @@
   },
   "user-a" : {
     "level" : "初学者",
-    "topics" : [ "Agent", "Graph" ],
-    "lastIntent" : "MIXED",
-    "lastQuestion" : "基于当前 minimax-chat 项目，解释官方 ReactAgent 和官方 StateGraph 的区别。",
-    "conversationCount" : 3,
-    "updatedAt" : "2026-05-06T22:19:49.2204745"
+    "topics" : [ "Agent", "Graph", "MCP", "Tool Calling" ],
+    "lastIntent" : "CONCEPT_EXPLAIN",
+    "lastQuestion" : "用官方 Graph 通过 MCP 查询 MCP、Tool 和 Graph 的学习资料。",
+    "conversationCount" : 6,
+    "updatedAt" : "2026-05-11T19:52:42.6635521"
   },
   "default-user" : {
     "level" : "初学者",

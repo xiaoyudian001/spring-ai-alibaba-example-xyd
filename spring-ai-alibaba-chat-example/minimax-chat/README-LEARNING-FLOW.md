@@ -487,6 +487,20 @@ Fallback 原因：真实 MCP 调用失败或未发现 ToolCallbackProvider
 3. /minimax/chat-client/mcp/status 返回 REAL_MCP_READY。
 ```
 
+写入安全配置：
+
+```text
+默认配置：write-enabled=false，模型写入会被拦截。
+mcp profile：write-enabled=true，write-mode=dry-run，只预览不落盘。
+commit 模式：write-enabled=true，write-mode=commit，才真正写回 MCP Server。
+```
+
+commit 模式启动方式：
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=mcp -Dminimax.mcp.write-mode=commit
+```
+
 推荐输入：
 
 ```text
@@ -497,8 +511,8 @@ Fallback 原因：真实 MCP 调用失败或未发现 ToolCallbackProvider
 
 ```text
 toolCalls 中出现 createMcpLearningResource。
-MCP 调试信息 mode = REAL_MCP。
-selectedToolName 指向 createLearningResource。
+dry-run 时 MCP 调试信息 mode = MCP_WRITE_DRY_RUN，writeMode = dry-run，不会写入 JSON。
+commit 时 MCP 调试信息 mode = REAL_MCP，writeMode = commit，selectedToolName 指向 createLearningResource。
 ```
 
 验证写入：

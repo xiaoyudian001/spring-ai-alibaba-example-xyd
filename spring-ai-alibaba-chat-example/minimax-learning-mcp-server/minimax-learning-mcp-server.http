@@ -100,8 +100,8 @@ Content-Type: application/json; charset=utf-8
 ### 12 通过手写 Agent 自动沉淀 MCP 学习资源
 # 预期：
 # - toolCalls 中出现 createMcpLearningResource。
-# - toolCalls 参数 source 为 REAL_MCP。
-# - learning-resources.json 中新增 mcp-tool-vs-mcp。
+# - mcp profile 默认 write-mode=dry-run，不会写入 JSON。
+# - 若 minimax-chat 使用 -Dminimax.mcp.write-mode=commit 启动，则 source 为 REAL_MCP，JSON 中新增 mcp-tool-vs-mcp。
 POST {{minimaxChat}}/minimax/chat-client/conversation/chat
 Content-Type: application/json; charset=utf-8
 
@@ -112,5 +112,13 @@ Content-Type: application/json; charset=utf-8
 }
 
 ### 13 验证 Agent 沉淀的资源已经写回 MCP Server
+# 前置条件：第 12 步必须在 commit 模式下执行。
 # 预期：返回 id 为 mcp-tool-vs-mcp 的资源。
 GET {{mcpServer}}/learning-mcp/resources/mcp-tool-vs-mcp
+
+### 14 查看 minimax-chat MCP 写入安全状态
+# 预期：
+# - writeEnabled=true 表示允许进入写入流程。
+# - writeMode=dry-run 表示只预览不落盘。
+# - writeMode=commit 表示允许真实写入 MCP Server。
+GET {{minimaxChat}}/minimax/chat-client/mcp/status

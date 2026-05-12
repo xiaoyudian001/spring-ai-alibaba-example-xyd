@@ -28,6 +28,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
@@ -45,6 +46,10 @@ public class LearningMcpService {
 	private final ObjectProvider<ToolCallbackProvider> toolCallbackProvider;
 
 	private final ObjectMapper objectMapper;
+
+	private final boolean writeEnabled;
+
+	private final String writeMode;
 
 	private final ThreadLocal<McpDebugInfo> debugInfoHolder = ThreadLocal.withInitial(McpDebugInfo::none);
 
@@ -74,9 +79,13 @@ public class LearningMcpService {
 					"理解 MCP 是外部工具和资源接入协议，本阶段先接入真实 MCP Client，再保留 mock fallback。",
 					"配置 MCP Server 后询问通过 MCP 获取 Agent 学习资源。"));
 
-	public LearningMcpService(ObjectProvider<ToolCallbackProvider> toolCallbackProvider, ObjectMapper objectMapper) {
+	public LearningMcpService(ObjectProvider<ToolCallbackProvider> toolCallbackProvider, ObjectMapper objectMapper,
+			@Value("${minimax.mcp.write-enabled:false}") boolean writeEnabled,
+			@Value("${minimax.mcp.write-mode:dry-run}") String writeMode) {
 		this.toolCallbackProvider = toolCallbackProvider;
 		this.objectMapper = objectMapper;
+		this.writeEnabled = writeEnabled;
+		this.writeMode = normalizeWriteMode(writeMode);
 	}
 
 	public List<String> listLearningTopics() {
@@ -101,13 +110,13 @@ public class LearningMcpService {
 	public McpWriteResult createLearningResource(String id, String topic, String title, String summary,
 			String nextAction) {
 		List<String> toolNames = availableToolNames();
-		McpWriteResult result = invokeRealMcpWrite("createLearningResource", Map.of(
+		Map<String, Object> arguments = Map.of(
 				"id", safeText(id),
 				"topic", safeText(topic),
 				"title", safeText(title),
 				"summary", safeText(summary),
-				"nextAction", safeText(nextAction)), toolNames)
-			.orElseGet(() -> mockWrite("createLearningResource", id, toolNames, fallbackReason(toolNames)));
+				"nextAction", safeText(nextAction));
+		McpWriteResult result = guardedWrite("createLearningResource", id, arguments, toolNames);
 		recordWriteDebug(id, result);
 		return result;
 	}
@@ -115,13 +124,13 @@ public class LearningMcpService {
 	public McpWriteResult updateLearningResource(String id, String topic, String title, String summary,
 			String nextAction) {
 		List<String> toolNames = availableToolNames();
-		McpWriteResult result = invokeRealMcpWrite("updateLearningResource", Map.of(
+		Map<String, Object> arguments = Map.of(
 				"id", safeText(id),
 				"topic", safeText(topic),
 				"title", safeText(title),
 				"summary", safeText(summary),
-				"nextAction", safeText(nextAction)), toolNames)
-			.orElseGet(() -> mockWrite("updateLearningResource", id, toolNames, fallbackReason(toolNames)));
+				"nextAction", safeText(nextAction));
+		McpWriteResult result = guardedWrite("updateLearningResource", id, arguments, toolNames);
 		recordWriteDebug(id, result);
 		return result;
 	}
@@ -142,7 +151,7 @@ public class LearningMcpService {
 	public LearningMcpStatus status() {
 		List<String> toolNames = availableToolNames();
 		return new LearningMcpStatus(!toolNames.isEmpty(), toolNames.size(), toolNames,
-				toolNames.isEmpty() ? "MOCK_FALLBACK" : "REAL_MCP_READY");
+				toolNames.isEmpty() ? "MOCK_FALLBACK" : "REAL_MCP_READY", this.writeEnabled, this.writeMode);
 	}
 
 	public McpDebugInfo snapshotDebugInfo() {
@@ -215,7 +224,7 @@ public class LearningMcpService {
 				return Optional.empty();
 			}
 			return Optional.of(new McpWriteResult(content, "REAL_MCP", true,
-					callback.getToolDefinition().name(), toolNames, ""));
+					callback.getToolDefinition().name(), toolNames, "", this.writeEnabled, this.writeMode));
 		}
 		catch (JsonProcessingException ex) {
 			return Optional.of(mockWrite(toolName, String.valueOf(arguments.get("id")), toolNames,
@@ -225,6 +234,52 @@ public class LearningMcpService {
 			return Optional.of(mockWrite(toolName, String.valueOf(arguments.get("id")), toolNames,
 					"真实 MCP 写入调用失败：" + ex.getMessage()));
 		}
+	}
+
+	private McpWriteResult guardedWrite(String operation, String resourceId, Map<String, Object> arguments,
+			List<String> toolNames) {
+		if (!this.writeEnabled) {
+			return blockedWrite(operation, resourceId, arguments, toolNames);
+		}
+		if ("dry-run".equals(this.writeMode)) {
+			return dryRunWrite(operation, resourceId, arguments, toolNames);
+		}
+		return invokeRealMcpWrite(operation, arguments, toolNames)
+			.orElseGet(() -> mockWrite(operation, resourceId, toolNames, fallbackReason(toolNames)));
+	}
+
+	private McpWriteResult blockedWrite(String operation, String resourceId, Map<String, Object> arguments,
+			List<String> toolNames) {
+		String content = """
+				MCP 写入已被安全策略拦截
+				- 操作：%s
+				- 资源 ID：%s
+				- 写入开关：false
+				- 写入模式：disabled
+				- 结果：未调用 MCP Server，未写入 learning-resources.json
+
+				计划写入内容：
+				%s
+				""".formatted(operation, safeText(resourceId), prettyArguments(arguments));
+		return new McpWriteResult(content, "MCP_WRITE_DISABLED", false, "", toolNames,
+				"minimax.mcp.write-enabled=false", false, "disabled");
+	}
+
+	private McpWriteResult dryRunWrite(String operation, String resourceId, Map<String, Object> arguments,
+			List<String> toolNames) {
+		String content = """
+				MCP 写入 Dry-Run 预览
+				- 操作：%s
+				- 资源 ID：%s
+				- 写入开关：true
+				- 写入模式：dry-run
+				- 结果：未调用 MCP Server，未写入 learning-resources.json
+
+				计划写入内容：
+				%s
+				""".formatted(operation, safeText(resourceId), prettyArguments(arguments));
+		return new McpWriteResult(content, "MCP_WRITE_DRY_RUN", false, "", toolNames,
+				"minimax.mcp.write-mode=dry-run", true, "dry-run");
 	}
 
 	private ToolCallback[] toolCallbacks() {
@@ -265,10 +320,12 @@ public class LearningMcpService {
 				- 操作：%s
 				- 资源 ID：%s
 				- 来源：MOCK_MCP
+				- 写入模式：%s
 				- 写入状态：未写入真实 learning-resources.json
 				- 兜底原因：%s
-				""".formatted(operation, safeText(resourceId), reason);
-		return new McpWriteResult(content, "MOCK_MCP", !toolNames.isEmpty(), "", toolNames, reason);
+				""".formatted(operation, safeText(resourceId), this.writeMode, reason);
+		return new McpWriteResult(content, "MOCK_MCP", !toolNames.isEmpty(), "", toolNames, reason,
+				this.writeEnabled, this.writeMode);
 	}
 
 	private boolean matches(McpLearningResource resource, String query) {
@@ -325,13 +382,13 @@ public class LearningMcpService {
 	private void recordDebug(String query, Integer limit, McpSearchResult result) {
 		this.debugInfoHolder.set(new McpDebugInfo(result.source(), result.realMcpAvailable(),
 				result.selectedToolName(), result.availableToolNames(), result.fallbackReason(),
-				query == null ? "" : query, normalizeLimit(limit)));
+				query == null ? "" : query, normalizeLimit(limit), this.writeEnabled, this.writeMode));
 	}
 
 	private void recordWriteDebug(String resourceId, McpWriteResult result) {
 		this.debugInfoHolder.set(new McpDebugInfo(result.source(), result.realMcpAvailable(),
 				result.selectedToolName(), result.availableToolNames(), result.fallbackReason(),
-				resourceId == null ? "" : resourceId, null));
+				resourceId == null ? "" : resourceId, null, result.writeEnabled(), result.writeMode()));
 	}
 
 	private String normalize(String value) {
@@ -342,7 +399,22 @@ public class LearningMcpService {
 		return value == null ? "" : value.trim();
 	}
 
-	public record LearningMcpStatus(boolean realMcpAvailable, int toolCount, List<String> toolNames, String mode) {
+	private String normalizeWriteMode(String writeMode) {
+		String safeWriteMode = normalize(writeMode);
+		return "commit".equals(safeWriteMode) ? "commit" : "dry-run";
+	}
+
+	private String prettyArguments(Map<String, Object> arguments) {
+		try {
+			return this.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(arguments);
+		}
+		catch (JsonProcessingException ex) {
+			return String.valueOf(arguments);
+		}
+	}
+
+	public record LearningMcpStatus(boolean realMcpAvailable, int toolCount, List<String> toolNames, String mode,
+			boolean writeEnabled, String writeMode) {
 	}
 
 	public record McpSearchResult(String content, String source, boolean realMcpAvailable, String selectedToolName,
@@ -350,7 +422,7 @@ public class LearningMcpService {
 	}
 
 	public record McpWriteResult(String content, String source, boolean realMcpAvailable, String selectedToolName,
-			List<String> availableToolNames, String fallbackReason) {
+			List<String> availableToolNames, String fallbackReason, boolean writeEnabled, String writeMode) {
 	}
 
 }

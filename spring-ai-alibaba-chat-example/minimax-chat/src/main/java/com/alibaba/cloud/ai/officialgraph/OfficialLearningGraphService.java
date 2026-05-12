@@ -245,7 +245,8 @@ public class OfficialLearningGraphService {
 
 	private McpDebugInfo toDebugInfo(String query, Integer limit, McpSearchResult result) {
 		return new McpDebugInfo(result.source(), result.realMcpAvailable(), result.selectedToolName(),
-				result.availableToolNames(), result.fallbackReason(), query == null ? "" : query, limit);
+				result.availableToolNames(), result.fallbackReason(), query == null ? "" : query, limit,
+				false, "read-only");
 	}
 
 	private McpDebugInfo mcpDebugInfo(OverAllState state) {
@@ -264,7 +265,9 @@ public class OfficialLearningGraphService {
 					Boolean.parseBoolean(stringValue(map, "realMcpAvailable", "false")),
 					stringValue(map, "selectedToolName", ""), toolNames,
 					stringValue(map, "fallbackReason", ""),
-					stringValue(map, "query", ""), integerValue(map.get("limit")));
+					stringValue(map, "query", ""), integerValue(map.get("limit")),
+					Boolean.parseBoolean(stringValue(map, "writeEnabled", "false")),
+					stringValue(map, "writeMode", "disabled"));
 		}
 		return McpDebugInfo.none();
 	}

@@ -19,9 +19,9 @@
     "level" : "初学者",
     "topics" : [ "Tool Calling", "Skill", "Agent", "Graph", "RAG", "MCP" ],
     "lastIntent" : "MIXED",
-    "lastQuestion" : "通过 MCP 查询 Agent 和 Graph 的学习资源，并说明下一步怎么学。",
-    "conversationCount" : 12,
-    "updatedAt" : "2026-05-11T15:23:12.510051"
+    "lastQuestion" : "把 Tool 和 MCP 的区别保存成一条学习资源，资源 ID 用 mcp-tool-vs-mcp，主题用 MCP。",
+    "conversationCount" : 13,
+    "updatedAt" : "2026-05-12T23:51:50.8726763"
   },
   "user-b" : {
     "level" : "进阶",

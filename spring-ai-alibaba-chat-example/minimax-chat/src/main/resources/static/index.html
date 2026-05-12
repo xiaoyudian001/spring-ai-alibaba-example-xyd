@@ -798,6 +798,8 @@
 				<div>模式：${escapeHtml(mode)}</div>
 				<div>真实 MCP 可用：${escapeHtml(info.realMcpAvailable ?? args.realMcpAvailable ?? false)}</div>
 				<div>选中 Tool：${escapeHtml(info.selectedToolName || args.selectedToolName || "暂无")}</div>
+				<div>写入开关：${escapeHtml(info.writeEnabled ?? args.writeEnabled ?? false)}</div>
+				<div>写入模式：${escapeHtml(info.writeMode || args.writeMode || "disabled")}</div>
 				<div>可用 Tools：${escapeHtml(tools)}</div>
 				<div>Fallback 原因：${escapeHtml(info.fallbackReason || "无")}</div>
 			</div>

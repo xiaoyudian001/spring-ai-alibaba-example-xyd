@@ -19,10 +19,11 @@ package com.alibaba.cloud.ai.mcp;
 import java.util.List;
 
 public record McpDebugInfo(String mode, boolean realMcpAvailable, String selectedToolName,
-		List<String> availableToolNames, String fallbackReason, String query, Integer limit) {
+		List<String> availableToolNames, String fallbackReason, String query, Integer limit,
+		boolean writeEnabled, String writeMode) {
 
 	public static McpDebugInfo none() {
-		return new McpDebugInfo("NOT_USED", false, "", List.of(), "", "", null);
+		return new McpDebugInfo("NOT_USED", false, "", List.of(), "", "", null, false, "disabled");
 	}
 
 }

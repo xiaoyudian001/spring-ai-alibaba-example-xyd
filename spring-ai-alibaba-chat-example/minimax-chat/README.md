@@ -25,6 +25,7 @@ README-LEARNING-FLOW.md
 - 本地文档 Simple RAG 检索
 - 轻量 Graph 工作流节点
 - 真实 MCP 学习资源查询和写入
+- MCP 写入安全开关和 dry-run 模式
 - 流式模式 SSE 调试事件
 
 ## 当前请求链路
@@ -364,6 +365,38 @@ data: {"memoryAfter":...,"toolCalls":[...],"agentSteps":[...]}
 
 在真实 MCP Server 已启动、`minimax-chat` 使用 `mcp` profile 启动时，Agent 不仅可以查询学习资源，还可以把用户要求保存的学习点写入 MCP Server。
 
+写入类工具受安全配置控制：
+
+```yaml
+minimax:
+  mcp:
+    write-enabled: false
+    write-mode: dry-run
+```
+
+含义：
+
+```text
+write-enabled=false：直接拦截写入，不调用 MCP Server。
+write-enabled=true + write-mode=dry-run：只预览将要写入的内容，不落盘。
+write-enabled=true + write-mode=commit：真正调用 MCP Server 写回 learning-resources.json。
+```
+
+`application-mcp.yml` 默认开启写入流程但仍保持 dry-run：
+
+```yaml
+minimax:
+  mcp:
+    write-enabled: true
+    write-mode: dry-run
+```
+
+真正落盘测试时再显式启动：
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=mcp -Dminimax.mcp.write-mode=commit
+```
+
 新增 Tool：
 
 ```text
@@ -395,7 +428,8 @@ updateMcpLearningResource(id, topic, title, summary, nextAction)
 
 ```text
 toolCalls 中出现 createMcpLearningResource。
-MCP 调试信息 mode = REAL_MCP。
+dry-run 时 MCP 调试信息 mode = MCP_WRITE_DRY_RUN，不会落盘。
+commit 时 MCP 调试信息 mode = REAL_MCP，并且会写回 MCP Server。
 打开 http://localhost:19000/index.html 可以看到新资源。
 ```
 

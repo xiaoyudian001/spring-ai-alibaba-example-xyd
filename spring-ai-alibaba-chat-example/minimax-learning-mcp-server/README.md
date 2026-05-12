@@ -228,6 +228,7 @@ minimax-learning-mcp-server.http
 11 通过官方 StateGraph 调用真实 MCP Server
 12 通过手写 Agent 自动沉淀 MCP 学习资源
 13 验证 Agent 沉淀的资源已经写回 MCP Server
+14 查看 minimax-chat MCP 写入安全状态
 ```
 
 页面测试可以配合 `.http` 使用：先用页面新增资源，再执行 `06 MCP Server 普通 REST 资源检索` 或 `09/10/11`，观察新增资源是否能被查询和 Agent 使用。
@@ -265,6 +266,20 @@ toolCalls
 ## Agent 自动沉淀资源
 
 `minimax-chat` 启用 `mcp` profile 后，模型可以通过 MCP 写入工具把学习点保存到 MCP Server：
+
+写入动作由 `minimax-chat` 侧安全配置控制：
+
+```text
+minimax.mcp.write-enabled=false：拦截写入，不调用 MCP Server。
+minimax.mcp.write-enabled=true + minimax.mcp.write-mode=dry-run：只预览，不落盘。
+minimax.mcp.write-enabled=true + minimax.mcp.write-mode=commit：真正调用 MCP Server 写回 JSON。
+```
+
+真正落盘测试时，`minimax-chat` 建议这样启动：
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=mcp -Dminimax.mcp.write-mode=commit
+```
 
 ```text
 用户要求保存学习点

@@ -123,7 +123,8 @@ public class MiniMaxLearningTools {
 		this.debugRecorder.record("createMcpLearningResource",
 				arguments("id", id, "topic", topic, "title", title, "source", result.source(),
 						"realMcpAvailable", result.realMcpAvailable(), "selectedToolName",
-						result.selectedToolName()),
+						result.selectedToolName(), "writeEnabled", result.writeEnabled(),
+						"writeMode", result.writeMode()),
 				result.content());
 		return result.content();
 	}
@@ -139,7 +140,8 @@ public class MiniMaxLearningTools {
 		this.debugRecorder.record("updateMcpLearningResource",
 				arguments("id", id, "topic", topic, "title", title, "source", result.source(),
 						"realMcpAvailable", result.realMcpAvailable(), "selectedToolName",
-						result.selectedToolName()),
+						result.selectedToolName(), "writeEnabled", result.writeEnabled(),
+						"writeMode", result.writeMode()),
 				result.content());
 		return result.content();
 	}

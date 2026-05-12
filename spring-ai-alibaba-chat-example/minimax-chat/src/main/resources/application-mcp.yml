@@ -3,3 +3,9 @@ spring:
     mcp:
       client:
         enabled: true
+
+minimax:
+  mcp:
+    # mcp profile 下允许模型进入写入流程，但默认仍为 dry-run，不会真正落盘。
+    write-enabled: true
+    write-mode: dry-run

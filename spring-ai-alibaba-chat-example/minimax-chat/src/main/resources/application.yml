@@ -3,6 +3,11 @@ server:
 minimax:
   memory:
     file: spring-ai-alibaba-chat-example/minimax-chat/memory/learning-memory.json
+  mcp:
+    # Agent 写入 MCP Server 是外部系统变更能力，默认关闭。
+    write-enabled: false
+    # dry-run 只预览写入内容；commit 才真正调用 MCP Server 写回 JSON。
+    write-mode: dry-run
 spring:
   application:
     name: minimax-chat-example

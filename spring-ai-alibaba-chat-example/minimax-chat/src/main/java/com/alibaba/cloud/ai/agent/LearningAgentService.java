@@ -98,6 +98,7 @@ public class LearningAgentService {
 	public LearningAgentResult chat(String userId, String message, List<LearningAgentMessage> history) {
 		this.debugRecorder.clear();
 		this.mcpService.clearDebugInfo();
+		this.mcpService.useUser(userId);
 		LearningMemory memoryBefore = this.memoryService.read(userId);
 		LearningIntent intent = this.intentPlanner.plan(message);
 		LearningGraphResult graph = this.graphService.plan(userId, message, intent);
@@ -124,6 +125,7 @@ public class LearningAgentService {
 		finally {
 			this.debugRecorder.remove();
 			this.mcpService.clearDebugInfo();
+			this.mcpService.clearUser();
 		}
 	}
 
@@ -136,6 +138,7 @@ public class LearningAgentService {
 	public Flux<LearningStreamEvent> streamEvents(String userId, String message, List<LearningAgentMessage> history) {
 		this.debugRecorder.clear();
 		this.mcpService.clearDebugInfo();
+		this.mcpService.useUser(userId);
 		LearningMemory memoryBefore = this.memoryService.read(userId);
 		LearningIntent intent = this.intentPlanner.plan(message);
 		LearningGraphResult graph = this.graphService.plan(userId, message, intent);
@@ -165,6 +168,7 @@ public class LearningAgentService {
 				.doFinally(signalType -> {
 					this.debugRecorder.remove();
 					this.mcpService.clearDebugInfo();
+					this.mcpService.clearUser();
 				});
 	}
 

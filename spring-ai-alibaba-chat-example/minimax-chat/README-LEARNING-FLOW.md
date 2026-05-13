@@ -491,7 +491,7 @@ Fallback 原因：真实 MCP 调用失败或未发现 ToolCallbackProvider
 
 ```text
 默认配置：write-enabled=false，模型写入会被拦截。
-mcp profile：write-enabled=true，write-mode=dry-run，只预览不落盘。
+mcp profile：write-enabled=true，write-mode=dry-run，只预览不落盘，并生成 PendingMcpWrite 草稿。
 commit 模式：write-enabled=true，write-mode=commit，才真正写回 MCP Server。
 ```
 
@@ -512,6 +512,8 @@ mvn spring-boot:run -Dspring-boot.run.profiles=mcp -Dminimax.mcp.write-mode=comm
 ```text
 toolCalls 中出现 createMcpLearningResource。
 dry-run 时 MCP 调试信息 mode = MCP_WRITE_DRY_RUN，writeMode = dry-run，不会写入 JSON。
+前端调试区会显示“确认写入”按钮。
+点击确认写入后，后端调用 /minimax/chat-client/mcp/write/confirm，并由后端明确执行 commit。
 commit 时 MCP 调试信息 mode = REAL_MCP，writeMode = commit，selectedToolName 指向 createLearningResource。
 ```
 
@@ -527,6 +529,23 @@ http://localhost:19000/index.html
 
 ```http
 GET http://localhost:19000/learning-mcp/resources/mcp-tool-vs-mcp
+```
+
+确认接口：
+
+```http
+POST http://localhost:8080/minimax/chat-client/mcp/write/confirm
+Content-Type: application/json
+
+{
+  "userId": "user-a"
+}
+```
+
+取消草稿：
+
+```http
+DELETE http://localhost:8080/minimax/chat-client/mcp/write/pending?userId=user-a
 ```
 
 ## 快速定位问题

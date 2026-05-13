@@ -16,14 +16,19 @@
 
 package com.alibaba.cloud.ai.mcp;
 
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.Map;
 
-public record McpDebugInfo(String mode, boolean realMcpAvailable, String selectedToolName,
-		List<String> availableToolNames, String fallbackReason, String query, Integer limit,
-		boolean writeEnabled, String writeMode, PendingMcpWrite pendingWrite) {
+public record PendingMcpWrite(String userId, String operation, String resourceId, String topic, String title,
+		String summary, String nextAction, LocalDateTime createdAt) {
 
-	public static McpDebugInfo none() {
-		return new McpDebugInfo("NOT_USED", false, "", List.of(), "", "", null, false, "disabled", null);
+	public Map<String, Object> arguments() {
+		return Map.of(
+				"id", this.resourceId,
+				"topic", this.topic,
+				"title", this.title,
+				"summary", this.summary,
+				"nextAction", this.nextAction);
 	}
 
 }

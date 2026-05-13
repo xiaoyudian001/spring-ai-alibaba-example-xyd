@@ -90,6 +90,7 @@ public class OfficialLearningGraphService {
 		this.debugRecorder.clear();
 		this.mcpService.clearDebugInfo();
 		String normalizedUserId = normalizeUserId(userId);
+		this.mcpService.useUser(normalizedUserId);
 		try {
 			RunnableConfig config = RunnableConfig.builder()
 					.threadId(normalizedUserId + "-official-graph")
@@ -109,6 +110,7 @@ public class OfficialLearningGraphService {
 		finally {
 			this.debugRecorder.remove();
 			this.mcpService.clearDebugInfo();
+			this.mcpService.clearUser();
 		}
 	}
 
@@ -246,7 +248,7 @@ public class OfficialLearningGraphService {
 	private McpDebugInfo toDebugInfo(String query, Integer limit, McpSearchResult result) {
 		return new McpDebugInfo(result.source(), result.realMcpAvailable(), result.selectedToolName(),
 				result.availableToolNames(), result.fallbackReason(), query == null ? "" : query, limit,
-				false, "read-only");
+				false, "read-only", null);
 	}
 
 	private McpDebugInfo mcpDebugInfo(OverAllState state) {
@@ -267,7 +269,7 @@ public class OfficialLearningGraphService {
 					stringValue(map, "fallbackReason", ""),
 					stringValue(map, "query", ""), integerValue(map.get("limit")),
 					Boolean.parseBoolean(stringValue(map, "writeEnabled", "false")),
-					stringValue(map, "writeMode", "disabled"));
+					stringValue(map, "writeMode", "disabled"), null);
 		}
 		return McpDebugInfo.none();
 	}

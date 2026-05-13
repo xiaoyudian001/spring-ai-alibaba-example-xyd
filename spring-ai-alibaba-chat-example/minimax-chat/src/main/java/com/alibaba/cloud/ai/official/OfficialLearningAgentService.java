@@ -65,6 +65,7 @@ public class OfficialLearningAgentService {
 	public OfficialLearningAgentResult chat(String userId, String message) {
 		this.debugRecorder.clear();
 		this.mcpService.clearDebugInfo();
+		this.mcpService.useUser(userId);
 		LearningMemory memoryBefore = this.memoryService.read(userId);
 		LearningIntent intent = this.intentPlanner.plan(message);
 		List<OfficialAgentStep> steps = new ArrayList<>();
@@ -100,6 +101,7 @@ public class OfficialLearningAgentService {
 		finally {
 			this.debugRecorder.remove();
 			this.mcpService.clearDebugInfo();
+			this.mcpService.clearUser();
 		}
 	}
 

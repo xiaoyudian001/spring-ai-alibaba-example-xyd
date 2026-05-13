@@ -317,6 +317,19 @@
 			margin-top: 2px;
 		}
 
+		.pending-write-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin-top: 8px;
+		}
+
+		.pending-write-actions button {
+			height: 34px;
+			border-radius: 6px;
+			font-size: 12px;
+		}
+
 		.debug-panel pre {
 			margin: 6px 0 0;
 			padding: 8px;
@@ -792,6 +805,21 @@
 		if (mode === "NOT_USED" && !mcpCall) return "";
 		const tools = Array.isArray(info.availableToolNames) && info.availableToolNames.length
 			? info.availableToolNames.join("、") : "暂无";
+		const pendingWrite = info.pendingWrite;
+		const pendingHtml = pendingWrite ? `
+			<div class="memory-card">
+				<div class="memory-card-title">待确认 MCP 写入</div>
+				<div>用户：${escapeHtml(pendingWrite.userId || currentUserId())}</div>
+				<div>操作：${escapeHtml(pendingWrite.operation || "")}</div>
+				<div>资源 ID：${escapeHtml(pendingWrite.resourceId || "")}</div>
+				<div>主题：${escapeHtml(pendingWrite.topic || "")}</div>
+				<div>标题：${escapeHtml(pendingWrite.title || "")}</div>
+				<div class="pending-write-actions">
+					<button class="primary" type="button" data-action="confirm-mcp-write" data-user-id="${escapeHtml(pendingWrite.userId || currentUserId())}">确认写入</button>
+					<button class="secondary" type="button" data-action="cancel-mcp-write" data-user-id="${escapeHtml(pendingWrite.userId || currentUserId())}">取消草稿</button>
+				</div>
+			</div>
+		` : "";
 		return `
 			<div class="memory-card">
 				<div class="memory-card-title">MCP 调试信息</div>
@@ -803,6 +831,7 @@
 				<div>可用 Tools：${escapeHtml(tools)}</div>
 				<div>Fallback 原因：${escapeHtml(info.fallbackReason || "无")}</div>
 			</div>
+			${pendingHtml}
 		`;
 	}
 
@@ -971,6 +1000,24 @@
 		return response.json();
 	}
 
+	async function confirmMcpWrite(userId) {
+		const response = await fetch("/minimax/chat-client/mcp/write/confirm", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ userId: userId || currentUserId() })
+		});
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		return response.json();
+	}
+
+	async function cancelMcpWrite(userId) {
+		const response = await fetch(`/minimax/chat-client/mcp/write/pending?userId=${encodeURIComponent(userId || currentUserId())}`, {
+			method: "DELETE"
+		});
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		return response.json();
+	}
+
 	async function sendConversationStream(message, target, messageNode) {
 		const response = await fetch("/minimax/chat-client/conversation/stream", {
 			method: "POST",
@@ -1061,6 +1108,25 @@
 		finally {
 			setBusy(false);
 			input.focus();
+		}
+	});
+
+	messages.addEventListener("click", async (event) => {
+		const button = event.target.closest("button[data-action='confirm-mcp-write'], button[data-action='cancel-mcp-write']");
+		if (!button) return;
+		button.disabled = true;
+		const userId = button.dataset.userId || currentUserId();
+		try {
+			const result = button.dataset.action === "confirm-mcp-write"
+				? await confirmMcpWrite(userId)
+				: await cancelMcpWrite(userId);
+			appendMessage("assistant", result.content || "MCP 写入操作已完成。");
+		}
+		catch (error) {
+			appendMessage("error", `MCP 写入确认失败：${error.message}`);
+		}
+		finally {
+			button.disabled = false;
 		}
 	});
 

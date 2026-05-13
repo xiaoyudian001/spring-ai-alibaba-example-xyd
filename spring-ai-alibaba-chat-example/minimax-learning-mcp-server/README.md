@@ -227,8 +227,10 @@ minimax-learning-mcp-server.http
 10 通过官方 ReactAgent 调用真实 MCP Server
 11 通过官方 StateGraph 调用真实 MCP Server
 12 通过手写 Agent 自动沉淀 MCP 学习资源
-13 验证 Agent 沉淀的资源已经写回 MCP Server
-14 查看 minimax-chat MCP 写入安全状态
+13 确认写入上一步 dry-run 生成的 MCP 学习资源
+14 验证 Agent 沉淀的资源已经写回 MCP Server
+15 查看 minimax-chat MCP 写入安全状态
+16 取消当前用户待确认 MCP 写入草稿
 ```
 
 页面测试可以配合 `.http` 使用：先用页面新增资源，再执行 `06 MCP Server 普通 REST 资源检索` 或 `09/10/11`，观察新增资源是否能被查询和 Agent 使用。
@@ -271,11 +273,17 @@ toolCalls
 
 ```text
 minimax.mcp.write-enabled=false：拦截写入，不调用 MCP Server。
-minimax.mcp.write-enabled=true + minimax.mcp.write-mode=dry-run：只预览，不落盘。
+minimax.mcp.write-enabled=true + minimax.mcp.write-mode=dry-run：只预览，不落盘，并生成待确认草稿。
 minimax.mcp.write-enabled=true + minimax.mcp.write-mode=commit：真正调用 MCP Server 写回 JSON。
 ```
 
-真正落盘测试时，`minimax-chat` 建议这样启动：
+dry-run 后可以在 `minimax-chat` 前端调试区点击“确认写入”，由后端确认接口真正提交：
+
+```text
+POST /minimax/chat-client/mcp/write/confirm
+```
+
+也可以直接用 commit 模式启动，让模型工具调用时立即写入：
 
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=mcp -Dminimax.mcp.write-mode=commit
@@ -284,6 +292,8 @@ mvn spring-boot:run -Dspring-boot.run.profiles=mcp -Dminimax.mcp.write-mode=comm
 ```text
 用户要求保存学习点
  -> MiniMax 判断需要调用 createMcpLearningResource
+ -> LearningMcpService 生成 PendingMcpWrite 草稿
+ -> 用户点击确认写入
  -> LearningMcpService 选择真实 MCP ToolCallback
  -> minimax-learning-mcp-server.createLearningResource
  -> LearningResourceRepository 写回 learning-resources.json

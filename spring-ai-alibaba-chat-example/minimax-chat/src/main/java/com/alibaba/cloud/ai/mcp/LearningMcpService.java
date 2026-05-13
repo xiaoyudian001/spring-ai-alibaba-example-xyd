@@ -16,12 +16,15 @@
 
 package com.alibaba.cloud.ai.mcp;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -52,6 +55,10 @@ public class LearningMcpService {
 	private final String writeMode;
 
 	private final ThreadLocal<McpDebugInfo> debugInfoHolder = ThreadLocal.withInitial(McpDebugInfo::none);
+
+	private final ThreadLocal<String> currentUserIdHolder = ThreadLocal.withInitial(() -> "default-user");
+
+	private final ConcurrentMap<String, PendingMcpWrite> pendingWrites = new ConcurrentHashMap<>();
 
 	private final List<McpLearningResource> resources = List.of(
 			new McpLearningResource("mcp-tool", "Tool",
@@ -107,6 +114,14 @@ public class LearningMcpService {
 		return searchProjectKnowledgeWithStatus(query, limit).content();
 	}
 
+	public void useUser(String userId) {
+		this.currentUserIdHolder.set(normalizeUserId(userId));
+	}
+
+	public void clearUser() {
+		this.currentUserIdHolder.remove();
+	}
+
 	public McpWriteResult createLearningResource(String id, String topic, String title, String summary,
 			String nextAction) {
 		List<String> toolNames = availableToolNames();
@@ -151,7 +166,8 @@ public class LearningMcpService {
 	public LearningMcpStatus status() {
 		List<String> toolNames = availableToolNames();
 		return new LearningMcpStatus(!toolNames.isEmpty(), toolNames.size(), toolNames,
-				toolNames.isEmpty() ? "MOCK_FALLBACK" : "REAL_MCP_READY", this.writeEnabled, this.writeMode);
+				toolNames.isEmpty() ? "MOCK_FALLBACK" : "REAL_MCP_READY", this.writeEnabled, this.writeMode,
+				pendingWrite(currentUserId()));
 	}
 
 	public McpDebugInfo snapshotDebugInfo() {
@@ -160,6 +176,44 @@ public class LearningMcpService {
 
 	public void clearDebugInfo() {
 		this.debugInfoHolder.remove();
+	}
+
+	public PendingMcpWrite pendingWrite(String userId) {
+		return this.pendingWrites.get(normalizeUserId(userId));
+	}
+
+	public McpWriteResult cancelPendingWrite(String userId) {
+		PendingMcpWrite removed = this.pendingWrites.remove(normalizeUserId(userId));
+		String content = removed == null ? "没有待取消的 MCP 写入草稿。" : "已取消 MCP 写入草稿：" + removed.resourceId();
+		return new McpWriteResult(content, "MCP_WRITE_CANCELLED", false, "", availableToolNames(), "",
+				this.writeEnabled, this.writeMode, null);
+	}
+
+	public McpWriteResult confirmPendingWrite(String userId) {
+		String safeUserId = normalizeUserId(userId);
+		List<String> toolNames = availableToolNames();
+		PendingMcpWrite pendingWrite = this.pendingWrites.get(safeUserId);
+		if (pendingWrite == null) {
+			return new McpWriteResult("没有待确认的 MCP 写入草稿。", "MCP_WRITE_NO_PENDING", false, "",
+					toolNames, "pending write not found", this.writeEnabled, this.writeMode, null);
+		}
+		if (!this.writeEnabled) {
+			return blockedWrite(pendingWrite.operation(), pendingWrite.resourceId(), pendingWrite.arguments(),
+					toolNames);
+		}
+		McpWriteResult result = invokeRealMcpWrite(pendingWrite.operation(), pendingWrite.arguments(), toolNames)
+			.orElseGet(() -> mockWrite(pendingWrite.operation(), pendingWrite.resourceId(), toolNames,
+					fallbackReason(toolNames)));
+		if ("REAL_MCP".equals(result.source())) {
+			this.pendingWrites.remove(safeUserId);
+			McpWriteResult confirmed = new McpWriteResult(result.content(), result.source(), result.realMcpAvailable(),
+					result.selectedToolName(), result.availableToolNames(), result.fallbackReason(),
+					result.writeEnabled(), "commit", null);
+			this.debugInfoHolder.set(toDebugInfo(pendingWrite.resourceId(), confirmed));
+			return confirmed;
+		}
+		this.debugInfoHolder.set(toDebugInfo(pendingWrite.resourceId(), result));
+		return result;
 	}
 
 	private Optional<McpSearchResult> invokeRealMcp(String query, Integer limit, List<String> toolNames) {
@@ -224,7 +278,7 @@ public class LearningMcpService {
 				return Optional.empty();
 			}
 			return Optional.of(new McpWriteResult(content, "REAL_MCP", true,
-					callback.getToolDefinition().name(), toolNames, "", this.writeEnabled, this.writeMode));
+					callback.getToolDefinition().name(), toolNames, "", this.writeEnabled, this.writeMode, null));
 		}
 		catch (JsonProcessingException ex) {
 			return Optional.of(mockWrite(toolName, String.valueOf(arguments.get("id")), toolNames,
@@ -262,24 +316,27 @@ public class LearningMcpService {
 				%s
 				""".formatted(operation, safeText(resourceId), prettyArguments(arguments));
 		return new McpWriteResult(content, "MCP_WRITE_DISABLED", false, "", toolNames,
-				"minimax.mcp.write-enabled=false", false, "disabled");
+				"minimax.mcp.write-enabled=false", false, "disabled", null);
 	}
 
 	private McpWriteResult dryRunWrite(String operation, String resourceId, Map<String, Object> arguments,
 			List<String> toolNames) {
+		PendingMcpWrite pendingWrite = toPendingWrite(currentUserId(), operation, arguments);
+		this.pendingWrites.put(pendingWrite.userId(), pendingWrite);
 		String content = """
 				MCP 写入 Dry-Run 预览
 				- 操作：%s
 				- 资源 ID：%s
+				- 待确认用户：%s
 				- 写入开关：true
 				- 写入模式：dry-run
 				- 结果：未调用 MCP Server，未写入 learning-resources.json
 
 				计划写入内容：
 				%s
-				""".formatted(operation, safeText(resourceId), prettyArguments(arguments));
+				""".formatted(operation, safeText(resourceId), pendingWrite.userId(), prettyArguments(arguments));
 		return new McpWriteResult(content, "MCP_WRITE_DRY_RUN", false, "", toolNames,
-				"minimax.mcp.write-mode=dry-run", true, "dry-run");
+				"minimax.mcp.write-mode=dry-run", true, "dry-run", pendingWrite);
 	}
 
 	private ToolCallback[] toolCallbacks() {
@@ -325,7 +382,7 @@ public class LearningMcpService {
 				- 兜底原因：%s
 				""".formatted(operation, safeText(resourceId), this.writeMode, reason);
 		return new McpWriteResult(content, "MOCK_MCP", !toolNames.isEmpty(), "", toolNames, reason,
-				this.writeEnabled, this.writeMode);
+				this.writeEnabled, this.writeMode, null);
 	}
 
 	private boolean matches(McpLearningResource resource, String query) {
@@ -382,13 +439,19 @@ public class LearningMcpService {
 	private void recordDebug(String query, Integer limit, McpSearchResult result) {
 		this.debugInfoHolder.set(new McpDebugInfo(result.source(), result.realMcpAvailable(),
 				result.selectedToolName(), result.availableToolNames(), result.fallbackReason(),
-				query == null ? "" : query, normalizeLimit(limit), this.writeEnabled, this.writeMode));
+				query == null ? "" : query, normalizeLimit(limit), this.writeEnabled, this.writeMode,
+				pendingWrite(currentUserId())));
 	}
 
 	private void recordWriteDebug(String resourceId, McpWriteResult result) {
-		this.debugInfoHolder.set(new McpDebugInfo(result.source(), result.realMcpAvailable(),
+		this.debugInfoHolder.set(toDebugInfo(resourceId, result));
+	}
+
+	private McpDebugInfo toDebugInfo(String resourceId, McpWriteResult result) {
+		return new McpDebugInfo(result.source(), result.realMcpAvailable(),
 				result.selectedToolName(), result.availableToolNames(), result.fallbackReason(),
-				resourceId == null ? "" : resourceId, null, result.writeEnabled(), result.writeMode()));
+				resourceId == null ? "" : resourceId, null, result.writeEnabled(), result.writeMode(),
+				result.pendingWrite());
 	}
 
 	private String normalize(String value) {
@@ -397,6 +460,14 @@ public class LearningMcpService {
 
 	private String safeText(String value) {
 		return value == null ? "" : value.trim();
+	}
+
+	private String currentUserId() {
+		return normalizeUserId(this.currentUserIdHolder.get());
+	}
+
+	private String normalizeUserId(String userId) {
+		return userId == null || userId.isBlank() ? "default-user" : userId.trim();
 	}
 
 	private String normalizeWriteMode(String writeMode) {
@@ -413,8 +484,15 @@ public class LearningMcpService {
 		}
 	}
 
+	private PendingMcpWrite toPendingWrite(String userId, String operation, Map<String, Object> arguments) {
+		return new PendingMcpWrite(normalizeUserId(userId), operation, safeText(String.valueOf(arguments.get("id"))),
+				safeText(String.valueOf(arguments.get("topic"))), safeText(String.valueOf(arguments.get("title"))),
+				safeText(String.valueOf(arguments.get("summary"))),
+				safeText(String.valueOf(arguments.get("nextAction"))), LocalDateTime.now());
+	}
+
 	public record LearningMcpStatus(boolean realMcpAvailable, int toolCount, List<String> toolNames, String mode,
-			boolean writeEnabled, String writeMode) {
+			boolean writeEnabled, String writeMode, PendingMcpWrite pendingWrite) {
 	}
 
 	public record McpSearchResult(String content, String source, boolean realMcpAvailable, String selectedToolName,
@@ -422,7 +500,8 @@ public class LearningMcpService {
 	}
 
 	public record McpWriteResult(String content, String source, boolean realMcpAvailable, String selectedToolName,
-			List<String> availableToolNames, String fallbackReason, boolean writeEnabled, String writeMode) {
+			List<String> availableToolNames, String fallbackReason, boolean writeEnabled, String writeMode,
+			PendingMcpWrite pendingWrite) {
 	}
 
 }

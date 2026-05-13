@@ -391,7 +391,13 @@ minimax:
     write-mode: dry-run
 ```
 
-真正落盘测试时再显式启动：
+dry-run 模式下，后端会保存一份 `PendingMcpWrite` 草稿，前端调试区会显示“确认写入”按钮。点击后调用确认接口，由后端明确执行 commit：
+
+```text
+POST /minimax/chat-client/mcp/write/confirm
+```
+
+也可以跳过确认流程，直接用 commit 模式启动，让模型工具调用时立即写入：
 
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=mcp -Dminimax.mcp.write-mode=commit
@@ -429,7 +435,9 @@ updateMcpLearningResource(id, topic, title, summary, nextAction)
 ```text
 toolCalls 中出现 createMcpLearningResource。
 dry-run 时 MCP 调试信息 mode = MCP_WRITE_DRY_RUN，不会落盘。
-commit 时 MCP 调试信息 mode = REAL_MCP，并且会写回 MCP Server。
+dry-run 调试区会出现“确认写入”按钮。
+点击确认写入后，确认接口返回 REAL_MCP，并写回 MCP Server。
+commit 启动模式下，模型工具调用会直接返回 REAL_MCP 并写回 MCP Server。
 打开 http://localhost:19000/index.html 可以看到新资源。
 ```
 

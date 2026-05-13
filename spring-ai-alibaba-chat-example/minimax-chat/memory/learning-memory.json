@@ -19,9 +19,9 @@
     "level" : "初学者",
     "topics" : [ "Tool Calling", "Skill", "Agent", "Graph", "RAG", "MCP" ],
     "lastIntent" : "MIXED",
-    "lastQuestion" : "把 Tool 和 MCP 的区别保存成一条学习资源，资源 ID 用 mcp-tool-vs-mcp，主题用 MCP。",
-    "conversationCount" : 13,
-    "updatedAt" : "2026-05-12T23:51:50.8726763"
+    "lastQuestion" : "把 Tool 和 MCP 的区别保存成一条学习资源，资源 ID 用 mcp-tool-vs-mcp，主题用 MCP，标题用 Tool 和 MCP 的区别，摘要说明 Tool 是模型可调用的函数入口，MCP 是把外部工具和资源协议化接入 Agent 的方式，下一步建议是先实现一个 Tool，再通过 MCP Server 暴露给 Agent 调用。",
+    "conversationCount" : 14,
+    "updatedAt" : "2026-05-13T13:49:37.9882218"
   },
   "user-b" : {
     "level" : "进阶",

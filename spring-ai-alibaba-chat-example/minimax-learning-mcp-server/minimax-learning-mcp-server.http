@@ -101,7 +101,7 @@ Content-Type: application/json; charset=utf-8
 # 预期：
 # - toolCalls 中出现 createMcpLearningResource。
 # - mcp profile 默认 write-mode=dry-run，不会写入 JSON。
-# - 若 minimax-chat 使用 -Dminimax.mcp.write-mode=commit 启动，则 source 为 REAL_MCP，JSON 中新增 mcp-tool-vs-mcp。
+# - 返回 mcpDebugInfo.pendingWrite，前端调试区显示“确认写入”按钮。
 POST {{minimaxChat}}/minimax/chat-client/conversation/chat
 Content-Type: application/json; charset=utf-8
 
@@ -111,14 +111,29 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### 13 验证 Agent 沉淀的资源已经写回 MCP Server
-# 前置条件：第 12 步必须在 commit 模式下执行。
+### 13 确认写入上一步 dry-run 生成的 MCP 学习资源
+# 预期：
+# - source 为 REAL_MCP。
+# - selectedToolName 指向 createLearningResource。
+# - learning-resources.json 中新增 mcp-tool-vs-mcp。
+POST {{minimaxChat}}/minimax/chat-client/mcp/write/confirm
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{userA}}"
+}
+
+### 14 验证 Agent 沉淀的资源已经写回 MCP Server
 # 预期：返回 id 为 mcp-tool-vs-mcp 的资源。
 GET {{mcpServer}}/learning-mcp/resources/mcp-tool-vs-mcp
 
-### 14 查看 minimax-chat MCP 写入安全状态
+### 15 查看 minimax-chat MCP 写入安全状态
 # 预期：
 # - writeEnabled=true 表示允许进入写入流程。
 # - writeMode=dry-run 表示只预览不落盘。
 # - writeMode=commit 表示允许真实写入 MCP Server。
 GET {{minimaxChat}}/minimax/chat-client/mcp/status
+
+### 16 取消当前用户待确认 MCP 写入草稿
+# 目标：如果第 12 步只想预览，不准备写入，可以取消 pending 草稿。
+DELETE {{minimaxChat}}/minimax/chat-client/mcp/write/pending?userId={{userA}}

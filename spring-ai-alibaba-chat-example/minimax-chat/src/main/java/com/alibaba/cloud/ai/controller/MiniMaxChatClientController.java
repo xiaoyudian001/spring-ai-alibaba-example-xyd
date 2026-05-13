@@ -25,6 +25,8 @@ import com.alibaba.cloud.ai.agent.LearningAgentService.LearningAgentMessage;
 import com.alibaba.cloud.ai.agent.LearningStreamEvent;
 import com.alibaba.cloud.ai.mcp.LearningMcpService;
 import com.alibaba.cloud.ai.mcp.LearningMcpService.LearningMcpStatus;
+import com.alibaba.cloud.ai.mcp.LearningMcpService.McpWriteResult;
+import com.alibaba.cloud.ai.mcp.PendingMcpWrite;
 import com.alibaba.cloud.ai.memory.LearningMemory;
 import com.alibaba.cloud.ai.memory.LearningMemoryService;
 import com.alibaba.cloud.ai.official.OfficialLearningAgentResult;
@@ -137,6 +139,21 @@ public class MiniMaxChatClientController {
 		return this.learningMcpService.status();
 	}
 
+	@GetMapping("/mcp/write/pending")
+	public PendingMcpWrite pendingMcpWrite(@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
+		return this.learningMcpService.pendingWrite(userId);
+	}
+
+	@PostMapping(value = "/mcp/write/confirm", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public McpWriteResult confirmMcpWrite(@RequestBody ConfirmMcpWriteRequest request) {
+		return this.learningMcpService.confirmPendingWrite(extractConfirmUserId(request));
+	}
+
+	@DeleteMapping("/mcp/write/pending")
+	public McpWriteResult cancelMcpWrite(@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
+		return this.learningMcpService.cancelPendingWrite(userId);
+	}
+
 	private String extractUserId(ChatRequest request) {
 		if (request == null || request.userId() == null || request.userId().isBlank()) {
 			return "default-user";
@@ -173,6 +190,16 @@ public class MiniMaxChatClientController {
 	}
 
 	public record ChatMessage(String role, String content) {
+	}
+
+	private String extractConfirmUserId(ConfirmMcpWriteRequest request) {
+		if (request == null || request.userId() == null || request.userId().isBlank()) {
+			return "default-user";
+		}
+		return request.userId().trim();
+	}
+
+	public record ConfirmMcpWriteRequest(String userId) {
 	}
 
 }

@@ -171,7 +171,15 @@ public class LearningMcpService {
 	}
 
 	public McpDebugInfo snapshotDebugInfo() {
-		return this.debugInfoHolder.get();
+		McpDebugInfo debugInfo = this.debugInfoHolder.get();
+		PendingMcpWrite pendingWrite = pendingWrite(currentUserId());
+		if (pendingWrite == null || debugInfo.pendingWrite() != null) {
+			return debugInfo;
+		}
+		String mode = "NOT_USED".equals(debugInfo.mode()) ? "MCP_WRITE_PENDING" : debugInfo.mode();
+		return new McpDebugInfo(mode, debugInfo.realMcpAvailable(), debugInfo.selectedToolName(),
+				debugInfo.availableToolNames(), debugInfo.fallbackReason(), debugInfo.query(), debugInfo.limit(),
+				this.writeEnabled, this.writeMode, pendingWrite);
 	}
 
 	public void clearDebugInfo() {

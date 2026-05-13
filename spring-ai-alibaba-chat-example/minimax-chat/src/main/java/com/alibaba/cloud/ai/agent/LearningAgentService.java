@@ -102,6 +102,7 @@ public class LearningAgentService {
 		LearningMemory memoryBefore = this.memoryService.read(userId);
 		LearningIntent intent = this.intentPlanner.plan(message);
 		LearningGraphResult graph = this.graphService.plan(userId, message, intent);
+		// 规划智能体的执行步骤，记录接收消息、读取记忆、意图识别和策略选择等关键环节
 		List<LearningAgentStep> steps = planSteps(message, intent, memoryBefore);
 		try {
 			steps.add(new LearningAgentStep("MODEL_CALL", "携带系统提示、历史上下文和可用工具调用 MiniMax-M2.7。"));

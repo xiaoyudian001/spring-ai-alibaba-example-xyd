@@ -1018,6 +1018,38 @@
 		return response.json();
 	}
 
+	async function fetchPendingMcpWrite(userId) {
+		const response = await fetch(`/minimax/chat-client/mcp/write/pending?userId=${encodeURIComponent(userId || currentUserId())}`);
+		if (!response.ok) return null;
+		const text = await response.text();
+		return text ? JSON.parse(text) : null;
+	}
+
+	async function mergePendingMcpWrite(mcpDebugInfo) {
+		const info = { ...(mcpDebugInfo || {}) };
+		if (!info.pendingWrite) {
+			try {
+				info.pendingWrite = await fetchPendingMcpWrite(currentUserId());
+			}
+			catch (ignored) {
+				info.pendingWrite = null;
+			}
+		}
+		if (info.pendingWrite && (!info.mode || info.mode === "NOT_USED")) {
+			info.mode = "MCP_WRITE_PENDING";
+			info.writeEnabled = info.writeEnabled ?? true;
+			info.writeMode = info.writeMode || "dry-run";
+		}
+		return info;
+	}
+
+	async function renderDebugWithPending(messageNode, intent, toolCalls, graphSteps, agentSteps, memoryBefore,
+			memoryAfter, chainMode, graphDefinition, mcpDebugInfo) {
+		const mergedMcpDebugInfo = await mergePendingMcpWrite(mcpDebugInfo);
+		renderDebug(messageNode, intent, toolCalls, graphSteps, agentSteps, memoryBefore, memoryAfter, chainMode,
+			graphDefinition, mergedMcpDebugInfo);
+	}
+
 	async function sendConversationStream(message, target, messageNode) {
 		const response = await fetch("/minimax/chat-client/conversation/stream", {
 			method: "POST",
@@ -1056,7 +1088,7 @@
 					debugData = payload;
 				}
 				else if (type === "done") {
-					renderDebug(messageNode, debugData.intent, payload.toolCalls || [],
+					await renderDebugWithPending(messageNode, debugData.intent, payload.toolCalls || [],
 						payload.graphSteps || debugData.graphSteps || [], payload.agentSteps || debugData.agentSteps || [],
 						debugData.memoryBefore, payload.memoryAfter, currentAgentModeLabel(), payload.graphDefinition,
 						payload.mcpDebugInfo || debugData.mcpDebugInfo);
@@ -1093,7 +1125,7 @@
 				const data = await sendConversation(message);
 				answer = cleanAssistantText(data.content || "");
 				setAssistantContent(assistant, answer);
-				renderDebug(assistantNode, data.intent, data.toolCalls || [], data.graphSteps || [],
+				await renderDebugWithPending(assistantNode, data.intent, data.toolCalls || [], data.graphSteps || [],
 					data.agentSteps || [], data.memoryBefore, data.memoryAfter, currentAgentModeLabel(),
 					data.graphDefinition, data.mcpDebugInfo);
 			}

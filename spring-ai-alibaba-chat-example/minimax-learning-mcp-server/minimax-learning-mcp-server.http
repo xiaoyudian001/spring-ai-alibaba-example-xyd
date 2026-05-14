@@ -159,3 +159,18 @@ GET {{minimaxChat}}/minimax/chat-client/evaluation/runs?limit=5
 ### 20 清空 Agent 规则评估
 # 预期：返回 deleted，表示删除的评估数量。
 DELETE {{minimaxChat}}/minimax/chat-client/evaluation/runs
+
+### 21 对最近一轮 AgentRunReport 执行 AI 评审
+# 前置：至少执行过一次 /conversation/chat、/official-agent/chat 或 /official-graph/chat。
+# 预期：
+# - 返回 relevanceScore/helpfulnessScore/clarityScore/groundingScore/overallScore。
+# - report/agent-judges.json 新增一条记录。
+POST {{minimaxChat}}/minimax/chat-client/judge/latest
+
+### 22 查看最近 AI 评审记录
+# 预期：返回最近 AI Judge 结果。
+GET {{minimaxChat}}/minimax/chat-client/judge/runs?limit=5
+
+### 23 清空 AI 评审记录
+# 预期：返回 deleted，表示删除的 AI 评审数量。
+DELETE {{minimaxChat}}/minimax/chat-client/judge/runs

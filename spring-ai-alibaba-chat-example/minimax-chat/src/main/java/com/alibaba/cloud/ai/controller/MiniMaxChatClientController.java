@@ -26,6 +26,8 @@ import com.alibaba.cloud.ai.agent.LearningAgentService.LearningAgentMessage;
 import com.alibaba.cloud.ai.agent.LearningStreamEvent;
 import com.alibaba.cloud.ai.evaluation.AgentEvaluationResult;
 import com.alibaba.cloud.ai.evaluation.AgentEvaluationService;
+import com.alibaba.cloud.ai.judge.AgentJudgeResult;
+import com.alibaba.cloud.ai.judge.AgentJudgeService;
 import com.alibaba.cloud.ai.mcp.LearningMcpService;
 import com.alibaba.cloud.ai.mcp.LearningMcpService.LearningMcpStatus;
 import com.alibaba.cloud.ai.mcp.LearningMcpService.McpWriteResult;
@@ -81,11 +83,13 @@ public class MiniMaxChatClientController {
 
 	private final AgentEvaluationService agentEvaluationService;
 
+	private final AgentJudgeService agentJudgeService;
+
 	public MiniMaxChatClientController(ChatModel chatModel, LearningAgentService learningAgentService,
 			LearningMemoryService learningMemoryService, LearningMcpService learningMcpService,
 			OfficialLearningAgentService officialLearningAgentService,
 			OfficialLearningGraphService officialLearningGraphService, AgentRunReportService agentRunReportService,
-			AgentEvaluationService agentEvaluationService) {
+			AgentEvaluationService agentEvaluationService, AgentJudgeService agentJudgeService) {
 		this.learningAgentService = learningAgentService;
 		this.learningMemoryService = learningMemoryService;
 		this.learningMcpService = learningMcpService;
@@ -93,6 +97,7 @@ public class MiniMaxChatClientController {
 		this.officialLearningGraphService = officialLearningGraphService;
 		this.agentRunReportService = agentRunReportService;
 		this.agentEvaluationService = agentEvaluationService;
+		this.agentJudgeService = agentJudgeService;
 		this.chatClient = ChatClient.builder(chatModel)
 				.defaultAdvisors(new SimpleLoggerAdvisor())
 				.defaultOptions(defaultOptions())
@@ -215,6 +220,21 @@ public class MiniMaxChatClientController {
 	@DeleteMapping("/evaluation/runs")
 	public ClearReportResponse clearAgentEvaluations() {
 		return new ClearReportResponse(this.agentEvaluationService.clear());
+	}
+
+	@PostMapping("/judge/latest")
+	public AgentJudgeResult judgeLatest() {
+		return this.agentJudgeService.judgeLatest();
+	}
+
+	@GetMapping("/judge/runs")
+	public List<AgentJudgeResult> agentJudges(@RequestParam(value = "limit", defaultValue = "20") int limit) {
+		return this.agentJudgeService.latest(limit);
+	}
+
+	@DeleteMapping("/judge/runs")
+	public ClearReportResponse clearAgentJudges() {
+		return new ClearReportResponse(this.agentJudgeService.clear());
 	}
 
 	private String extractUserId(ChatRequest request) {

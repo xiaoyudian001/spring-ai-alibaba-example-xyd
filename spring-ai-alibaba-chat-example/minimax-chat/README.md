@@ -686,3 +686,40 @@ Agent 执行
  -> Dashboard
  -> 继续优化 Planner / Tool / Memory / RAG / MCP
 ```
+
+## 18. LLM-as-Judge AI 评审
+
+规则评估只能判断工具、Memory、MCP 等链路是否按预期执行，不能很好判断回答质量。`AgentJudgeService` 提供手动触发的 LLM-as-Judge 能力，会读取最近一条 `AgentRunReport`，调用 MiniMax-M2.7 进行质量评审，并写入：
+
+```text
+report/agent-judges.json
+```
+
+AI 评审维度：
+
+- `relevanceScore`：回答是否贴合用户问题
+- `helpfulnessScore`：回答是否有帮助、是否可执行
+- `clarityScore`：表达是否清晰
+- `groundingScore`：是否合理基于 Tool、RAG、MCP、Memory、Graph 等上下文
+- `riskNotes`：潜在问题、幻觉风险或工具使用不足
+- `improvementAdvice`：下一步如何优化 Agent
+
+触发最近一轮 AI 评审：
+
+```http
+POST /minimax/chat-client/judge/latest
+```
+
+查看最近 5 条 AI 评审：
+
+```http
+GET /minimax/chat-client/judge/runs?limit=5
+```
+
+清空 AI 评审：
+
+```http
+DELETE /minimax/chat-client/judge/runs
+```
+
+前端页面提供“AI 评审”按钮。这个能力是手动触发的，因为它会额外调用一次大模型。

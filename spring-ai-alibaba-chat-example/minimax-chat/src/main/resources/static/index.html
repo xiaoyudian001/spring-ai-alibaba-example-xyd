@@ -700,6 +700,7 @@
 					<span class="capability">MCP 写入</span>
 					<span class="capability">执行报告</span>
 					<span class="capability">规则评估</span>
+					<span class="capability">AI 评审</span>
 					<span class="capability">流式调试</span>
 				</div>
 			</div>
@@ -790,6 +791,7 @@
 				<button id="viewMemoryButton" class="secondary" type="button">查看记忆</button>
 				<button id="viewReportButton" class="secondary" type="button">查看报告</button>
 				<button id="viewEvaluationButton" class="secondary" type="button">查看评估</button>
+				<button id="judgeButton" class="secondary" type="button">AI 评审</button>
 				<button id="clearMemoryButton" class="secondary" type="button">清空记忆</button>
 				<button id="clearButton" class="secondary" type="button">清空上下文</button>
 				<button id="sendButton" class="primary" type="submit">发送</button>
@@ -809,6 +811,7 @@
 	const viewMemoryButton = document.getElementById("viewMemoryButton");
 	const viewReportButton = document.getElementById("viewReportButton");
 	const viewEvaluationButton = document.getElementById("viewEvaluationButton");
+	const judgeButton = document.getElementById("judgeButton");
 	const refreshEvaluationButton = document.getElementById("refreshEvaluationButton");
 	const averageScoreStat = document.getElementById("averageScoreStat");
 	const passCountStat = document.getElementById("passCountStat");
@@ -1198,6 +1201,20 @@
 		return response.json();
 	}
 
+	async function judgeLatestRun() {
+		const response = await fetch("/minimax/chat-client/judge/latest", {
+			method: "POST"
+		});
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		return response.json();
+	}
+
+	async function fetchAgentJudges() {
+		const response = await fetch("/minimax/chat-client/judge/runs?limit=5");
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		return response.json();
+	}
+
 	function formatAgentRunReports(reports) {
 		if (!reports || !reports.length) {
 			return "当前还没有 Agent 执行报告。先发送一轮对话，再回来查看。";
@@ -1231,6 +1248,35 @@
 				+ `- 报告 ID：${evaluation.reportId || ""}\n`
 				+ `- 总体：${evaluation.passed ? "通过" : "需要关注"}\n`
 				+ `${checks}`;
+		}).join("\n\n");
+	}
+
+	function formatAgentJudge(judge) {
+		if (!judge) return "当前没有 AI 评审结果。";
+		return `### AI 评审结果：${judge.status || "UNKNOWN"}\n`
+			+ `- 报告 ID：${judge.reportId || "暂无"}\n`
+			+ `- 链路：${judge.chainMode || "UNKNOWN"}\n`
+			+ `- 相关性：${judge.relevanceScore ?? 0}/10\n`
+			+ `- 帮助性：${judge.helpfulnessScore ?? 0}/10\n`
+			+ `- 清晰度：${judge.clarityScore ?? 0}/10\n`
+			+ `- 依据性：${judge.groundingScore ?? 0}/10\n`
+			+ `- 综合分：${judge.overallScore ?? 0}/10\n`
+			+ `- 风险：${judge.riskNotes || "暂无"}\n`
+			+ `- 改进建议：${judge.improvementAdvice || "暂无"}`;
+	}
+
+	function formatAgentJudges(judges) {
+		if (!judges || !judges.length) {
+			return "当前还没有 AI 评审记录。点击 AI 评审后会生成。";
+		}
+		return judges.map((judge, index) => {
+			return `### ${index + 1}. ${judge.status || "UNKNOWN"} ${judge.overallScore ?? 0}/10\n`
+				+ `- 时间：${judge.createdAt || ""}\n`
+				+ `- 用户：${judge.userId || currentUserId()}\n`
+				+ `- 链路：${judge.chainMode || "UNKNOWN"}\n`
+				+ `- 问题：${judge.question || ""}\n`
+				+ `- 风险：${judge.riskNotes || "暂无"}\n`
+				+ `- 建议：${judge.improvementAdvice || "暂无"}`;
 		}).join("\n\n");
 	}
 
@@ -1519,6 +1565,26 @@
 		}
 		catch (error) {
 			appendMessage("error", `查看评估失败：${error.message}`);
+		}
+	});
+
+	judgeButton.addEventListener("click", async () => {
+		judgeButton.disabled = true;
+		judgeButton.textContent = "评审中";
+		try {
+			const judge = await judgeLatestRun();
+			appendMessage("assistant", formatAgentJudge(judge));
+			const judges = await fetchAgentJudges();
+			if (judges && judges.length > 1) {
+				appendMessage("assistant", `最近 AI 评审记录：\n${formatAgentJudges(judges.slice(0, 3))}`);
+			}
+		}
+		catch (error) {
+			appendMessage("error", `AI 评审失败：${error.message}`);
+		}
+		finally {
+			judgeButton.disabled = false;
+			judgeButton.textContent = "AI 评审";
 		}
 	});
 

@@ -91,6 +91,7 @@ flowchart TD
 | 14 | Agent 执行报告 | 前端按钮或 HTTP | `report/agent-runs.json` 记录每轮链路 |
 | 15 | Agent 规则评估 | 前端按钮或 HTTP | `report/agent-evaluations.json` 记录规则评分 |
 | 16 | Evaluation Dashboard | 前端页面 | 最近 5 轮评估趋势和风险项 |
+| 17 | LLM-as-Judge | 前端按钮或 HTTP | `report/agent-judges.json` 记录 AI 质量评审 |
 
 ## 1. 基础聊天测试
 
@@ -734,4 +735,45 @@ WARN / FAIL 数量
 Dashboard 平均得分更新。
 最近等级显示 PASS / WARN / FAIL。
 卡片中可以看到链路模式、意图、用户和需要关注的检查项。
+```
+
+## 17. LLM-as-Judge AI 评审测试
+
+这一阶段让 MiniMax-M2.7 作为 Judge，对最近一轮 AgentRunReport 做回答质量评审。它是手动触发能力，不会每轮自动调用，避免额外模型消耗。
+
+评审文件：
+
+```text
+report/agent-judges.json
+```
+
+测试步骤：
+
+```text
+1. 先发送一轮对话，确保 report/agent-runs.json 已有记录。
+2. 点击前端“AI 评审”按钮。
+3. 查看页面返回的 relevance/helpfulness/clarity/grounding 综合评审。
+4. 检查 report/agent-judges.json 是否新增记录。
+```
+
+HTTP 测试：
+
+```http
+POST /minimax/chat-client/judge/latest
+GET /minimax/chat-client/judge/runs?limit=5
+DELETE /minimax/chat-client/judge/runs
+```
+
+推荐测试问题：
+
+```text
+请根据当前项目解释 Tool、Skill、Agent、Memory、RAG、MCP 和 Graph 的调用关系，并给出下一步学习建议。
+```
+
+预期：
+
+```text
+AI 评审返回 4 个 0-10 分的维度评分。
+riskNotes 指出潜在问题。
+improvementAdvice 给出下一步优化建议。
 ```

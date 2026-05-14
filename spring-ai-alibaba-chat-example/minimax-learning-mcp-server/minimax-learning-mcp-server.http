@@ -137,3 +137,25 @@ GET {{minimaxChat}}/minimax/chat-client/mcp/status
 ### 16 取消当前用户待确认 MCP 写入草稿
 # 目标：如果第 12 步只想预览，不准备写入，可以取消 pending 草稿。
 DELETE {{minimaxChat}}/minimax/chat-client/mcp/write/pending?userId={{userA}}
+
+### 17 查看最近 Agent 执行报告
+# 预期：
+# - 返回最近执行记录。
+# - chainMode 显示 HANDWRITTEN_AGENT / OFFICIAL_REACT_AGENT / OFFICIAL_STATE_GRAPH。
+# - 包含 intent、mcpMode、toolCallCount、pendingMcpWrite 等字段。
+GET {{minimaxChat}}/minimax/chat-client/report/runs?limit=5
+
+### 18 清空 Agent 执行报告
+# 预期：返回 deleted，表示删除的报告数量。
+DELETE {{minimaxChat}}/minimax/chat-client/report/runs
+
+### 19 查看最近 Agent 规则评估
+# 预期：
+# - 返回最近评估记录。
+# - 包含 score、maxScore、level 和 checks。
+# - checks 中可以看到意图识别、回答非空、Memory 更新、时间工具、MCP 写入意图、项目知识检索。
+GET {{minimaxChat}}/minimax/chat-client/evaluation/runs?limit=5
+
+### 20 清空 Agent 规则评估
+# 预期：返回 deleted，表示删除的评估数量。
+DELETE {{minimaxChat}}/minimax/chat-client/evaluation/runs

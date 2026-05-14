@@ -532,6 +532,8 @@ minimax-tool-calling.http
 | 14 | 写入 user-a Memory | `minimax-chat.http` | `POST /minimax/chat-client/conversation/chat` | `user-a` 关注主题更新为 Agent |
 | 15 | 写入 user-b Memory | `minimax-chat.http` | `POST /minimax/chat-client/conversation/chat` | `user-b` 关注主题更新为 RAG |
 | 16 | 验证多用户隔离 | `minimax-chat.http` | `GET /minimax/chat-client/memory` | `user-a` 和 `user-b` 记忆互不影响 |
+| 17 | 查看 Agent 执行报告 | 页面按钮或 HTTP | `GET /minimax/chat-client/report/runs?limit=5` | 返回最近执行链路、意图、Tool、MCP 和 Memory 摘要 |
+| 18 | 查看 Agent 规则评估 | 页面按钮或 HTTP | `GET /minimax/chat-client/evaluation/runs?limit=5` | 返回每轮规则评分和检查项 |
 
 ### 专项能力用例
 
@@ -556,6 +558,8 @@ minimax-tool-calling.http
 4. Memory 管理：12-13
 5. 多用户隔离：14-16
 6. Tool/RAG/Graph 专项：minimax-tool-calling.http
+7. Agent 执行报告：GET /minimax/chat-client/report/runs?limit=5
+8. Agent 规则评估：GET /minimax/chat-client/evaluation/runs?limit=5
 ```
 
 ### 关键断言
@@ -590,3 +594,65 @@ Memory 持久化文件应按用户 ID 分组：
   "user-b": {}
 }
 ```
+
+## 15. Agent 执行报告
+
+每轮同步对话、流式对话、官方 ReactAgent 和官方 StateGraph 调用结束后，`AgentRunReportService` 会把本轮执行过程写入：
+
+```text
+report/agent-runs.json
+```
+
+报告内容包括：
+
+- 用户 ID、用户问题、链路模式和历史上下文条数
+- Planner 识别出的意图
+- Memory 调用前后状态
+- Agent 步骤、Graph 节点和 Tool 调用次数
+- MCP 模式、是否存在待确认写入
+- 最终回答摘要
+
+查看最近 5 条报告：
+
+```http
+GET /minimax/chat-client/report/runs?limit=5
+```
+
+清空报告：
+
+```http
+DELETE /minimax/chat-client/report/runs
+```
+
+前端页面也提供“查看报告”按钮，用于快速复盘最近几轮 Agent 执行链路。这个能力为下一步做 Agent Evaluation 打基础。
+
+## 16. Agent 规则评估
+
+每轮执行报告保存后，`AgentEvaluationService` 会基于 `AgentRunReport` 自动生成规则评估，并写入：
+
+```text
+report/agent-evaluations.json
+```
+
+当前评估不额外调用大模型，先使用确定性规则检查：
+
+- Planner 是否返回有效意图
+- 最终回答摘要是否为空
+- Memory 是否在本轮后发生变化
+- 时间类问题是否调用 `getCurrentTime`
+- 保存/沉淀资源诉求是否触发 MCP 写入或待确认写入
+- 项目知识类问题是否调用 RAG 或 MCP 检索
+
+查看最近 5 条评估：
+
+```http
+GET /minimax/chat-client/evaluation/runs?limit=5
+```
+
+清空评估：
+
+```http
+DELETE /minimax/chat-client/evaluation/runs
+```
+
+前端页面提供“查看评估”按钮。评估结果中的 `score/maxScore` 可以帮助你判断本轮 Agent 是否按预期执行，`checks` 会列出每个规则的通过、未通过或跳过原因。

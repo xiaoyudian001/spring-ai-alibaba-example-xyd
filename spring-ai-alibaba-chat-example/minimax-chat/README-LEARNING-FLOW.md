@@ -88,6 +88,8 @@ flowchart TD
 | 11 | 真实 MCP | `mcp` profile | `mcpDebugInfo.mode=REAL_MCP` |
 | 12 | MCP 可观测性 | 前端调试区 | MCP Tool、fallback、可用工具 |
 | 13 | MCP 资源写入 | 前端页面 | `createMcpLearningResource` 写回 MCP Server |
+| 14 | Agent 执行报告 | 前端按钮或 HTTP | `report/agent-runs.json` 记录每轮链路 |
+| 15 | Agent 规则评估 | 前端按钮或 HTTP | `report/agent-evaluations.json` 记录规则评分 |
 
 ## 1. 基础聊天测试
 
@@ -582,3 +584,108 @@ DELETE http://localhost:8080/minimax/chat-client/mcp/write/pending?userId=user-a
 ```
 
 这条路线跑通后，可以继续进入下一阶段：把 MCP Server 的资源从内存列表升级为文件、数据库或外部知识库。
+
+## 14. Agent 执行报告测试
+
+这一阶段把每轮 Agent 调用沉淀为本地 JSON 报告，方便复盘和后续做 Evaluation。
+
+报告文件：
+
+```text
+report/agent-runs.json
+```
+
+触发方式：
+
+```text
+任意发送一轮同步、流式、官方 Agent 或官方 Graph 对话。
+```
+
+查看最近报告：
+
+```http
+GET /minimax/chat-client/report/runs?limit=5
+```
+
+前端也可以点击“查看报告”。
+
+重点观察：
+
+```text
+chainMode       当前链路：HANDWRITTEN_AGENT / HANDWRITTEN_AGENT_STREAM / OFFICIAL_REACT_AGENT / OFFICIAL_STATE_GRAPH
+intent          Planner 识别意图
+memoryBefore    调用前 Memory
+memoryAfter     调用后 Memory
+toolCallCount   Tool 调用次数
+graphStepCount  Graph 节点数
+mcpMode         MCP 调用模式
+pendingMcpWrite 是否有待确认 MCP 写入
+```
+
+推荐测试问题：
+
+```text
+请通过 MCP 查询 Agent 和 Graph 的学习资源，并给我一个 30 分钟学习计划。
+```
+
+如果要验证写入报告，可以输入：
+
+```text
+把 Tool 和 MCP 的区别保存成一条学习资源，资源 ID 用 mcp-tool-vs-mcp。
+```
+
+预期：
+
+```text
+report/agent-runs.json 新增一条记录。
+前端“查看报告”显示最近记录。
+pendingMcpWrite=true 表示本轮产生了待确认 MCP 写入。
+```
+
+## 15. Agent 规则评估测试
+
+这一阶段基于上一阶段的执行报告生成规则评估，帮助判断 Agent 是否按预期使用 Planner、Tool、Memory、RAG 和 MCP。
+
+评估文件：
+
+```text
+report/agent-evaluations.json
+```
+
+触发方式：
+
+```text
+任意发送一轮同步、流式、官方 Agent 或官方 Graph 对话。
+```
+
+查看最近评估：
+
+```http
+GET /minimax/chat-client/evaluation/runs?limit=5
+```
+
+前端也可以点击“查看评估”。
+
+重点观察：
+
+```text
+score/maxScore   本轮适用规则的得分
+level            PASS / WARN / FAIL
+checks           每个规则是否适用、是否通过和原因
+reportId         对应的 AgentRunReport ID
+```
+
+推荐测试问题：
+
+```text
+现在北京时间几点？然后根据当前项目给我一个 30 分钟 Agent 学习计划。
+```
+
+预期：
+
+```text
+时间工具检查通过：调用 getCurrentTime。
+项目知识检索检查通过：调用 RAG 或 MCP。
+Memory 更新检查通过：memoryAfter 不同于 memoryBefore。
+report/agent-evaluations.json 新增一条评估记录。
+```

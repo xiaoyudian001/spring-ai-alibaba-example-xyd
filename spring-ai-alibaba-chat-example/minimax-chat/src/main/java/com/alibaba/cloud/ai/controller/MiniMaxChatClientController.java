@@ -18,11 +18,14 @@ package com.alibaba.cloud.ai.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.alibaba.cloud.ai.agent.LearningAgentResult;
 import com.alibaba.cloud.ai.agent.LearningAgentService;
 import com.alibaba.cloud.ai.agent.LearningAgentService.LearningAgentMessage;
 import com.alibaba.cloud.ai.agent.LearningStreamEvent;
+import com.alibaba.cloud.ai.evaluation.AgentEvaluationResult;
+import com.alibaba.cloud.ai.evaluation.AgentEvaluationService;
 import com.alibaba.cloud.ai.mcp.LearningMcpService;
 import com.alibaba.cloud.ai.mcp.LearningMcpService.LearningMcpStatus;
 import com.alibaba.cloud.ai.mcp.LearningMcpService.McpWriteResult;
@@ -33,6 +36,8 @@ import com.alibaba.cloud.ai.official.OfficialLearningAgentResult;
 import com.alibaba.cloud.ai.official.OfficialLearningAgentService;
 import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphResult;
 import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphService;
+import com.alibaba.cloud.ai.report.AgentRunReport;
+import com.alibaba.cloud.ai.report.AgentRunReportService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -72,15 +77,22 @@ public class MiniMaxChatClientController {
 
 	private final OfficialLearningGraphService officialLearningGraphService;
 
+	private final AgentRunReportService agentRunReportService;
+
+	private final AgentEvaluationService agentEvaluationService;
+
 	public MiniMaxChatClientController(ChatModel chatModel, LearningAgentService learningAgentService,
 			LearningMemoryService learningMemoryService, LearningMcpService learningMcpService,
 			OfficialLearningAgentService officialLearningAgentService,
-			OfficialLearningGraphService officialLearningGraphService) {
+			OfficialLearningGraphService officialLearningGraphService, AgentRunReportService agentRunReportService,
+			AgentEvaluationService agentEvaluationService) {
 		this.learningAgentService = learningAgentService;
 		this.learningMemoryService = learningMemoryService;
 		this.learningMcpService = learningMcpService;
 		this.officialLearningAgentService = officialLearningAgentService;
 		this.officialLearningGraphService = officialLearningGraphService;
+		this.agentRunReportService = agentRunReportService;
+		this.agentEvaluationService = agentEvaluationService;
 		this.chatClient = ChatClient.builder(chatModel)
 				.defaultAdvisors(new SimpleLoggerAdvisor())
 				.defaultOptions(defaultOptions())
@@ -101,7 +113,12 @@ public class MiniMaxChatClientController {
 
 	@PostMapping(value = "/conversation/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public LearningAgentResult conversationChat(@RequestBody ChatRequest request) {
-		return this.learningAgentService.chat(extractUserId(request), extractMessage(request), toAgentHistory(request));
+		String userId = extractUserId(request);
+		String message = extractMessage(request);
+		List<LearningAgentMessage> history = toAgentHistory(request);
+		LearningAgentResult result = this.learningAgentService.chat(userId, message, history);
+		saveEvaluation(this.agentRunReportService.saveHandwritten(userId, message, history.size(), result));
+		return result;
 	}
 
 	@PostMapping(value = "/conversation/stream", consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -109,19 +126,45 @@ public class MiniMaxChatClientController {
 	public Flux<ServerSentEvent<LearningStreamEvent>> conversationStream(@RequestBody ChatRequest request,
 			HttpServletResponse response) {
 		response.setCharacterEncoding("UTF-8");
-		return this.learningAgentService.streamEvents(extractUserId(request), extractMessage(request),
-				toAgentHistory(request))
+		String userId = extractUserId(request);
+		String message = extractMessage(request);
+		List<LearningAgentMessage> history = toAgentHistory(request);
+		AtomicReference<LearningStreamEvent> debugEvent = new AtomicReference<>();
+		StringBuilder content = new StringBuilder();
+		return this.learningAgentService.streamEvents(userId, message, history)
+				.doOnNext(event -> {
+					if ("debug".equals(event.type())) {
+						debugEvent.set(event);
+					}
+					else if ("message".equals(event.type())) {
+						content.append(event.content() == null ? "" : event.content());
+					}
+					else if ("done".equals(event.type())) {
+						saveEvaluation(this.agentRunReportService.saveStream(userId, message, history.size(),
+								content.toString(), debugEvent.get(), event));
+					}
+				})
 				.map(event -> ServerSentEvent.builder(event).event(event.type()).build());
 	}
 
 	@PostMapping(value = "/official-agent/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public OfficialLearningAgentResult officialAgentChat(@RequestBody ChatRequest request) {
-		return this.officialLearningAgentService.chat(extractUserId(request), extractMessage(request));
+		String userId = extractUserId(request);
+		String message = extractMessage(request);
+		List<LearningAgentMessage> history = toAgentHistory(request);
+		OfficialLearningAgentResult result = this.officialLearningAgentService.chat(userId, message);
+		saveEvaluation(this.agentRunReportService.saveOfficialAgent(userId, message, history.size(), result));
+		return result;
 	}
 
 	@PostMapping(value = "/official-graph/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public OfficialLearningGraphResult officialGraphChat(@RequestBody ChatRequest request) {
-		return this.officialLearningGraphService.chat(extractUserId(request), extractMessage(request));
+		String userId = extractUserId(request);
+		String message = extractMessage(request);
+		List<LearningAgentMessage> history = toAgentHistory(request);
+		OfficialLearningGraphResult result = this.officialLearningGraphService.chat(userId, message);
+		saveEvaluation(this.agentRunReportService.saveOfficialGraph(userId, message, history.size(), result));
+		return result;
 	}
 
 	@GetMapping("/memory")
@@ -152,6 +195,26 @@ public class MiniMaxChatClientController {
 	@DeleteMapping("/mcp/write/pending")
 	public McpWriteResult cancelMcpWrite(@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
 		return this.learningMcpService.cancelPendingWrite(userId);
+	}
+
+	@GetMapping("/report/runs")
+	public List<AgentRunReport> agentRunReports(@RequestParam(value = "limit", defaultValue = "20") int limit) {
+		return this.agentRunReportService.latest(limit);
+	}
+
+	@DeleteMapping("/report/runs")
+	public ClearReportResponse clearAgentRunReports() {
+		return new ClearReportResponse(this.agentRunReportService.clear());
+	}
+
+	@GetMapping("/evaluation/runs")
+	public List<AgentEvaluationResult> agentEvaluations(@RequestParam(value = "limit", defaultValue = "20") int limit) {
+		return this.agentEvaluationService.latest(limit);
+	}
+
+	@DeleteMapping("/evaluation/runs")
+	public ClearReportResponse clearAgentEvaluations() {
+		return new ClearReportResponse(this.agentEvaluationService.clear());
 	}
 
 	private String extractUserId(ChatRequest request) {
@@ -186,6 +249,10 @@ public class MiniMaxChatClientController {
 				.build();
 	}
 
+	private void saveEvaluation(AgentRunReport report) {
+		this.agentEvaluationService.evaluateAndSave(report);
+	}
+
 	public record ChatRequest(String userId, String message, List<ChatMessage> history) {
 	}
 
@@ -200,6 +267,9 @@ public class MiniMaxChatClientController {
 	}
 
 	public record ConfirmMcpWriteRequest(String userId) {
+	}
+
+	public record ClearReportResponse(int deleted) {
 	}
 
 }

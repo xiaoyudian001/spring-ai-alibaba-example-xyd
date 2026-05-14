@@ -556,6 +556,8 @@
 					<span class="capability">Graph</span>
 					<span class="capability">MCP Client</span>
 					<span class="capability">MCP 写入</span>
+					<span class="capability">执行报告</span>
+					<span class="capability">规则评估</span>
 					<span class="capability">流式调试</span>
 				</div>
 			</div>
@@ -613,6 +615,8 @@
 			</div>
 			<div class="composer-actions">
 				<button id="viewMemoryButton" class="secondary" type="button">查看记忆</button>
+				<button id="viewReportButton" class="secondary" type="button">查看报告</button>
+				<button id="viewEvaluationButton" class="secondary" type="button">查看评估</button>
 				<button id="clearMemoryButton" class="secondary" type="button">清空记忆</button>
 				<button id="clearButton" class="secondary" type="button">清空上下文</button>
 				<button id="sendButton" class="primary" type="submit">发送</button>
@@ -630,6 +634,8 @@
 	const modeInputs = Array.from(document.querySelectorAll("input[name='modeSelect']"));
 	const debugToggle = document.getElementById("debugToggle");
 	const viewMemoryButton = document.getElementById("viewMemoryButton");
+	const viewReportButton = document.getElementById("viewReportButton");
+	const viewEvaluationButton = document.getElementById("viewEvaluationButton");
 	const clearMemoryButton = document.getElementById("clearMemoryButton");
 	const sendButton = document.getElementById("sendButton");
 	const clearButton = document.getElementById("clearButton");
@@ -1000,6 +1006,54 @@
 		return response.json();
 	}
 
+	async function fetchAgentRunReports() {
+		const response = await fetch("/minimax/chat-client/report/runs?limit=5");
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		return response.json();
+	}
+
+	async function fetchAgentEvaluations() {
+		const response = await fetch("/minimax/chat-client/evaluation/runs?limit=5");
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		return response.json();
+	}
+
+	function formatAgentRunReports(reports) {
+		if (!reports || !reports.length) {
+			return "当前还没有 Agent 执行报告。先发送一轮对话，再回来查看。";
+		}
+		return reports.map((report, index) => {
+			const pending = report.pendingMcpWrite ? "是" : "否";
+			return `### ${index + 1}. ${report.chainMode || "UNKNOWN"}\n`
+				+ `- 时间：${report.createdAt || ""}\n`
+				+ `- 用户：${report.userId || currentUserId()}\n`
+				+ `- 意图：${report.intent || "UNKNOWN"}\n`
+				+ `- MCP：${report.mcpMode || "NOT_USED"}，待确认写入：${pending}\n`
+				+ `- Tool 调用：${report.toolCallCount ?? 0} 次，Agent 步骤：${report.agentStepCount ?? 0} 步，Graph 节点：${report.graphStepCount ?? 0} 个\n`
+				+ `- 问题：${report.message || ""}\n`
+				+ `- 摘要：${report.answerSummary || ""}`;
+		}).join("\n\n");
+	}
+
+	function formatAgentEvaluations(evaluations) {
+		if (!evaluations || !evaluations.length) {
+			return "当前还没有 Agent 评估结果。先发送一轮对话，再回来查看。";
+		}
+		return evaluations.map((evaluation, index) => {
+			const checks = (evaluation.checks || []).map(check => {
+				const state = !check.applicable ? "跳过" : check.passed ? "通过" : "未通过";
+				return `  - ${check.name || "检查项"}：${state}。${check.detail || ""}`;
+			}).join("\n");
+			return `### ${index + 1}. ${evaluation.level || "UNKNOWN"} (${evaluation.score ?? 0}/${evaluation.maxScore ?? 0})\n`
+				+ `- 用户：${evaluation.userId || currentUserId()}\n`
+				+ `- 链路：${evaluation.chainMode || "UNKNOWN"}\n`
+				+ `- 意图：${evaluation.intent || "UNKNOWN"}\n`
+				+ `- 报告 ID：${evaluation.reportId || ""}\n`
+				+ `- 总体：${evaluation.passed ? "通过" : "需要关注"}\n`
+				+ `${checks}`;
+		}).join("\n\n");
+	}
+
 	async function confirmMcpWrite(userId) {
 		const response = await fetch("/minimax/chat-client/mcp/write/confirm", {
 			method: "POST",
@@ -1187,6 +1241,26 @@
 		}
 		catch (error) {
 			appendMessage("error", `查看记忆失败：${error.message}`);
+		}
+	});
+
+	viewReportButton.addEventListener("click", async () => {
+		try {
+			const reports = await fetchAgentRunReports();
+			appendMessage("assistant", formatAgentRunReports(reports));
+		}
+		catch (error) {
+			appendMessage("error", `查看执行报告失败：${error.message}`);
+		}
+	});
+
+	viewEvaluationButton.addEventListener("click", async () => {
+		try {
+			const evaluations = await fetchAgentEvaluations();
+			appendMessage("assistant", formatAgentEvaluations(evaluations));
+		}
+		catch (error) {
+			appendMessage("error", `查看评估失败：${error.message}`);
 		}
 	});
 

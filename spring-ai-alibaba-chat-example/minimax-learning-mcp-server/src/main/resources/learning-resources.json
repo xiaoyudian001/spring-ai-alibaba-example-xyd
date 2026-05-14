@@ -41,9 +41,9 @@
   "summary" : "MCP 把外部工具和资源作为协议化能力提供给 Agent。minimax-chat 是 MCP Client，本模块是真实 MCP Server。",
   "nextAction" : "启动本模块后访问 /minimax/chat-client/mcp/status，确认 mode 为 REAL_MCP_READY。"
 }, {
-  "id" : "mcp-tool-vs-mcp",
+  "id" : "tool-mcp-difference",
   "topic" : "MCP",
-  "title" : "Tool 与 MCP 的区别",
-  "summary" : "对比 Tool（工具）和 MCP（Model Context Protocol）的核心定义、用途和区别，解决初学者容易混淆两者的学习痛点",
-  "nextAction" : "建议继续学习 MCP Server 的实现机制，了解 MCP Node 如何连接外部服务"
+  "title" : "Tool 和 MCP 区别",
+  "summary" : "Tool 是模型可调用的单个能力，MCP 是连接外部工具和资源的协议",
+  "nextAction" : "在 minimax-chat 项目中观察 Tool 的实现（如 MiniMaxLearningTools）和 MCP Server 的配置，理解两者如何协同工作"
 } ]

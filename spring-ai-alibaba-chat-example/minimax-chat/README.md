@@ -656,3 +656,33 @@ DELETE /minimax/chat-client/evaluation/runs
 ```
 
 前端页面提供“查看评估”按钮。评估结果中的 `score/maxScore` 可以帮助你判断本轮 Agent 是否按预期执行，`checks` 会列出每个规则的通过、未通过或跳过原因。
+
+## 17. Evaluation Dashboard
+
+前端页面在聊天窗口下方提供轻量 Dashboard，用于观察最近 5 轮 Agent 规则评估趋势。
+
+Dashboard 展示：
+
+- 最近 5 轮平均得分
+- PASS 数量
+- WARN / FAIL 数量
+- 最近一次评估等级
+- 每轮链路模式、意图、用户和需要关注的检查项
+
+页面加载时会自动读取：
+
+```http
+GET /minimax/chat-client/evaluation/runs?limit=5
+```
+
+每次完成一轮对话后也会自动刷新。也可以点击“刷新评估”手动更新。
+
+这一层的目标是把 Agent 工程链路闭环可视化：
+
+```text
+Agent 执行
+ -> Report
+ -> Evaluation
+ -> Dashboard
+ -> 继续优化 Planner / Tool / Memory / RAG / MCP
+```

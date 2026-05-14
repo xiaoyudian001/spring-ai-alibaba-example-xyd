@@ -90,6 +90,7 @@ flowchart TD
 | 13 | MCP 资源写入 | 前端页面 | `createMcpLearningResource` 写回 MCP Server |
 | 14 | Agent 执行报告 | 前端按钮或 HTTP | `report/agent-runs.json` 记录每轮链路 |
 | 15 | Agent 规则评估 | 前端按钮或 HTTP | `report/agent-evaluations.json` 记录规则评分 |
+| 16 | Evaluation Dashboard | 前端页面 | 最近 5 轮评估趋势和风险项 |
 
 ## 1. 基础聊天测试
 
@@ -688,4 +689,49 @@ reportId         对应的 AgentRunReport ID
 项目知识检索检查通过：调用 RAG 或 MCP。
 Memory 更新检查通过：memoryAfter 不同于 memoryBefore。
 report/agent-evaluations.json 新增一条评估记录。
+```
+
+## 16. Evaluation Dashboard 测试
+
+这一阶段把规则评估结果从“文本查看”升级为页面 Dashboard。
+
+打开前端页面：
+
+```text
+http://localhost:8080/index.html
+```
+
+观察聊天窗口下方的 `Agent Evaluation Dashboard`。
+
+Dashboard 会显示：
+
+```text
+平均得分
+PASS 数量
+WARN / FAIL 数量
+最近等级
+最近 5 轮评估卡片
+```
+
+测试步骤：
+
+```text
+1. 先发送一轮时间 + 学习计划问题。
+2. 等回答完成后，Dashboard 自动刷新。
+3. 点击“刷新评估”，确认可以手动刷新。
+4. 点击“查看评估”，确认文本详情和 Dashboard 数据一致。
+```
+
+推荐问题：
+
+```text
+现在北京时间几点？然后根据当前项目给我一个 30 分钟 Agent 学习计划。
+```
+
+预期：
+
+```text
+Dashboard 平均得分更新。
+最近等级显示 PASS / WARN / FAIL。
+卡片中可以看到链路模式、意图、用户和需要关注的检查项。
 ```

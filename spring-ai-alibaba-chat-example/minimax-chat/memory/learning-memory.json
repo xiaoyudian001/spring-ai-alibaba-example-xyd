@@ -20,8 +20,8 @@
     "topics" : [ "Tool Calling", "MCP", "Agent" ],
     "lastIntent" : "MIXED",
     "lastQuestion" : "现在北京时间几点？然后给我一个今天 30 分钟的 Agent 学习计划。",
-    "conversationCount" : 3,
-    "updatedAt" : "2026-05-14T00:45:10.0557991"
+    "conversationCount" : 5,
+    "updatedAt" : "2026-05-14T11:59:42.3283167"
   },
   "user-b" : {
     "level" : "进阶",
@@ -30,5 +30,13 @@
     "lastQuestion" : "我是进阶开发者，想学习 RAG。",
     "conversationCount" : 1,
     "updatedAt" : "2026-05-01T21:56:57.7226755"
+  },
+  "usb-a" : {
+    "level" : "初学者",
+    "topics" : [ "Agent" ],
+    "lastIntent" : "CONCEPT_EXPLAIN",
+    "lastQuestion" : "如何 快速 学习 Agent 给出 合理建议",
+    "conversationCount" : 1,
+    "updatedAt" : "2026-05-14T12:17:15.8701055"
   }
 }

@@ -1,0 +1,131 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Learning MCP Resources" [level=1] [ref=e5]
+      - paragraph [ref=e6]: 维护 Spring AI Alibaba 学习资源，供 MiniMax Chat 的 Agent、Graph 和 MCP Client 调用。
+    - generic [ref=e7]:
+      - generic [ref=e10]: 连接中
+      - generic [ref=e11]: 正在读取 MCP Server 状态。
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - heading "资源列表" [level=2] [ref=e15]
+        - generic [ref=e16]:
+          - textbox "搜索 Agent、Graph、MCP、Memory" [ref=e17]
+          - combobox "按主题筛选" [ref=e18]:
+            - option "全部主题" [selected]
+            - option "Agent"
+            - option "Graph"
+            - option "MCP"
+            - option "Memory"
+            - option "RAG"
+            - option "Skill"
+            - option "Tool"
+          - button "刷新" [ref=e19] [cursor=pointer]
+      - generic [ref=e20]:
+        - article [ref=e21]:
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - strong [ref=e24]: Tool Calling 基础
+              - generic [ref=e25]: Tool
+            - generic [ref=e26]: mcp-tool
+            - paragraph [ref=e27]: Tool 是模型可以调用的具体函数入口，适合从 getCurrentTime、generateDailyPlan、searchLearningResources 这类小工具开始理解。
+            - paragraph [ref=e28]:
+              - strong [ref=e29]: 下一步：
+              - text: 在 minimax-chat 中观察 MiniMaxLearningTools、OfficialLearningToolCallbacks，以及 MCP Server 暴露出的 LearningResourceTool。
+          - button "编辑" [ref=e31] [cursor=pointer]
+        - article [ref=e32]:
+          - generic [ref=e33]:
+            - generic [ref=e34]:
+              - strong [ref=e35]: Skill 业务封装
+              - generic [ref=e36]: Skill
+            - generic [ref=e37]: mcp-skill
+            - paragraph [ref=e38]: Skill 负责稳定业务逻辑，Tool 只负责暴露给模型调用。这样以后接 Agent、Graph 或 MCP 时，业务逻辑可以继续复用。
+            - paragraph [ref=e39]:
+              - strong [ref=e40]: 下一步：
+              - text: 阅读 LearningSkillService，确认学习建议、计划生成、概念解释是如何被 Tool 和 Agent 复用的。
+          - button "编辑" [ref=e42] [cursor=pointer]
+        - article [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]:
+              - strong [ref=e46]: ReactAgent 调用链
+              - generic [ref=e47]: Agent
+            - generic [ref=e48]: mcp-agent
+            - paragraph [ref=e49]: Agent 负责把模型、工具、上下文和执行状态组织起来，让模型可以按需调用工具，再基于工具结果生成最终回答。
+            - paragraph [ref=e50]:
+              - strong [ref=e51]: 下一步：
+              - text: 测试 /minimax/chat-client/official-agent/chat，并观察 agentSteps、toolCalls 和最终 content 的关系。
+          - button "编辑" [ref=e53] [cursor=pointer]
+        - article [ref=e54]:
+          - generic [ref=e55]:
+            - generic [ref=e56]:
+              - strong [ref=e57]: StateGraph 编排
+              - generic [ref=e58]: Graph
+            - generic [ref=e59]: mcp-graph
+            - paragraph [ref=e60]: Graph 用节点显式编排流程，例如 memory_read、planner、mcp_node、react_agent、memory_write，适合把复杂流程拆成可观察步骤。
+            - paragraph [ref=e61]:
+              - strong [ref=e62]: 下一步：
+              - text: 测试 /minimax/chat-client/official-graph/chat，并查看 graphSteps、graphDefinition 和 MCP 调用节点。
+          - button "编辑" [ref=e64] [cursor=pointer]
+        - article [ref=e65]:
+          - generic [ref=e66]:
+            - generic [ref=e67]:
+              - strong [ref=e68]: 多用户 Memory
+              - generic [ref=e69]: Memory
+            - generic [ref=e70]: mcp-memory
+            - paragraph [ref=e71]: Memory 记录用户阶段、关注主题、历史轮次和上次意图，适合做个性化学习助手，并通过 userId 隔离不同用户状态。
+            - paragraph [ref=e72]:
+              - strong [ref=e73]: 下一步：
+              - text: 分别使用 default-user、user-a 和 user-b 测试长期记忆隔离与更新。
+          - button "编辑" [ref=e75] [cursor=pointer]
+        - article [ref=e76]:
+          - generic [ref=e77]:
+            - generic [ref=e78]:
+              - strong [ref=e79]: 项目知识检索
+              - generic [ref=e80]: RAG
+            - generic [ref=e81]: mcp-rag
+            - paragraph [ref=e82]: RAG 把 README、源码结构和项目说明作为上下文提供给模型，适合回答当前项目实现细节，而不是只依赖模型通用知识。
+            - paragraph [ref=e83]:
+              - strong [ref=e84]: 下一步：
+              - text: 询问当前 minimax-chat 调用链，观察 searchLearningDocs 或相关 RAG 调试信息。
+          - button "编辑" [ref=e86] [cursor=pointer]
+        - article [ref=e87]:
+          - generic [ref=e88]:
+            - generic [ref=e89]:
+              - strong [ref=e90]: MCP Server / Client
+              - generic [ref=e91]: MCP
+            - generic [ref=e92]: mcp-mcp
+            - paragraph [ref=e93]: MCP 把外部工具和资源作为协议化能力提供给 Agent。minimax-chat 是 MCP Client，本模块是真实 MCP Server。
+            - paragraph [ref=e94]:
+              - strong [ref=e95]: 下一步：
+              - text: 启动本模块后访问 /minimax/chat-client/mcp/status，确认 mode 为 REAL_MCP_READY。
+          - button "编辑" [ref=e97] [cursor=pointer]
+    - complementary [ref=e98]:
+      - generic [ref=e99]:
+        - heading "新增资源" [level=2] [ref=e100]
+        - button "新建" [ref=e101] [cursor=pointer]
+      - generic [ref=e102]:
+        - generic [ref=e103]: 填写资源后保存，变更会写回 learning-resources.json。
+        - generic [ref=e104]:
+          - generic [ref=e105]: 资源 ID
+          - textbox "资源 ID" [ref=e106]:
+            - /placeholder: 例如 mcp-agent-roadmap
+        - generic [ref=e107]:
+          - generic [ref=e108]: 主题
+          - textbox "主题" [ref=e109]:
+            - /placeholder: 例如 Agent、Graph、MCP
+        - generic [ref=e110]:
+          - generic [ref=e111]: 标题
+          - textbox "标题" [ref=e112]:
+            - /placeholder: 资源标题
+        - generic [ref=e113]:
+          - generic [ref=e114]: 摘要
+          - textbox "摘要" [ref=e115]:
+            - /placeholder: 这条资源解决什么学习问题
+        - generic [ref=e116]:
+          - generic [ref=e117]: 下一步
+          - textbox "下一步" [ref=e118]:
+            - /placeholder: 学习者接下来应该做什么
+        - generic [ref=e119]:
+          - button "保存资源" [ref=e120] [cursor=pointer]
+          - button "删除资源" [disabled] [ref=e121] [cursor=pointer]

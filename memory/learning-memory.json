@@ -1,0 +1,10 @@
+{
+  "default-user" : {
+    "level" : "初学者",
+    "topics" : [ "Agent" ],
+    "lastIntent" : "LEARNING_ADVICE",
+    "lastQuestion" : "基于我之前的学习方向，下一步应该学什么？",
+    "conversationCount" : 4,
+    "updatedAt" : "2026-04-30T20:47:50.0910239"
+  }
+}

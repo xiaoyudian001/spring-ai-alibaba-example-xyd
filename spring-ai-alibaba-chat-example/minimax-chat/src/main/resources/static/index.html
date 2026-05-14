@@ -121,6 +121,145 @@
 			box-shadow: var(--shadow);
 		}
 
+		.evaluation-dashboard {
+			width: min(1040px, calc(100% - 32px));
+			margin: -4px auto 18px;
+			padding: 14px 16px;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: rgba(255, 255, 255, 0.9);
+			box-shadow: var(--shadow);
+		}
+
+		.dashboard-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			margin-bottom: 12px;
+		}
+
+		.dashboard-title {
+			font-weight: 800;
+			color: #0f172a;
+		}
+
+		.dashboard-subtitle {
+			margin-top: 3px;
+			color: var(--muted);
+			font-size: 12px;
+		}
+
+		.dashboard-refresh {
+			height: 34px;
+			border-radius: 7px;
+			font-size: 12px;
+		}
+
+		.evaluation-stats {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			gap: 8px;
+		}
+
+		.evaluation-stat {
+			min-height: 68px;
+			padding: 10px 12px;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: var(--surface-soft);
+		}
+
+		.stat-label {
+			color: var(--muted);
+			font-size: 12px;
+		}
+
+		.stat-value {
+			margin-top: 6px;
+			color: #0f172a;
+			font-size: 22px;
+			font-weight: 850;
+			line-height: 1.1;
+		}
+
+		.evaluation-list {
+			display: grid;
+			grid-template-columns: repeat(5, minmax(0, 1fr));
+			gap: 8px;
+			margin-top: 10px;
+		}
+
+		.evaluation-card {
+			padding: 10px;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: #fff;
+			min-height: 112px;
+		}
+
+		.evaluation-card-top {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+			margin-bottom: 7px;
+		}
+
+		.level-badge {
+			display: inline-flex;
+			align-items: center;
+			height: 22px;
+			padding: 0 7px;
+			border-radius: 999px;
+			font-size: 11px;
+			font-weight: 800;
+		}
+
+		.level-pass {
+			background: #ecfdf3;
+			color: #027a48;
+		}
+
+		.level-warn {
+			background: #fffaeb;
+			color: #b54708;
+		}
+
+		.level-fail {
+			background: #fff4f2;
+			color: var(--danger);
+		}
+
+		.evaluation-score {
+			color: #344054;
+			font-size: 12px;
+			font-weight: 700;
+		}
+
+		.evaluation-meta {
+			color: #475467;
+			font-size: 12px;
+			line-height: 1.45;
+		}
+
+		.evaluation-checks {
+			margin-top: 7px;
+			color: var(--muted);
+			font-size: 12px;
+			line-height: 1.45;
+		}
+
+		.evaluation-empty {
+			grid-column: 1 / -1;
+			padding: 12px;
+			border: 1px dashed var(--debug-line);
+			border-radius: 8px;
+			background: var(--debug-bg);
+			color: var(--muted);
+			font-size: 13px;
+		}
+
 		.messages {
 			height: min(54vh, 680px);
 			min-height: 380px;
@@ -517,11 +656,14 @@
 		}
 
 		@media (max-width: 820px) {
-			header, main, .composer { width: min(100% - 24px, 1040px); }
+			header, main, .composer, .evaluation-dashboard { width: min(100% - 24px, 1040px); }
 			header { padding-top: 18px; }
 			.header-row { align-items: flex-start; flex-direction: column; }
 			.messages { min-height: 360px; height: 58vh; padding: 14px; }
 			.message { width: 100%; }
+			.dashboard-header { align-items: flex-start; flex-direction: column; }
+			.evaluation-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+			.evaluation-list { grid-template-columns: 1fr; }
 			.composer-inner {
 				grid-template-columns: 1fr;
 				grid-template-areas:
@@ -571,6 +713,37 @@
 	<main>
 		<div id="messages" class="messages"></div>
 	</main>
+
+	<section class="evaluation-dashboard" aria-label="Agent 规则评估 Dashboard">
+		<div class="dashboard-header">
+			<div>
+				<div class="dashboard-title">Agent Evaluation Dashboard</div>
+				<div id="evaluationDashboardSubtitle" class="dashboard-subtitle">最近 5 轮规则评估，发送问题后自动刷新</div>
+			</div>
+			<button id="refreshEvaluationButton" class="secondary dashboard-refresh" type="button">刷新评估</button>
+		</div>
+		<div class="evaluation-stats">
+			<div class="evaluation-stat">
+				<div class="stat-label">平均得分</div>
+				<div id="averageScoreStat" class="stat-value">--</div>
+			</div>
+			<div class="evaluation-stat">
+				<div class="stat-label">PASS</div>
+				<div id="passCountStat" class="stat-value">0</div>
+			</div>
+			<div class="evaluation-stat">
+				<div class="stat-label">WARN / FAIL</div>
+				<div id="warnFailCountStat" class="stat-value">0 / 0</div>
+			</div>
+			<div class="evaluation-stat">
+				<div class="stat-label">最近等级</div>
+				<div id="latestLevelStat" class="stat-value">--</div>
+			</div>
+		</div>
+		<div id="evaluationList" class="evaluation-list">
+			<div class="evaluation-empty">暂无评估结果。发送一轮对话后，这里会显示 Agent 执行质量。</div>
+		</div>
+	</section>
 
 	<form id="composer" class="composer">
 		<div class="composer-inner">
@@ -636,6 +809,13 @@
 	const viewMemoryButton = document.getElementById("viewMemoryButton");
 	const viewReportButton = document.getElementById("viewReportButton");
 	const viewEvaluationButton = document.getElementById("viewEvaluationButton");
+	const refreshEvaluationButton = document.getElementById("refreshEvaluationButton");
+	const averageScoreStat = document.getElementById("averageScoreStat");
+	const passCountStat = document.getElementById("passCountStat");
+	const warnFailCountStat = document.getElementById("warnFailCountStat");
+	const latestLevelStat = document.getElementById("latestLevelStat");
+	const evaluationList = document.getElementById("evaluationList");
+	const evaluationDashboardSubtitle = document.getElementById("evaluationDashboardSubtitle");
 	const clearMemoryButton = document.getElementById("clearMemoryButton");
 	const sendButton = document.getElementById("sendButton");
 	const clearButton = document.getElementById("clearButton");
@@ -1054,6 +1234,82 @@
 		}).join("\n\n");
 	}
 
+	function levelClass(level) {
+		const value = String(level || "").toLowerCase();
+		if (value === "pass") return "level-pass";
+		if (value === "warn") return "level-warn";
+		if (value === "fail") return "level-fail";
+		return "level-warn";
+	}
+
+	function renderEvaluationDashboard(evaluations) {
+		const items = Array.isArray(evaluations) ? evaluations : [];
+		if (!items.length) {
+			averageScoreStat.textContent = "--";
+			passCountStat.textContent = "0";
+			warnFailCountStat.textContent = "0 / 0";
+			latestLevelStat.textContent = "--";
+			evaluationDashboardSubtitle.textContent = "最近 5 轮规则评估，发送问题后自动刷新";
+			evaluationList.innerHTML = `<div class="evaluation-empty">暂无评估结果。发送一轮对话后，这里会显示 Agent 执行质量。</div>`;
+			return;
+		}
+		const ratios = items
+			.filter(item => Number(item.maxScore || 0) > 0)
+			.map(item => Number(item.score || 0) / Number(item.maxScore || 1));
+		const average = ratios.length
+			? Math.round((ratios.reduce((total, value) => total + value, 0) / ratios.length) * 100)
+			: 0;
+		const passCount = items.filter(item => item.level === "PASS").length;
+		const warnCount = items.filter(item => item.level === "WARN").length;
+		const failCount = items.filter(item => item.level === "FAIL").length;
+		const latest = items[0];
+		averageScoreStat.textContent = `${average}%`;
+		passCountStat.textContent = String(passCount);
+		warnFailCountStat.textContent = `${warnCount} / ${failCount}`;
+		latestLevelStat.textContent = latest.level || "--";
+		evaluationDashboardSubtitle.textContent = `最近 ${items.length} 轮评估，最新链路：${latest.chainMode || "UNKNOWN"}`;
+		evaluationList.innerHTML = items.map(item => {
+			const failedChecks = (item.checks || [])
+				.filter(check => check.applicable && !check.passed)
+				.map(check => check.name)
+				.slice(0, 2);
+			const checkText = failedChecks.length
+				? `关注：${failedChecks.map(escapeHtml).join("、")}`
+				: "规则检查通过或无明显风险";
+			return `
+				<div class="evaluation-card">
+					<div class="evaluation-card-top">
+						<span class="level-badge ${levelClass(item.level)}">${escapeHtml(item.level || "UNKNOWN")}</span>
+						<span class="evaluation-score">${escapeHtml(item.score ?? 0)}/${escapeHtml(item.maxScore ?? 0)}</span>
+					</div>
+					<div class="evaluation-meta">
+						<div>${escapeHtml(item.chainMode || "UNKNOWN")}</div>
+						<div>意图：${escapeHtml(item.intent || "UNKNOWN")}</div>
+						<div>用户：${escapeHtml(item.userId || currentUserId())}</div>
+					</div>
+					<div class="evaluation-checks">${checkText}</div>
+				</div>
+			`;
+		}).join("");
+	}
+
+	async function refreshEvaluationDashboard(showErrorMessage = false) {
+		refreshEvaluationButton.disabled = true;
+		try {
+			const evaluations = await fetchAgentEvaluations();
+			renderEvaluationDashboard(evaluations);
+		}
+		catch (error) {
+			if (showErrorMessage) {
+				appendMessage("error", `刷新评估 Dashboard 失败：${error.message}`);
+			}
+			evaluationDashboardSubtitle.textContent = `评估 Dashboard 暂不可用：${error.message}`;
+		}
+		finally {
+			refreshEvaluationButton.disabled = false;
+		}
+	}
+
 	async function confirmMcpWrite(userId) {
 		const response = await fetch("/minimax/chat-client/mcp/write/confirm", {
 			method: "POST",
@@ -1185,6 +1441,7 @@
 			}
 			addHistory("user", message);
 			addHistory("assistant", answer);
+			await refreshEvaluationDashboard();
 			input.value = "";
 		}
 		catch (error) {
@@ -1257,11 +1514,16 @@
 	viewEvaluationButton.addEventListener("click", async () => {
 		try {
 			const evaluations = await fetchAgentEvaluations();
+			renderEvaluationDashboard(evaluations);
 			appendMessage("assistant", formatAgentEvaluations(evaluations));
 		}
 		catch (error) {
 			appendMessage("error", `查看评估失败：${error.message}`);
 		}
+	});
+
+	refreshEvaluationButton.addEventListener("click", async () => {
+		await refreshEvaluationDashboard(true);
 	});
 
 	clearMemoryButton.addEventListener("click", async () => {
@@ -1280,6 +1542,7 @@
 		appendMessage("assistant", `已切换到用户 ${currentUserId()}。同步模式会显示该用户的 Memory。`);
 	});
 
+	refreshEvaluationDashboard();
 	appendMessage("assistant", "你好，输入一个问题开始测试。同步模式会显示 Planner 识别意图和本轮 Tool 调用；流式模式请查看后端日志。");
 </script>
 </body>

@@ -19,9 +19,9 @@
     "level" : "初学者",
     "topics" : [ "Tool Calling", "MCP", "Agent" ],
     "lastIntent" : "MIXED",
-    "lastQuestion" : "现在北京时间几点？然后给我一个今天 30 分钟的 Agent 学习计划。",
-    "conversationCount" : 5,
-    "updatedAt" : "2026-05-14T11:59:42.3283167"
+    "lastQuestion" : "我想学习 Multi-Agent 和 Workflow，请用 Workflow 模式给我一条学习路线、实践任务和测试方法。",
+    "conversationCount" : 7,
+    "updatedAt" : "2026-05-15T09:21:17.4276505"
   },
   "user-b" : {
     "level" : "进阶",

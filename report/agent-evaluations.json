@@ -1,0 +1,211 @@
+[ {
+  "id" : "eval-60701045-5aa1-4459-9e6f-be93fabc8a3f",
+  "reportId" : "run-d7fa7ae9-8f39-4f26-b7a0-394de05d03bc",
+  "createdAt" : "2026-05-14T02:29:57.272492Z",
+  "userId" : "default-user",
+  "chainMode" : "HANDWRITTEN_AGENT",
+  "intent" : "MIXED",
+  "score" : 4,
+  "maxScore" : 5,
+  "level" : "WARN",
+  "passed" : false,
+  "checks" : [ {
+    "name" : "意图识别",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Planner 返回了有效意图：MIXED"
+  }, {
+    "name" : "回答非空",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "回答摘要非空。"
+  }, {
+    "name" : "Memory 更新",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Memory 在本轮调用后发生变化。"
+  }, {
+    "name" : "时间工具",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "时间问题已调用 getCurrentTime。"
+  }, {
+    "name" : "MCP 写入意图",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮没有明确保存或更新资源诉求。"
+  }, {
+    "name" : "项目知识检索",
+    "applicable" : true,
+    "passed" : false,
+    "detail" : "项目知识类问题未看到 RAG/MCP 检索。"
+  } ]
+}, {
+  "id" : "eval-02232343-83c9-438b-ad77-ad360d733349",
+  "reportId" : "run-5a1c3dcc-597d-4417-bed4-be25d8f86b46",
+  "createdAt" : "2026-05-14T03:59:42.350502100Z",
+  "userId" : "default-user",
+  "chainMode" : "OFFICIAL_REACT_AGENT",
+  "intent" : "MIXED",
+  "score" : 4,
+  "maxScore" : 5,
+  "level" : "WARN",
+  "passed" : false,
+  "checks" : [ {
+    "name" : "意图识别",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Planner 返回了有效意图：MIXED"
+  }, {
+    "name" : "回答非空",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "回答摘要非空。"
+  }, {
+    "name" : "Memory 更新",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Memory 在本轮调用后发生变化。"
+  }, {
+    "name" : "时间工具",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "时间问题已调用 getCurrentTime。"
+  }, {
+    "name" : "MCP 写入意图",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮没有明确保存或更新资源诉求。"
+  }, {
+    "name" : "项目知识检索",
+    "applicable" : true,
+    "passed" : false,
+    "detail" : "项目知识类问题未看到 RAG/MCP 检索。"
+  } ]
+}, {
+  "id" : "eval-f136f0cf-f7cd-47af-8a3c-e714e4498113",
+  "reportId" : "run-f8b1a71a-dbaf-4fcd-be7e-be52ca61f2d0",
+  "createdAt" : "2026-05-14T04:17:15.878154100Z",
+  "userId" : "usb-a",
+  "chainMode" : "OFFICIAL_REACT_AGENT",
+  "intent" : "CONCEPT_EXPLAIN",
+  "score" : 3,
+  "maxScore" : 4,
+  "level" : "WARN",
+  "passed" : false,
+  "checks" : [ {
+    "name" : "意图识别",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Planner 返回了有效意图：CONCEPT_EXPLAIN"
+  }, {
+    "name" : "回答非空",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "回答摘要非空。"
+  }, {
+    "name" : "Memory 更新",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Memory 在本轮调用后发生变化。"
+  }, {
+    "name" : "时间工具",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮不是时间问题。"
+  }, {
+    "name" : "MCP 写入意图",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮没有明确保存或更新资源诉求。"
+  }, {
+    "name" : "项目知识检索",
+    "applicable" : true,
+    "passed" : false,
+    "detail" : "项目知识类问题未看到 RAG/MCP 检索。"
+  } ]
+}, {
+  "id" : "eval-5f0166bc-06ff-4ce9-acb0-4d8cb7e16c36",
+  "reportId" : "run-3d99d845-eb6c-4b7a-ae50-15192dfce2d3",
+  "createdAt" : "2026-05-14T15:36:37.195718700Z",
+  "userId" : "default-user",
+  "chainMode" : "LEARNING_WORKFLOW",
+  "intent" : "GENERAL_CHAT",
+  "score" : 3,
+  "maxScore" : 3,
+  "level" : "PASS",
+  "passed" : true,
+  "checks" : [ {
+    "name" : "意图识别",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Planner 返回了有效意图：GENERAL_CHAT"
+  }, {
+    "name" : "回答非空",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "回答摘要非空。"
+  }, {
+    "name" : "Memory 更新",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Memory 在本轮调用后发生变化。"
+  }, {
+    "name" : "时间工具",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮不是时间问题。"
+  }, {
+    "name" : "MCP 写入意图",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮没有明确保存或更新资源诉求。"
+  }, {
+    "name" : "项目知识检索",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮不是项目知识类问题。"
+  } ]
+}, {
+  "id" : "eval-76302332-9c2a-48c2-824f-818d2d204550",
+  "reportId" : "run-9532fe26-1abf-4c94-82e2-ec79966e5ba2",
+  "createdAt" : "2026-05-15T01:21:17.545105700Z",
+  "userId" : "default-user",
+  "chainMode" : "LEARNING_WORKFLOW",
+  "intent" : "MIXED",
+  "score" : 3,
+  "maxScore" : 4,
+  "level" : "WARN",
+  "passed" : false,
+  "checks" : [ {
+    "name" : "意图识别",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Planner 返回了有效意图：MIXED"
+  }, {
+    "name" : "回答非空",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "回答摘要非空。"
+  }, {
+    "name" : "Memory 更新",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Memory 在本轮调用后发生变化。"
+  }, {
+    "name" : "时间工具",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮不是时间问题。"
+  }, {
+    "name" : "MCP 写入意图",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮没有明确保存或更新资源诉求。"
+  }, {
+    "name" : "项目知识检索",
+    "applicable" : true,
+    "passed" : false,
+    "detail" : "项目知识类问题未看到 RAG/MCP 检索。"
+  } ]
+} ]

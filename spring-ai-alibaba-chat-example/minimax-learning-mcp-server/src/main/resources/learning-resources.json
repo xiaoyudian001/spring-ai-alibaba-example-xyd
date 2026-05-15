@@ -46,4 +46,10 @@
   "title" : "Tool 和 MCP 区别",
   "summary" : "Tool 是模型可调用的单个能力，MCP 是连接外部工具和资源的协议",
   "nextAction" : "在 minimax-chat 项目中观察 Tool 的实现（如 MiniMaxLearningTools）和 MCP Server 的配置，理解两者如何协同工作"
+}, {
+  "id" : "learning-workflow-design",
+  "topic" : "Workflow",
+  "title" : "Learning Workflow 业务场景重构：从技术步骤到学习辅导五步法",
+  "summary" : "把 minimax-chat 的技术调用链重构成学习辅导业务场景，每个步骤赋予真实业务含义：理解问题 → 识别意图 → 激活能力 → 交付价值 → 记录成长",
+  "nextAction" : "下一步可以把 LearningWorkflowService 中的节点名称替换为业务步骤描述，实现 Workflow 可视化的业务语义升级"
 } ]

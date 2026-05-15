@@ -174,3 +174,32 @@ GET {{minimaxChat}}/minimax/chat-client/judge/runs?limit=5
 ### 23 清空 AI 评审记录
 # 预期：返回 deleted，表示删除的 AI 评审数量。
 DELETE {{minimaxChat}}/minimax/chat-client/judge/runs
+
+### 24 通过 Workflow 模式执行学习对话
+# 预期：
+# - 响应中包含 workflowSteps。
+# - workflowSteps 展示 analyze_goal、check_foundation、collect_project_context、choose_learning_path、
+#   generate_learning_plan、define_validation_task、recommend_next_step 等学习辅导流程。
+# - report/agent-runs.json 新增 chainMode=LEARNING_WORKFLOW。
+POST {{minimaxChat}}/minimax/chat-client/workflow/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{userA}}",
+  "message": "我想学习 Multi-Agent 和 Workflow，请用 Workflow 模式给我一条学习路线、实践任务和测试方法。",
+  "history": []
+}
+
+### 25 通过 Multi-Agent 模式执行学习对话
+# 预期：
+# - 响应中包含 multiAgentSteps。
+# - multiAgentSteps 展示 CoordinatorAgent、PlannerAgent、ResearchAgent、TeacherAgent、ReviewerAgent。
+# - report/agent-runs.json 新增 chainMode=LEARNING_MULTI_AGENT。
+POST {{minimaxChat}}/minimax/chat-client/multi-agent/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{userA}}",
+  "message": "用 Multi-Agent 模式帮我学习 Workflow 和 AgentGraph，并给出实践任务和测试方法。",
+  "history": []
+}

@@ -92,6 +92,8 @@ flowchart TD
 | 15 | Agent 规则评估 | 前端按钮或 HTTP | `report/agent-evaluations.json` 记录规则评分 |
 | 16 | Evaluation Dashboard | 前端页面 | 最近 5 轮评估趋势和风险项 |
 | 17 | LLM-as-Judge | 前端按钮或 HTTP | `report/agent-judges.json` 记录 AI 质量评审 |
+| 18 | Workflow 模式 | 前端链路模式或 HTTP | 固定流程编排并复用现有 Agent 能力 |
+| 19 | Multi-Agent 模式 | 前端链路模式或 HTTP | Coordinator 串联 Planner/Research/Teacher/Reviewer |
 
 ## 1. 基础聊天测试
 
@@ -776,4 +778,99 @@ DELETE /minimax/chat-client/judge/runs
 AI 评审返回 4 个 0-10 分的维度评分。
 riskNotes 指出潜在问题。
 improvementAdvice 给出下一步优化建议。
+```
+
+## 18. Workflow 模式测试
+
+这一阶段新增 `LearningWorkflowService`，用于学习固定流程式编排。
+
+Workflow 学习辅导步骤：
+
+```text
+识别学习目标
+ -> 判断当前学习阶段
+ -> 收集项目上下文
+ -> 选择学习路径
+ -> 生成学习计划
+ -> 给出验证任务
+ -> 生成下一步建议
+```
+
+HTTP 测试：
+
+```http
+POST /minimax/chat-client/workflow/chat
+Content-Type: application/json
+
+{
+  "userId": "user-a",
+  "message": "用 Workflow 模式解释 Tool、AgentGraph 和 Multi-Agent 的区别，并给我下一步学习建议。",
+  "history": []
+}
+```
+
+前端测试：
+
+```text
+1. 打开 http://localhost:8080/index.html。
+2. 链路模式选择 Workflow。
+3. 发送问题。
+4. 观察调试区中的 Workflow 学习辅导步骤。
+5. 查看 Evaluation Dashboard 是否更新。
+```
+
+预期：
+
+```text
+响应中包含 workflowSteps。
+workflowSteps 中包含 analyze_goal、check_foundation、collect_project_context、choose_learning_path、generate_learning_plan、define_validation_task、recommend_next_step。
+报告文件 report/agent-runs.json 中 chainMode = LEARNING_WORKFLOW。
+规则评估文件 report/agent-evaluations.json 新增记录。
+```
+
+## 19. Multi-Agent 模式测试
+
+这一阶段新增串行 Multi-Agent 学习辅导链路，用于理解多个 Agent 角色如何协作。
+
+角色链路：
+
+```text
+CoordinatorAgent
+ -> PlannerAgent
+ -> ResearchAgent
+ -> TeacherAgent
+ -> ReviewerAgent
+ -> CoordinatorAgent
+```
+
+HTTP 测试：
+
+```http
+POST /minimax/chat-client/multi-agent/chat
+Content-Type: application/json
+
+{
+  "userId": "user-a",
+  "message": "用 Multi-Agent 模式帮我学习 Workflow 和 AgentGraph，并给出实践任务。",
+  "history": []
+}
+```
+
+前端测试：
+
+```text
+1. 打开 http://localhost:8080/index.html。
+2. 链路模式选择 Multi-Agent。
+3. 发送问题。
+4. 观察调试区中的 PlannerAgent、ResearchAgent、TeacherAgent、ReviewerAgent。
+5. 查看回答末尾的 Multi-Agent 协作摘要。
+```
+
+预期：
+
+```text
+响应中包含 multiAgentSteps。
+报告文件 report/agent-runs.json 中 chainMode = LEARNING_MULTI_AGENT。
+规则评估文件 report/agent-evaluations.json 新增记录。
+可以继续点击 AI 评审，对 Multi-Agent 输出做质量判断。
 ```

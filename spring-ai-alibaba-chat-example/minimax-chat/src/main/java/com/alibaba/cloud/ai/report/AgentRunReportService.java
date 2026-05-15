@@ -28,8 +28,10 @@ import java.util.UUID;
 import com.alibaba.cloud.ai.agent.LearningAgentResult;
 import com.alibaba.cloud.ai.agent.LearningStreamEvent;
 import com.alibaba.cloud.ai.mcp.McpDebugInfo;
+import com.alibaba.cloud.ai.multiagent.MultiAgentResult;
 import com.alibaba.cloud.ai.official.OfficialLearningAgentResult;
 import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphResult;
+import com.alibaba.cloud.ai.workflow.LearningWorkflowResult;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -93,6 +95,24 @@ public class AgentRunReportService {
 				mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()), safeSize(result.toolCalls()), 0,
 				safeSize(result.graphSteps()), result.memoryBefore(), result.memoryAfter(), List.of(),
 				result.graphSteps(), result.toolCalls(), result.mcpDebugInfo()));
+	}
+
+	public AgentRunReport saveWorkflow(String userId, String message, int historySize, LearningWorkflowResult result) {
+		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "LEARNING_WORKFLOW",
+				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
+				mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()), safeSize(result.toolCalls()),
+				safeSize(result.workflowSteps()), safeSize(result.graphSteps()), result.memoryBefore(),
+				result.memoryAfter(), result.workflowSteps(), result.graphSteps(), result.toolCalls(),
+				result.mcpDebugInfo()));
+	}
+
+	public AgentRunReport saveMultiAgent(String userId, String message, int historySize, MultiAgentResult result) {
+		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "LEARNING_MULTI_AGENT",
+				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
+				mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()), safeSize(result.toolCalls()),
+				safeSize(result.multiAgentSteps()), safeSize(result.graphSteps()), result.memoryBefore(),
+				result.memoryAfter(), result.multiAgentSteps(), result.graphSteps(), result.toolCalls(),
+				result.mcpDebugInfo()));
 	}
 
 	public synchronized List<AgentRunReport> latest(int limit) {

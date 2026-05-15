@@ -585,7 +585,7 @@
 		}
 
 		.agent-mode-radio {
-			grid-template-columns: repeat(3, minmax(74px, 1fr));
+			grid-template-columns: repeat(5, minmax(74px, 1fr));
 		}
 
 		.mode-radio label {
@@ -693,6 +693,8 @@
 					<span class="capability">Skill</span>
 					<span class="capability">Planner</span>
 					<span class="capability">Agent</span>
+					<span class="capability">Workflow</span>
+					<span class="capability">Multi-Agent</span>
 					<span class="capability">多用户 Memory</span>
 					<span class="capability">Simple RAG</span>
 					<span class="capability">Graph</span>
@@ -770,6 +772,14 @@
 					<label>
 						<input type="radio" name="agentModeSelect" value="official-graph">
 						<span>官方 Graph</span>
+					</label>
+					<label>
+						<input type="radio" name="agentModeSelect" value="workflow">
+						<span>Workflow</span>
+					</label>
+					<label>
+						<input type="radio" name="agentModeSelect" value="multi-agent">
+						<span>Multi-Agent</span>
 					</label>
 				</div>
 				<div class="mode-radio" role="radiogroup" aria-label="响应模式">
@@ -1136,7 +1146,9 @@
 		return {
 			"handwritten": "手写 LearningAgent",
 			"official-agent": "官方 ReactAgent",
-			"official-graph": "官方 StateGraph"
+			"official-graph": "官方 StateGraph",
+			"workflow": "Learning Workflow",
+			"multi-agent": "Learning Multi-Agent"
 		}[currentAgentMode()] || "手写 LearningAgent";
 	}
 
@@ -1144,7 +1156,9 @@
 		return {
 			"handwritten": "/minimax/chat-client/conversation/chat",
 			"official-agent": "/minimax/chat-client/official-agent/chat",
-			"official-graph": "/minimax/chat-client/official-graph/chat"
+			"official-graph": "/minimax/chat-client/official-graph/chat",
+			"workflow": "/minimax/chat-client/workflow/chat",
+			"multi-agent": "/minimax/chat-client/multi-agent/chat"
 		}[currentAgentMode()] || "/minimax/chat-client/conversation/chat";
 	}
 
@@ -1481,8 +1495,9 @@
 				const data = await sendConversation(message);
 				answer = cleanAssistantText(data.content || "");
 				setAssistantContent(assistant, answer);
-				await renderDebugWithPending(assistantNode, data.intent, data.toolCalls || [], data.graphSteps || [],
-					data.agentSteps || [], data.memoryBefore, data.memoryAfter, currentAgentModeLabel(),
+				await renderDebugWithPending(assistantNode, data.intent, data.toolCalls || [],
+					data.workflowSteps || data.graphSteps || [],
+					data.multiAgentSteps || data.agentSteps || [], data.memoryBefore, data.memoryAfter, currentAgentModeLabel(),
 					data.graphDefinition, data.mcpDebugInfo);
 			}
 			addHistory("user", message);

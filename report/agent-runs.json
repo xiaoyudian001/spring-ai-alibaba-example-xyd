@@ -394,4 +394,300 @@
     "writeMode" : "disabled",
     "pendingWrite" : null
   }
+}, {
+  "id" : "run-3d99d845-eb6c-4b7a-ae50-15192dfce2d3",
+  "createdAt" : "2026-05-14T15:36:37.124005600Z",
+  "userId" : "default-user",
+  "chainMode" : "LEARNING_WORKFLOW",
+  "message" : "把当前 Workflow 从技术步骤改成学习辅导业务场景 Workflow，每个步骤要根据用户问题、Memory、Intent 输出真实业务含义。",
+  "historySize" : 0,
+  "intent" : "GENERAL_CHAT",
+  "answerSummary" : " ## Learning Workflow 业务场景重构 基于当前 minimax-chat 的技术调用链，我设计了一套**学习辅导五步法 Workflow**： --- ### \uD83D\uDCDA 业务场景 Workflow ``` 用户提问 ↓ ┌─────────────────────────────────────────────────────────────┐ │ 步骤1️⃣ 【理解问题】 │ │ 输入：用户原始问题 │ │ 输出：问题...",
+  "mcpMode" : "MCP_WRITE_DRY_RUN",
+  "pendingMcpWrite" : true,
+  "toolCallCount" : 3,
+  "agentStepCount" : 7,
+  "graphStepCount" : 8,
+  "memoryBefore" : {
+    "userId" : "default-user",
+    "level" : "初学者",
+    "topics" : [ "Tool Calling", "MCP", "Agent" ],
+    "lastIntent" : "MIXED",
+    "lastQuestion" : "现在北京时间几点？然后给我一个今天 30 分钟的 Agent 学习计划。",
+    "conversationCount" : 5,
+    "updatedAt" : "2026-05-14T11:59:42.3283167"
+  },
+  "memoryAfter" : {
+    "userId" : "default-user",
+    "level" : "初学者",
+    "topics" : [ "Tool Calling", "MCP", "Agent" ],
+    "lastIntent" : "GENERAL_CHAT",
+    "lastQuestion" : "把当前 Workflow 从技术步骤改成学习辅导业务场景 Workflow，每个步骤要根据用户问题、Memory、Intent 输出真实业务含义。",
+    "conversationCount" : 6,
+    "updatedAt" : "2026-05-14T23:36:37.1070944"
+  },
+  "agentSteps" : [ {
+    "id" : "analyze_goal",
+    "name" : "识别学习目标",
+    "status" : "DONE",
+    "detail" : "识别到用户在进行一般学习对话，当前重点是：Workflow 学习流程编排。Workflow 需要保持回答简洁，并引导到可实践任务。"
+  }, {
+    "id" : "check_foundation",
+    "name" : "判断当前学习阶段",
+    "status" : "DONE",
+    "detail" : "根据 Memory，用户阶段为「初学者」，已关注主题：Tool Calling、MCP、Agent，历史对话轮次：5。适合继续从已跑通能力进入更真实的 Workflow / Multi-Agent 实践。"
+  }, {
+    "id" : "collect_project_context",
+    "name" : "收集项目上下文",
+    "status" : "DONE",
+    "detail" : "本轮已同时使用本地 RAG 和 MCP 上下文，适合回答当前项目实现、外部学习资源和下一步实践。"
+  }, {
+    "id" : "choose_learning_path",
+    "name" : "选择学习路径",
+    "status" : "DONE",
+    "detail" : "选择 Workflow 学习路径：先固定学习辅导业务流程，再把复杂节点逐步升级为 Agent 或 Graph 节点。"
+  }, {
+    "id" : "generate_learning_plan",
+    "name" : "生成学习计划",
+    "status" : "DONE",
+    "detail" : "建议先提出一个明确学习目标，再选择 Tool、RAG、MCP、Workflow 或 Multi-Agent 中的一个能力做小步实践。"
+  }, {
+    "id" : "define_validation_task",
+    "name" : "给出验证任务",
+    "status" : "DONE",
+    "detail" : "验证任务：查看 report/agent-runs.json 是否新增 LEARNING_WORKFLOW 记录，并确认 Memory 是否合理更新。"
+  }, {
+    "id" : "recommend_next_step",
+    "name" : "生成下一步建议",
+    "status" : "DONE",
+    "detail" : "下一步建议：把 Workflow 的 collect_project_context 节点从说明型升级为显式 RAG/MCP 调用节点，并记录每个节点输入输出。"
+  } ],
+  "graphSteps" : [ {
+    "id" : "receive",
+    "name" : "Receive",
+    "status" : "DONE",
+    "detail" : "接收用户 default-user 的问题。"
+  }, {
+    "id" : "memory-read",
+    "name" : "Memory Read",
+    "status" : "DONE",
+    "detail" : "按 userId 从 JSON 文件读取长期学习记忆。"
+  }, {
+    "id" : "planner",
+    "name" : "Planner",
+    "status" : "DONE",
+    "detail" : "识别学习意图：GENERAL_CHAT。"
+  }, {
+    "id" : "strategy",
+    "name" : "Strategy",
+    "status" : "DONE",
+    "detail" : "普通聊天可以直接由模型基于上下文回答。"
+  }, {
+    "id" : "model-call",
+    "name" : "Model Call",
+    "status" : "DONE",
+    "detail" : "调用 MiniMax-M2.7，并暴露 Tool、Skill、RAG 能力。"
+  }, {
+    "id" : "tool-execute",
+    "name" : "Tool Execute",
+    "status" : "WAITING",
+    "detail" : "由模型按需触发工具，例如时间、学习计划、概念解释或本地文档检索。"
+  }, {
+    "id" : "memory-write",
+    "name" : "Memory Write",
+    "status" : "DONE",
+    "detail" : "回答完成后更新当前用户长期记忆。"
+  }, {
+    "id" : "response",
+    "name" : "Response",
+    "status" : "DONE",
+    "detail" : "返回回答、Graph 节点、Tool 调用和 Memory 调试信息。"
+  } ],
+  "toolCalls" : [ {
+    "name" : "searchLearningDocs",
+    "arguments" : {
+      "query" : "Workflow 配置 实现 业务场景",
+      "limit" : 5
+    },
+    "result" : "本地文档检索结果：\n\n[1] README.md\n路径：spring-ai-alibaba-chat-example\\minimax-chat\\README.md\n摘要：hService` | 把 Agent 执行流程表达成可展示的轻量工作流节点。 |\n| Memory | `LearningMemoryService` | 按 userId 从 JSON 文件读取用户学习记忆，并在每轮对话后写回该用户的学习阶段、关注主题、最近意图和对话轮次。 |\n| RAG | `LearningRagService` | 基于关键词检索当前 minimax-chat 的 README 和关键源码，为模型回答当前项目实现细节提供本地资料。 |\n| MCP | `LearningMcpService` | 通过真实 MCP Client 查询、创建和更新外部学习资源；未启用真实 MCP 时提供 mock fallback。 |\n| Planner | `LearningIntentPlanner` | 把当前用户请求识别成具体学习意图。 |\n| Tool | `MiniMaxLearningTools` | 暴露可以被大模型调用的工具入口。 |\n| Skill | `LearningSkillService` | 承载学习建议、计划生成、概念解释、当前时间等真实业务逻辑。 |\n| Model | MiniMax-M2.7 | 生成最终回答，并根据需要决定是否调用工具。 |\n\n## 演进记录\n\n### 1. Chat\n\n初始目标：让 MiniMax 聊天先跑通，支持简单前端页面和自定义输入内容。\n\n```text\n前端问题\n -> Controller\n -> MiniMax\n -> 前端展示回答\n```\n\n### 2. Tool Calling\n\n新增可以被模型调用的工具，用于获取当前时间和生成 Spring AI Alibaba 学习建议。\n\n```text\n前端问题\n -> Controller\n -> MiniMax\n -> MiniMax 按需调用 Tools\n -> 前端展示回答 + Tool调用\n```\n\n### 3. Skill 层\n\n把真实学习业务逻辑从 Tool 方法中拆出来，放入 `LearningSkillService`。\n\n`\n\n[2] MiniMaxChatClientController.java\n路径：spring-ai-alibaba-chat-example\\minimax-chat\\src\\main\\java\\com\\alibaba\\cloud\\ai\\controller\\MiniMaxChatClientController.java\n摘要：aphResult;\nimport com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphService;\nimport com.alibaba.cloud.ai.report.AgentRunReport;\nimport com.alibaba.cloud.ai.report.AgentRunReportService;\nimport com.alibaba.cloud.ai.workflow.LearningWorkflowResult;\nimport com.alibaba.cloud.ai.workflow.LearningWorkflowService;\nimport jakarta.servlet.http.HttpServletResponse;\nimport org.springframework.ai.chat.client.ChatClient;\nimport org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;\nimport org.springframework.ai.chat.model.ChatModel;\nimport org.springframework.ai.openai.OpenAiChatOptions;\nimport org.springframework.http.MediaType;\nimport org.springframework.http.codec.ServerSentEvent;\nimport org.springframework.web.bind.annotation.DeleteMapping;\nimport org.springframework.web.bind.annotation.GetMapping;\nimport org.springframework.web.bind.annotation.PostMapping;\nimport org.springframewo\n\n[3] LearningAgentService.java\n路径：spring-ai-alibaba-chat-example\\minimax-chat\\src\\main\\java\\com\\alibaba\\cloud\\ai\\agent\\LearningAgentService.java\n摘要：Graph 时，优先调用 generateLearningAdvice 工具。\n\t\t\t当用户要求今日计划、30 分钟学习安排、每日练习或任务拆分时，优先调用 generateDailyPlan 工具。\n\t\t\t当用户询问概念含义或区别，例如 Tool、Skill、Agent、Graph 是什么时，优先调用 explainConcept 工具。\n\t\t\t当用户询问当前 minimax-chat 项目文档、README、源码结构、调用链或当前实现细节时，优先调用 searchLearningDocs 工具检索本地资料。\n\t\t\t当用户明确要求“保存、记录、沉淀、新增学习资源”时，调用 createMcpLearningResource 把学习点写入 MCP Server。\n\t\t\t当用户明确要求“修改、更新、完善已有学习资源”时，调用 updateMcpLearningResource 更新 MCP Server 中的资源。\n\t\t\t不要输出 <think>、</think> 或任何思考标签。\n\t\t\t\"\"\";\n\n\tprivate static final int MAX_HISTORY_MESSAGES = 20;\n\n\tprivate final ChatClient chatClient;\n\n\tprivate final MiniMaxLearningTools learningTools;\n\n\tprivate final ToolCallDebugRecorder debugRecorder;\n\n\tprivate final LearningIntentPlanner intentPlanner;\n\n\tprivate final LearningMemoryService memoryService;\n\n\tprivate final LearningGraphService graphService;\n\n\tprivate final LearningMcpService mcpService;\n\n\tpublic LearningAgentService(ChatModel ch\n\n[4] MiniMaxLearningTools.java\n路径：spring-ai-alibaba-chat-example\\minimax-chat\\src\\main\\java\\com\\alibaba\\cloud\\ai\\tool\\MiniMaxLearningTools.java\n摘要：oncept(concept, level);\n\t\tthis.debugRecorder.record(\"explainConcept\", arguments(\"concept\", concept, \"level\", level), result);\n\t\treturn result;\n\t}\n\n\t@Tool(description = \"检索当前 minimax-chat 项目的本地文档和关键源码。当用户询问 README、项目结构、当前实现、调用链、Controller、Agent、Tool、Skill、Memory 或 RAG 代码细节时使用。\")\n\tpublic String searchLearningDocs(\n\t\t\t@ToolParam(description = \"检索问题或关键词，例如 当前项目 Tool Skill Agent Memory 调用链。\") String query,\n\t\t\t@ToolParam(description = \"返回结果数量，建议 1 到 5。\") Integer limit) {\n\t\tString result = this.learningRagService.search(query, limit);\n\t\tthis.debugRecorder.record(\"searchLearningDocs\", arguments(\"query\", query, \"limit\", limit), result);\n\t\treturn result;\n\t}\n\n\t@Tool(description = \"通过 MCP 获取 Spring AI Alibaba 学习资源，真实 MCP Client 优先，mock MCP 兜底。当用户询问 MCP、外部工具协议、学习资源、资源发现、MCP Node 或通过 MCP 查找资料时使用。\")\n\tpublic String searchMcpLearningResources(\n\t\t\t@ToolParam(description = \"MCP 资源查询词，例如 Agent、Graph、Tool、Me\n\n[5] LearningIntentPlanner.java\n路径：spring-ai-alibaba-chat-example\\minimax-chat\\src\\main\\java\\com\\alibaba\\cloud\\ai\\planner\\LearningIntentPlanner.java\n摘要：(containsAny(text, \"是什么\", \"区别\", \"解释\", \"概念\", \"tool\", \"skill\", \"agent\", \"rag\", \"mcp\", \"graph\")) {\n\t\t\tmatched++;\n\t\t\tlastIntent = LearningIntent.CONCEPT_EXPLAIN;\n\t\t}\n\t\tif (containsAny(text, \"readme\", \"文档\", \"源码\", \"项目结构\", \"当前实现\", \"调用链\", \"minimax-chat\")) {\n\t\t\tmatched++;\n\t\t\tlastIntent = LearningIntent.CONCEPT_EXPLAIN;\n\t\t}\n\t\tif (containsAny(text, \"保存\", \"记录\", \"沉淀\", \"新增资源\", \"学习资源\", \"写入 mcp\", \"写入mcp\", \"更新资源\", \"修改资源\")) {\n\t\t\tmatched++;\n\t\t\tlastIntent = LearningIntent.MIXED;\n\t\t}\n\n\t\tif (matched > 1) {\n\t\t\treturn LearningIntent.MIXED;\n\t\t}\n\t\treturn lastIntent;\n\t}\n\n\tpublic String instructionFor(LearningIntent intent) {\n\t\treturn switch (intent) {\n\t\t\tcase TIME_QUERY -> \"本轮 Planner 识别为 TIME_QUERY。回答时优先调用 getCurrentTime 工具获取真实时间。\";\n\t\t\tcase LEARNING_ADVICE -> \"本轮 Planner 识别为 LEARNING_ADVICE。回答时优先调用 generateLearningAdvice 工具生成学习建议。\";\n\t\t\tcase DAILY_PLAN -> \"本轮 Planner 识别为 DAILY_PLAN。回答时优先调用 generateDailyPlan 工具生成可\n"
+  }, {
+    "name" : "searchLearningDocs",
+    "arguments" : {
+      "query" : "LearningWorkflowService Workflow 步骤 流程",
+      "limit" : 3
+    },
+    "result" : "本地文档检索结果：\n\n[1] README.md\n路径：spring-ai-alibaba-chat-example\\minimax-chat\\README.md\n摘要：-> Planner 判断意图\n -> MiniMax + Tools\n -> searchLearningDocs Tool 按需检索本地文档\n -> search/create/update MCP Learning Resource Tool 按需查询或沉淀外部学习资源\n -> LearningMemoryService 按 userId 更新记忆并写回 JSON 文件\n -> 前端展示回答 + Graph节点 + Agent步骤 + Tool调用 + 当前用户Memory信息\n```\n\n流式模式会额外通过 SSE 事件分阶段返回：\n\n```text\ndebug -> message -> done\n```\n\n## 各层职责\n\n| 层 | 类 | 职责 |\n| --- | --- | --- |\n| 前端 | `src/main/resources/static/index.html` | 发送用户 ID 和用户问题，维护短期聊天历史，渲染 Markdown，展示调试信息。 |\n| Controller | `MiniMaxChatClientController` | 接收 HTTP 请求，把对话处理委托给 Agent 层。 |\n| Agent | `LearningAgentService` | 编排记忆读取、意图识别、模型调用、工具访问和记忆更新。 |\n| Graph | `LearningGraphService` | 把 Agent 执行流程表达成可展示的轻量工作流节点。 |\n| Memory | `LearningMemoryService` | 按 userId 从 JSON 文件读取用户学习记忆，并在每轮对话后写回该用户的学习阶段、关注主题、最近意图和对话轮次。 |\n| RAG | `LearningRagService` | 基于关键词检索当前 minimax-chat 的 README 和关键源码，为模型回答当前项目实现细节提供本地资料。 |\n| MCP | `LearningMcpService` | 通过真实 MCP Client 查询\n\n[2] MiniMaxChatClientController.java\n路径：spring-ai-alibaba-chat-example\\minimax-chat\\src\\main\\java\\com\\alibaba\\cloud\\ai\\controller\\MiniMaxChatClientController.java\n摘要：aphResult;\nimport com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphService;\nimport com.alibaba.cloud.ai.report.AgentRunReport;\nimport com.alibaba.cloud.ai.report.AgentRunReportService;\nimport com.alibaba.cloud.ai.workflow.LearningWorkflowResult;\nimport com.alibaba.cloud.ai.workflow.LearningWorkflowService;\nimport jakarta.servlet.http.HttpServletResponse;\nimport org.springframework.ai.chat.client.ChatClient;\nimport org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;\nimport org.springframework.ai.chat.model.ChatModel;\nimport org.springframework.ai.openai.OpenAiChatOptions;\nimport org.springframework.http.MediaType;\nimport org.springframework.http.codec.ServerSentEvent;\nimport org.springframework.web.bind.annotation.DeleteMapping;\nimport org.springframework.web.bind.annotation.GetMapping;\nimport org.springframework.web.bind.annotation.PostMapping;\nimport org.springframewo\n\n[3] LearningSkillService.java\n路径：spring-ai-alibaba-chat-example\\minimax-chat\\src\\main\\java\\com\\alibaba\\cloud\\ai\\skill\\LearningSkillService.java\n摘要：l calling\", \"Tool Calling 是让模型在需要真实能力时调用 Java 方法。它解决的是“模型不会凭空知道实时信息或业务系统数据”的问题。\",\n\t\t\t\"tool\", \"Tool 是一个可被模型调用的函数入口，通常用 @Tool 暴露。它应该小而明确，比如获取当前时间、查询订单、检索知识库。\",\n\t\t\t\"skill\", \"Skill 是一组围绕同一目标组织起来的能力。它可以包含多个 Tool、提示词模板、业务规则和执行步骤。\",\n\t\t\t\"agent\", \"Agent 是能够理解目标、选择工具或技能、执行步骤并根据结果继续推理的智能体。\",\n\t\t\t\"rag\", \"RAG 是检索增强生成。它先从知识库查相关资料，再把资料交给模型回答，适合企业知识问答。\",\n\t\t\t\"mcp\", \"MCP 是模型上下文协议，用统一方式把外部工具、资源和服务暴露给模型或 Agent。\",\n\t\t\t\"graph\", \"Graph 是显式工作流编排。开发者把任务拆成节点和边，适合多步骤、可控、可恢复的 Agent 流程。\");\n\n\tpublic String getCurrentTime(String zoneId) {\n\t\tString normalizedZoneId = normalizeZoneId(zoneId);\n\t\tZonedDateTime now = ZonedDateTime.now(ZoneId.of(normalizedZoneId));\n\t\treturn \"当前时间：\" + now.format(TIME_FORMATTER) + \"。时区：\" + normalizedZoneId + \"。\";\n\t}\n\n\tpublic String generateLearningAdvice(String topic, String level) {\n\t\tString safeTopic = hasText(topic) ? topic.trim() : \"Spring AI Alibaba Agent\";\n\t\tString safeLevel = normalizeLe\n"
+  }, {
+    "name" : "createMcpLearningResource",
+    "arguments" : {
+      "writeMode" : "dry-run",
+      "writeEnabled" : true,
+      "topic" : "Workflow",
+      "selectedToolName" : "",
+      "realMcpAvailable" : false,
+      "source" : "MCP_WRITE_DRY_RUN",
+      "id" : "learning-workflow-design",
+      "title" : "Learning Workflow 业务场景重构：从技术步骤到学习辅导五步法"
+    },
+    "result" : "MCP 写入 Dry-Run 预览\n- 操作：createLearningResource\n- 资源 ID：learning-workflow-design\n- 待确认用户：default-user\n- 写入开关：true\n- 写入模式：dry-run\n- 结果：未调用 MCP Server，未写入 learning-resources.json\n\n计划写入内容：\n{\r\n  \"topic\" : \"Workflow\",\r\n  \"summary\" : \"把 minimax-chat 的技术调用链重构成学习辅导业务场景，每个步骤赋予真实业务含义：理解问题 → 识别意图 → 激活能力 → 交付价值 → 记录成长\",\r\n  \"title\" : \"Learning Workflow 业务场景重构：从技术步骤到学习辅导五步法\",\r\n  \"id\" : \"learning-workflow-design\",\r\n  \"nextAction\" : \"下一步可以把 LearningWorkflowService 中的节点名称替换为业务步骤描述，实现 Workflow 可视化的业务语义升级\"\r\n}\n"
+  } ],
+  "mcpDebugInfo" : {
+    "mode" : "MCP_WRITE_DRY_RUN",
+    "realMcpAvailable" : false,
+    "selectedToolName" : "",
+    "availableToolNames" : [ "listLearningTopics", "createLearningResource", "updateLearningResource", "getLearningResource", "searchLearningResources" ],
+    "fallbackReason" : "minimax.mcp.write-mode=dry-run",
+    "query" : "learning-workflow-design",
+    "limit" : null,
+    "writeEnabled" : true,
+    "writeMode" : "dry-run",
+    "pendingWrite" : {
+      "userId" : "default-user",
+      "operation" : "createLearningResource",
+      "resourceId" : "learning-workflow-design",
+      "topic" : "Workflow",
+      "title" : "Learning Workflow 业务场景重构：从技术步骤到学习辅导五步法",
+      "summary" : "把 minimax-chat 的技术调用链重构成学习辅导业务场景，每个步骤赋予真实业务含义：理解问题 → 识别意图 → 激活能力 → 交付价值 → 记录成长",
+      "nextAction" : "下一步可以把 LearningWorkflowService 中的节点名称替换为业务步骤描述，实现 Workflow 可视化的业务语义升级",
+      "createdAt" : "2026-05-14T23:36:14.7688507"
+    }
+  }
+}, {
+  "id" : "run-9532fe26-1abf-4c94-82e2-ec79966e5ba2",
+  "createdAt" : "2026-05-15T01:21:17.465405100Z",
+  "userId" : "default-user",
+  "chainMode" : "LEARNING_WORKFLOW",
+  "message" : "我想学习 Multi-Agent 和 Workflow，请用 Workflow 模式给我一条学习路线、实践任务和测试方法。",
+  "historySize" : 0,
+  "intent" : "MIXED",
+  "answerSummary" : " # \uD83C\uDFAF Multi-Agent 与 Workflow 学习路线 ## 一、渐进式学习路线 基于你当前处于 **初学者阶段**，推荐按以下顺序推进： | 阶段 | 内容 | 目标 | |------|------|------| | **1️⃣ 基础** | 跑通 ChatClient | 理解 AI 模型对话基本流程 | | **2️⃣ 进阶** | 学习 Tool Calling | 让模型能调用外部工具 | | **3️⃣ 封装...",
+  "mcpMode" : "MCP_WRITE_PENDING",
+  "pendingMcpWrite" : true,
+  "toolCallCount" : 1,
+  "agentStepCount" : 7,
+  "graphStepCount" : 8,
+  "memoryBefore" : {
+    "userId" : "default-user",
+    "level" : "初学者",
+    "topics" : [ "Tool Calling", "MCP", "Agent" ],
+    "lastIntent" : "GENERAL_CHAT",
+    "lastQuestion" : "把当前 Workflow 从技术步骤改成学习辅导业务场景 Workflow，每个步骤要根据用户问题、Memory、Intent 输出真实业务含义。",
+    "conversationCount" : 6,
+    "updatedAt" : "2026-05-14T23:36:37.1070944"
+  },
+  "memoryAfter" : {
+    "userId" : "default-user",
+    "level" : "初学者",
+    "topics" : [ "Tool Calling", "MCP", "Agent" ],
+    "lastIntent" : "MIXED",
+    "lastQuestion" : "我想学习 Multi-Agent 和 Workflow，请用 Workflow 模式给我一条学习路线、实践任务和测试方法。",
+    "conversationCount" : 7,
+    "updatedAt" : "2026-05-15T09:21:17.4276505"
+  },
+  "agentSteps" : [ {
+    "id" : "analyze_goal",
+    "name" : "识别学习目标",
+    "status" : "DONE",
+    "detail" : "识别到用户问题包含多个学习目标，当前重点是：Multi-Agent 多角色协作。Workflow 需要组合概念解释、项目上下文、学习计划和验证任务。"
+  }, {
+    "id" : "check_foundation",
+    "name" : "判断当前学习阶段",
+    "status" : "DONE",
+    "detail" : "根据 Memory，用户阶段为「初学者」，已关注主题：Tool Calling、MCP、Agent，历史对话轮次：6。适合继续从已跑通能力进入更真实的 Workflow / Multi-Agent 实践。"
+  }, {
+    "id" : "collect_project_context",
+    "name" : "收集项目上下文",
+    "status" : "DONE",
+    "detail" : "本轮已使用 MCP 学习资源上下文，适合补充外部化资源、沉淀学习条目或验证 MCP 接入。"
+  }, {
+    "id" : "choose_learning_path",
+    "name" : "选择学习路径",
+    "status" : "DONE",
+    "detail" : "选择 Multi-Agent 学习路径：先实现 Coordinator，再拆出 PlannerAgent、ResearchAgent、TeacherAgent、ReviewerAgent。"
+  }, {
+    "id" : "generate_learning_plan",
+    "name" : "生成学习计划",
+    "status" : "DONE",
+    "detail" : "建议按实践路线推进：先完善 Workflow 场景，再实现 Multi-Agent 角色拆分，最后把 Multi-Agent 放进 Graph 节点。"
+  }, {
+    "id" : "define_validation_task",
+    "name" : "给出验证任务",
+    "status" : "DONE",
+    "detail" : "验证任务：用 Workflow 模式提问同一个问题，再切换官方 Graph 对比 graphSteps；检查 本轮工具调用 1 次，MCP 模式：MCP_WRITE_PENDING。"
+  }, {
+    "id" : "recommend_next_step",
+    "name" : "生成下一步建议",
+    "status" : "DONE",
+    "detail" : "下一步建议：新增 multiagent 包，实现 CoordinatorAgent、ResearchAgent、TeacherAgent、ReviewerAgent，并先让 Coordinator 串行调用这些角色。"
+  } ],
+  "graphSteps" : [ {
+    "id" : "receive",
+    "name" : "Receive",
+    "status" : "DONE",
+    "detail" : "接收用户 default-user 的问题。"
+  }, {
+    "id" : "memory-read",
+    "name" : "Memory Read",
+    "status" : "DONE",
+    "detail" : "按 userId 从 JSON 文件读取长期学习记忆。"
+  }, {
+    "id" : "planner",
+    "name" : "Planner",
+    "status" : "DONE",
+    "detail" : "识别学习意图：MIXED。"
+  }, {
+    "id" : "strategy",
+    "name" : "Strategy",
+    "status" : "DONE",
+    "detail" : "混合问题允许组合多个工具路径。"
+  }, {
+    "id" : "model-call",
+    "name" : "Model Call",
+    "status" : "DONE",
+    "detail" : "调用 MiniMax-M2.7，并暴露 Tool、Skill、RAG 能力。"
+  }, {
+    "id" : "tool-execute",
+    "name" : "Tool Execute",
+    "status" : "WAITING",
+    "detail" : "由模型按需触发工具，例如时间、学习计划、概念解释或本地文档检索。"
+  }, {
+    "id" : "memory-write",
+    "name" : "Memory Write",
+    "status" : "DONE",
+    "detail" : "回答完成后更新当前用户长期记忆。"
+  }, {
+    "id" : "response",
+    "name" : "Response",
+    "status" : "DONE",
+    "detail" : "返回回答、Graph 节点、Tool 调用和 Memory 调试信息。"
+  } ],
+  "toolCalls" : [ {
+    "name" : "generateLearningAdvice",
+    "arguments" : {
+      "level" : "初学者",
+      "topic" : "Multi-Agent Workflow"
+    },
+    "result" : "学习建议：\n1. 当前主题：Multi-Agent Workflow。\n2. 当前阶段：初学者。\n3. 推荐顺序：先跑通 ChatClient，再学习 Tool Calling，然后封装 Skill，最后进入 Agent 编排。\n4. 实践任务：先写一个无外部依赖的本地 Java Tool，例如获取当前时间或生成学习建议。\n5. 验收标准：模型能根据用户问题自动决定是否调用工具，并把工具结果整合成自然语言回答。\n"
+  } ],
+  "mcpDebugInfo" : {
+    "mode" : "MCP_WRITE_PENDING",
+    "realMcpAvailable" : false,
+    "selectedToolName" : "",
+    "availableToolNames" : [ ],
+    "fallbackReason" : "",
+    "query" : "",
+    "limit" : null,
+    "writeEnabled" : true,
+    "writeMode" : "dry-run",
+    "pendingWrite" : {
+      "userId" : "default-user",
+      "operation" : "createLearningResource",
+      "resourceId" : "learning-workflow-design",
+      "topic" : "Workflow",
+      "title" : "Learning Workflow 业务场景重构：从技术步骤到学习辅导五步法",
+      "summary" : "把 minimax-chat 的技术调用链重构成学习辅导业务场景，每个步骤赋予真实业务含义：理解问题 → 识别意图 → 激活能力 → 交付价值 → 记录成长",
+      "nextAction" : "下一步可以把 LearningWorkflowService 中的节点名称替换为业务步骤描述，实现 Workflow 可视化的业务语义升级",
+      "createdAt" : "2026-05-14T23:36:14.7688507"
+    }
+  }
 } ]

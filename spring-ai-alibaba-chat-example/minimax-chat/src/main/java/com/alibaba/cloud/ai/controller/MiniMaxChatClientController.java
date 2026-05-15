@@ -34,12 +34,16 @@ import com.alibaba.cloud.ai.mcp.LearningMcpService.McpWriteResult;
 import com.alibaba.cloud.ai.mcp.PendingMcpWrite;
 import com.alibaba.cloud.ai.memory.LearningMemory;
 import com.alibaba.cloud.ai.memory.LearningMemoryService;
+import com.alibaba.cloud.ai.multiagent.LearningCoordinatorAgent;
+import com.alibaba.cloud.ai.multiagent.MultiAgentResult;
 import com.alibaba.cloud.ai.official.OfficialLearningAgentResult;
 import com.alibaba.cloud.ai.official.OfficialLearningAgentService;
 import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphResult;
 import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphService;
 import com.alibaba.cloud.ai.report.AgentRunReport;
 import com.alibaba.cloud.ai.report.AgentRunReportService;
+import com.alibaba.cloud.ai.workflow.LearningWorkflowResult;
+import com.alibaba.cloud.ai.workflow.LearningWorkflowService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -79,6 +83,10 @@ public class MiniMaxChatClientController {
 
 	private final OfficialLearningGraphService officialLearningGraphService;
 
+	private final LearningWorkflowService learningWorkflowService;
+
+	private final LearningCoordinatorAgent learningCoordinatorAgent;
+
 	private final AgentRunReportService agentRunReportService;
 
 	private final AgentEvaluationService agentEvaluationService;
@@ -88,13 +96,16 @@ public class MiniMaxChatClientController {
 	public MiniMaxChatClientController(ChatModel chatModel, LearningAgentService learningAgentService,
 			LearningMemoryService learningMemoryService, LearningMcpService learningMcpService,
 			OfficialLearningAgentService officialLearningAgentService,
-			OfficialLearningGraphService officialLearningGraphService, AgentRunReportService agentRunReportService,
+			OfficialLearningGraphService officialLearningGraphService, LearningWorkflowService learningWorkflowService,
+			LearningCoordinatorAgent learningCoordinatorAgent, AgentRunReportService agentRunReportService,
 			AgentEvaluationService agentEvaluationService, AgentJudgeService agentJudgeService) {
 		this.learningAgentService = learningAgentService;
 		this.learningMemoryService = learningMemoryService;
 		this.learningMcpService = learningMcpService;
 		this.officialLearningAgentService = officialLearningAgentService;
 		this.officialLearningGraphService = officialLearningGraphService;
+		this.learningWorkflowService = learningWorkflowService;
+		this.learningCoordinatorAgent = learningCoordinatorAgent;
 		this.agentRunReportService = agentRunReportService;
 		this.agentEvaluationService = agentEvaluationService;
 		this.agentJudgeService = agentJudgeService;
@@ -169,6 +180,26 @@ public class MiniMaxChatClientController {
 		List<LearningAgentMessage> history = toAgentHistory(request);
 		OfficialLearningGraphResult result = this.officialLearningGraphService.chat(userId, message);
 		saveEvaluation(this.agentRunReportService.saveOfficialGraph(userId, message, history.size(), result));
+		return result;
+	}
+
+	@PostMapping(value = "/workflow/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public LearningWorkflowResult workflowChat(@RequestBody ChatRequest request) {
+		String userId = extractUserId(request);
+		String message = extractMessage(request);
+		List<LearningAgentMessage> history = toAgentHistory(request);
+		LearningWorkflowResult result = this.learningWorkflowService.chat(userId, message, history);
+		saveEvaluation(this.agentRunReportService.saveWorkflow(userId, message, history.size(), result));
+		return result;
+	}
+
+	@PostMapping(value = "/multi-agent/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public MultiAgentResult multiAgentChat(@RequestBody ChatRequest request) {
+		String userId = extractUserId(request);
+		String message = extractMessage(request);
+		List<LearningAgentMessage> history = toAgentHistory(request);
+		MultiAgentResult result = this.learningCoordinatorAgent.chat(userId, message, history);
+		saveEvaluation(this.agentRunReportService.saveMultiAgent(userId, message, history.size(), result));
 		return result;
 	}
 

@@ -723,3 +723,99 @@ DELETE /minimax/chat-client/judge/runs
 ```
 
 前端页面提供“AI 评审”按钮。这个能力是手动触发的，因为它会额外调用一次大模型。
+
+## 19. Workflow 模式
+
+`LearningWorkflowService` 提供一个轻量、确定性的 Workflow 编排层，用来学习“固定流程”和“Agent 自主决策”的区别。
+
+当前 Workflow 已改成学习辅导业务流程：
+
+```text
+识别学习目标
+ -> 判断当前学习阶段
+ -> 收集项目上下文
+ -> 选择学习路径
+ -> 生成学习计划
+ -> 给出验证任务
+ -> 生成下一步建议
+```
+
+Workflow 固定的是学习辅导过程，不再只是技术调用链。每个节点会根据用户问题、Memory、Planner 意图、Tool/RAG/MCP 调用情况生成真实业务含义。回答生成仍复用现有 `LearningAgentService`，因此不会重复实现 Tool、Skill、RAG、MCP、Memory 逻辑。
+
+调用入口：
+
+```http
+POST /minimax/chat-client/workflow/chat
+```
+
+前端“Agent 链路模式”新增：
+
+```text
+Workflow
+```
+
+Workflow 调用结束后同样会进入：
+
+```text
+AgentRunReport
+ -> AgentEvaluation
+ -> Evaluation Dashboard
+ -> 可手动触发 AI 评审
+```
+
+这个阶段用于理解：
+
+- Workflow 关注固定步骤和状态流转
+- Agent 关注模型自主选择工具和生成回答
+- Graph 可以表达 Workflow，也可以承载未来 Multi-Agent 节点
+
+## 20. Multi-Agent 模式
+
+`LearningCoordinatorAgent` 提供第一版串行 Multi-Agent 学习辅导链路。它不是并发多智能体，而是先把多个角色的职责拆清楚，方便观察和测试。
+
+当前角色：
+
+```text
+CoordinatorAgent
+ -> PlannerAgent
+ -> ResearchAgent
+ -> TeacherAgent
+ -> ReviewerAgent
+ -> CoordinatorAgent
+```
+
+职责说明：
+
+- `PlannerAgent`：识别学习意图，拆解学习子任务
+- `ResearchAgent`：收集当前项目 RAG 和 MCP 学习资源上下文
+- `TeacherAgent`：复用 `LearningAgentService` 生成教学回答，保留 Tool、Skill、RAG、MCP、Memory 能力
+- `ReviewerAgent`：检查回答是否非空、是否包含实践/测试/下一步、项目问题是否使用工具
+- `CoordinatorAgent`：串联角色并输出最终回答与协作摘要
+
+调用入口：
+
+```http
+POST /minimax/chat-client/multi-agent/chat
+```
+
+前端“Agent 链路模式”新增：
+
+```text
+Multi-Agent
+```
+
+Multi-Agent 调用结束后同样会进入：
+
+```text
+AgentRunReport
+ -> AgentEvaluation
+ -> Evaluation Dashboard
+ -> 可手动触发 AI 评审
+```
+
+这一阶段用于理解：
+
+- 单 Agent 是一个智能体自己完成任务
+- Workflow 是固定业务流程
+- Multi-Agent 是多个角色串行协作
+- 后续可以把 Multi-Agent 角色放进 Workflow 或 AgentGraph 节点里

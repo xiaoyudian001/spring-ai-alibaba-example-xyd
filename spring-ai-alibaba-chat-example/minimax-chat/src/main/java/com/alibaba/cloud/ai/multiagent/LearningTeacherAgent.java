@@ -21,6 +21,8 @@ import java.util.List;
 import com.alibaba.cloud.ai.agent.LearningAgentResult;
 import com.alibaba.cloud.ai.agent.LearningAgentService;
 import com.alibaba.cloud.ai.agent.LearningAgentService.LearningAgentMessage;
+import com.alibaba.cloud.ai.multiagent.LearningPlannerAgent.PlannerOutput;
+import com.alibaba.cloud.ai.multiagent.LearningResearchAgent.ResearchOutput;
 import org.springframework.stereotype.Component;
 
 /**
@@ -35,8 +37,31 @@ public class LearningTeacherAgent {
 		this.learningAgentService = learningAgentService;
 	}
 
-	public LearningAgentResult teach(String userId, String message, List<LearningAgentMessage> history) {
-		return this.learningAgentService.chat(userId, message, history);
+	public LearningAgentResult teach(String userId, String message, List<LearningAgentMessage> history,
+			PlannerOutput plan, ResearchOutput research) {
+		return this.learningAgentService.chat(userId, augmentedMessage(message, plan, research), history);
+	}
+
+	private String augmentedMessage(String message, PlannerOutput plan, ResearchOutput research) {
+		return """
+				%s
+
+				【Multi-Agent 上下文】
+				PlannerAgent 识别意图：%s
+				PlannerAgent 规划：%s
+
+				ResearchAgent RAG 摘要：
+				%s
+
+				ResearchAgent MCP 摘要：
+				%s
+
+				请基于上述上下文回答用户原始问题。回答必须包含：
+				1. 完整学习路线
+				2. 具体实践任务
+				3. 可执行测试方法
+				4. 如果真实 MCP 不可用，请明确说明 fallback，并给出备选操作
+				""".formatted(message, plan.intent(), plan.detail(), research.ragSummary(), research.mcpSummary());
 	}
 
 }

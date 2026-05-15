@@ -128,6 +128,7 @@ public class AgentJudgeService {
 	private String userPrompt(AgentRunReport report) throws IOException {
 		return """
 				请评审下面这次 Agent 执行报告。
+				注意：answerSummary 只是列表摘要，可能被截断；请优先根据 answerContent 判断回答质量。
 
 				AgentRunReport:
 				%s

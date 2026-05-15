@@ -23,8 +23,8 @@ import java.util.List;
  * A persisted snapshot of one learning agent execution.
  */
 public record AgentRunReport(String id, Instant createdAt, String userId, String chainMode, String message,
-		int historySize, String intent, String answerSummary, String mcpMode, boolean pendingMcpWrite,
-		int toolCallCount, int agentStepCount, int graphStepCount, Object memoryBefore, Object memoryAfter,
-		List<?> agentSteps, List<?> graphSteps, List<?> toolCalls, Object mcpDebugInfo) {
+		int historySize, String intent, String answerSummary, String answerContent, String mcpMode,
+		boolean pendingMcpWrite, int toolCallCount, int agentStepCount, int graphStepCount, Object memoryBefore,
+		Object memoryAfter, List<?> agentSteps, List<?> graphSteps, List<?> toolCalls, Object mcpDebugInfo) {
 
 }

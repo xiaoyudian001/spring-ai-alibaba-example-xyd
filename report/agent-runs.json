@@ -7,6 +7,7 @@
   "historySize" : 0,
   "intent" : "MIXED",
   "answerSummary" : " ## 当前时间 \uD83D\uDCC5 **2026年05月14日 00:44:54**（北京时间） --- ## \uD83D\uDCDA 今日 30 分钟 Agent 学习计划 | 时间 | 内容 | |------|------| | **10 分钟** | 阅读当前模块代码，重点看 **Controller → Tool → Skill Service** 的调用链 | | **15 分钟** | 动手改一个小功能，例如新增一个 `@Tool` 参数或调整 Ski...",
+  "answerContent" : null,
   "mcpMode" : "NOT_USED",
   "pendingMcpWrite" : false,
   "toolCallCount" : 2,
@@ -129,6 +130,7 @@
   "historySize" : 0,
   "intent" : "MIXED",
   "answerSummary" : " ## 当前时间 **北京时间：2026 年 5 月 14 日 10:29:51** --- ## 30 分钟 Agent 学习计划 | 阶段 | 时长 | 内容 | |------|------|------| | \uD83D\uDCD6 理论 + 代码阅读 | 10 分钟 | 阅读 Controller、Tool、Skill Service 的调用链，理解 Agent 在项目中的定位 | | ✏️ 动手实践 | 15 分钟 | 新增一个 `@Tool...",
+  "answerContent" : null,
   "mcpMode" : "NOT_USED",
   "pendingMcpWrite" : false,
   "toolCallCount" : 2,
@@ -251,6 +253,7 @@
   "historySize" : 0,
   "intent" : "MIXED",
   "answerSummary" : " **现在北京时 间是 2026-05-14 11:59:26。** --- ## \uD83D\uDCDA 今日 30 分钟 Agent 学习计划 | 时间 | 任务 | 重点 | |------|------|------| | **10 分钟** | 阅读当前项目 `Agent` 相关代码 | Controller → Tool → Skill Service 的调用链 | | **15 分钟** | 动手实践 | 新增一个 `@Tool` 参数 或...",
+  "answerContent" : null,
   "mcpMode" : "NOT_USED",
   "pendingMcpWrite" : false,
   "toolCallCount" : 2,
@@ -327,6 +330,7 @@
   "historySize" : 0,
   "intent" : "CONCEPT_EXPLAIN",
   "answerSummary" : " ## Agent 快速学习路径建议 ### 1️⃣ 理解 Agent 是什么 **Agent = 目标理解 + 工具选择 + 执行推理** 在 minimax-chat 中，你的项目已具备：Chat → 多轮上下文 → Markdown → Tool Calling，下一步就是封装 **Skill**，最终进入 Agent 编排。 --- ### 2️⃣ 推荐学习顺序 ``` 第1步：跑通 ChatClient（已有基础） ↓ 第2步...",
+  "answerContent" : null,
   "mcpMode" : "NOT_USED",
   "pendingMcpWrite" : false,
   "toolCallCount" : 2,
@@ -403,6 +407,7 @@
   "historySize" : 0,
   "intent" : "GENERAL_CHAT",
   "answerSummary" : " ## Learning Workflow 业务场景重构 基于当前 minimax-chat 的技术调用链，我设计了一套**学习辅导五步法 Workflow**： --- ### \uD83D\uDCDA 业务场景 Workflow ``` 用户提问 ↓ ┌─────────────────────────────────────────────────────────────┐ │ 步骤1️⃣ 【理解问题】 │ │ 输入：用户原始问题 │ │ 输出：问题...",
+  "answerContent" : null,
   "mcpMode" : "MCP_WRITE_DRY_RUN",
   "pendingMcpWrite" : true,
   "toolCallCount" : 3,
@@ -561,6 +566,7 @@
   "historySize" : 0,
   "intent" : "MIXED",
   "answerSummary" : " # \uD83C\uDFAF Multi-Agent 与 Workflow 学习路线 ## 一、渐进式学习路线 基于你当前处于 **初学者阶段**，推荐按以下顺序推进： | 阶段 | 内容 | 目标 | |------|------|------| | **1️⃣ 基础** | 跑通 ChatClient | 理解 AI 模型对话基本流程 | | **2️⃣ 进阶** | 学习 Tool Calling | 让模型能调用外部工具 | | **3️⃣ 封装...",
+  "answerContent" : null,
   "mcpMode" : "MCP_WRITE_PENDING",
   "pendingMcpWrite" : true,
   "toolCallCount" : 1,
@@ -689,5 +695,162 @@
       "nextAction" : "下一步可以把 LearningWorkflowService 中的节点名称替换为业务步骤描述，实现 Workflow 可视化的业务语义升级",
       "createdAt" : "2026-05-14T23:36:14.7688507"
     }
+  }
+}, {
+  "id" : "run-6b8f807f-922b-44d9-a007-b69318b09dc8",
+  "createdAt" : "2026-05-15T05:57:24.416544900Z",
+  "userId" : "user-c",
+  "chainMode" : "LEARNING_MULTI_AGENT",
+  "message" : "用 Multi-Agent 模式帮我学习 Workflow 和 AgentGraph，并给出完整学习路线、实践任务和测试方法。",
+  "historySize" : 0,
+  "intent" : "MIXED",
+  "answerSummary" : " ## \uD83C\uDFAF Workflow 和 AgentGraph 完整学习路线 基于 Multi-Agent 分析结果，为你整理如下： --- ### \uD83D\uDCDA 一、核心概念速览 | 概念 | 定位 | 在本项目中的作用 | |------|------|------------------| | **Graph** | 显式工作流编排 | 把任务拆成节点和边，适合多步骤、可控、可恢复的 Agent 流程 | | **Workflow** | 业务...",
+  "answerContent" : "## \uD83C\uDFAF Workflow 和 AgentGraph 完整学习路线\n\n基于 Multi-Agent 分析结果，为你整理如下：\n\n---\n\n### \uD83D\uDCDA 一、核心概念速览\n\n| 概念 | 定位 | 在本项目中的作用 |\n|------|------|------------------|\n| **Graph** | 显式工作流编排 | 把任务拆成节点和边，适合多步骤、可控、可恢复的 Agent 流程 |\n| **Workflow** | 业务场景化的流程设计 | 从技术调用链 → 学习辅导五步法：理解问题 → 识别意图 → 激活能力 → 交付价值 → 记录成长 |\n| **Agent** | 智能编排层 | 把模型、工具、上下文和执行状态组织起来，让模型按需调用工具 |\n| **Skill** | 业务能力封装 | 负责稳定业务逻辑，Tool 只负责暴露给模型调用 |\n\n---\n\n### \uD83D\uDEE4️ 二、完整学习路线（4 阶段）\n\n#### **阶段 1：跑通基础调用链（Day 1-2）**\n```\n前端 → Controller → LearningAgentService → LearningGraphService → LearningMemoryService → Planner → MiniMax\n```\n- \uD83D\uDCD6 阅读 `MiniMaxChatClientController.java` 理解入口\n- \uD83D\uDCD6 阅读 `LearningAgentService.java` 理解 Agent 编排\n- \uD83D\uDCD6 阅读 `LearningGraphService.java` 理解 Graph 节点生成\n- \uD83C\uDFAF **目标**：理解完整调用链路\n\n#### **阶段 2：掌握 Tool Calling（Day 3-4）**\n- \uD83D\uDCD6 阅读 `MiniMaxLearningTools.java` 看 Tool 定义\n- \uD83D\uDCD6 阅读 `LearningSkillService.java` 看 Skill 业务封装\n- \uD83C\uDFAF **验收问题**：\n  - 模型什么时候应该调用 Tool？\n  - Tool 和 Skill Service 的边界分别是什么？\n\n#### **阶段 3：理解 Agent 编排（Day 5-6）**\n- \uD83D\uDCD6 测试 `/minimax/chat-client/official-agent/chat`\n- 观察 `agentSteps`、`toolCalls` 和最终 `content` 的关系\n- \uD83C\uDFAF **核心**：Agent 如何组织模型、工具、上下文\n\n#### **阶段 4：掌握 Graph/Workflow 编排（Day 7-10）**\n- \uD83D\uDCD6 测试 `/minimax/chat-client/official-graph/chat`\n- 查看 `graphSteps`、`graphDefinition` 和 MCP 调用节点\n- \uD83C\uDFAF **核心**：StateGraph 节点编排：memory_read → planner → mcp_node → react_agent → memory_write\n\n---\n\n### \uD83D\uDEE0️ 三、具体实践任务（按优先级）\n\n| 序号 | 任务 | 难度 | 涉及文件 |\n|------|------|------|----------|\n| 1 | 新增一个本地 Tool（例如计算学习进度） | ⭐ | `MiniMaxLearningTools.java` |\n| 2 | 在 Skill 中封装新能力并暴露为 Tool | ⭐⭐ | `LearningSkillService.java` |\n| 3 | 修改 Graph 节点，添加自定义流程步骤 | ⭐⭐ | `LearningGraphService.java` |\n| 4 | 把 Workflow 节点名称替换为业务语义 | ⭐⭐⭐ | `LearningWorkflowService.java` |\n| 5 | 实现多 Agent 协作（例如 Planner + Executor） | ⭐⭐⭐ | 新增 Agent 类 |\n\n---\n\n### \uD83E\uDDEA 四、可执行测试方法\n\n#### **测试 1：验证 Tool 是否被调用**\n```bash\n# 使用 .http 文件或 Postman\nPOST http://localhost:8080/minimax/chat-client/chat\nContent-Type: application/json\n\n{\n  \"userId\": \"test-user-001\",\n  \"message\": \"现在几点了？（触发获取时间 Tool）\"\n}\n```\n\n**验收点**：观察返回结果中是否有 `toolCalls` 字段\n\n#### **测试 2：验证 Graph 流程**\n```bash\nPOST http://localhost:8080/minimax/chat-client/official-graph/chat\nContent-Type: application/json\n\n{\n  \"userId\": \"test-user-001\", \n  \"message\": \"帮我解释什么是 Tool Calling\"\n}\n```\n\n**验收点**：检查 `graphSteps` 是否包含节点：`memory_read` → `planner` → `mcp_node` → `react_agent` → `memory_write`\n\n#### **测试 3：验证 MCP Server**\n```bash\nGET http://localhost:8080/minimax/chat-client/mcp/status\n```\n\n**验收点**：确认 `mode` 为 `REAL_MCP_READY`\n\n#### **测试 4：流式模式 SSE 调试**\n```bash\nPOST http://localhost:8080/minimax/chat-client/chat/stream\n```\n\n**验收点**：SSE 事件顺序为 `debug` → `message` → `done`\n\n---\n\n### \uD83D\uDCC5 五、今日学习计划（120 分钟）\n\n| 时间 | 任务 | 产出 |\n|------|------|------|\n| 0-40min | 阅读代码：`Controller` → `AgentService` → `GraphService` | 理解调用链 |\n| 40-100min | 动手实践：新增一个 Tool 或修改 Skill | 可运行的代码 |\n| 100-120min | 测试验证：用 .http 文件测试，记录结果 | 测试报告 |\n\n---\n\n### ⚠️ Fallback 说明\n\nMCP Server 调用已验证可用：\n- ✅ 真实 MCP Server：`minimax-learning-mcp-server`\n- ✅ 资源来源：`learning-resources.json`\n- ✅ 可用主题：Tool、Skill、Agent、Graph、Memory、RAG、MCP、Workflow\n\n**如果 MCP 不可用**：系统会自动 fallback 到 Mock 模式，不影响核心功能学习。\n\n---\n\n### \uD83D\uDCCB 六、推荐下一步\n\n1. **立即行动**：从今日计划的 40 分钟阅读开始，顺序阅读上述 4 个核心类\n2. **保存学习资源**：如果需要，我可以帮你把这条学习路线保存为 MCP 资源\n3. **开始测试**：启动项目后用上述 `.http` 文件验证 Graph 调用链路\n\n需要我帮你保存这条学习路线到 MCP 吗？或者你想从哪个具体任务开始动手实践？\n---\n### Multi-Agent 协作摘要\n- PlannerAgent：MIXED\n- ResearchAgent：ResearchAgent 已收集上下文：RAG 摘要：本地文档检索结果： [1] README.md 路径：spring-ai-alibaba-chat-example\\minimax-chat\\README.md 摘要：arning Memory - 多用户 Learning Memory - Memory 查看和清空管理 - 本地文档 Simple RAG 检索 - 轻量 Graph 工作流节点 - 真实 MCP 学习资源查询和写入 - MCP 写入安全开关和 dry-run 模式 - 流式模式 SSE 调试事件 ## 当前请求链路 最新调用链路： ```text...；MCP 模式：REAL_MCP，真实 MCP 可用。\n- ReviewerAgent：ReviewerAgent 认为回答可以交付。",
+  "mcpMode" : "REAL_MCP",
+  "pendingMcpWrite" : false,
+  "toolCallCount" : 5,
+  "agentStepCount" : 6,
+  "graphStepCount" : 8,
+  "memoryBefore" : {
+    "userId" : "user-c",
+    "level" : "初学者",
+    "topics" : [ ],
+    "lastIntent" : "GENERAL_CHAT",
+    "lastQuestion" : "",
+    "conversationCount" : 0,
+    "updatedAt" : "2026-05-15T13:56:45.2293183"
+  },
+  "memoryAfter" : {
+    "userId" : "user-c",
+    "level" : "初学者",
+    "topics" : [ "Agent", "Graph", "RAG", "MCP" ],
+    "lastIntent" : "MIXED",
+    "lastQuestion" : "用 Multi-Agent 模式帮我学习 Workflow 和 AgentGraph，并给出完整学习路线、实践任务和测试方法。\n\n【Multi-Agent 上下文】\nPlannerAgent 识别意图：MIXED\nPlannerAgent 规划：识别意图：MIXED；学习状态：用户阶段：初学者；关注主题：暂无；历史对话轮次：0；上次意图：GENERAL_CHAT。；子任务：明确学习目标、收集项目证据、组织学习回答、评审回答质量。\n\nResearchAgent RAG 摘要：\n本地文档检索结果： [1] README.md 路径：spring-ai-alibaba-chat-example\\minimax-chat\\README.md 摘要：arning Memory - 多用户 Learning Memory - Memory 查看和清空管理 - 本地文档 Simple RAG 检索 - 轻量 Graph 工作流节点 - 真实 MCP 学习资源查询和写入 - MCP 写入安全开关和 dry-run 模式 - 流式模式 SSE 调试事件 ## 当前请求链路 最新调用链路： ```text...\n\nResearchAgent MCP 摘要：\n[{\"text\":\"\\\"真实 MCP Server 调用结果\\\\n- Server：minimax-learning-mcp-server\\\\n- 资源来源：file:F:\\\\\\\\project\\\\\\\\spring-ai-alibaba-example-xyd\\\\\\\\spring-ai-alibaba-chat-example\\\\\\\\minimax-learning-mcp-server\\\\\\\\src\\\\\\\\main\\\\\\\\resources\\\\\\\\learning-resources.json\\\\n- 查询：用 ...\n\n请基于上述上下文回答用户原始问题。回答必须包含：\n1. 完整学习路线\n2. 具体实践任务\n3. 可执行测试方法\n4. 如果真实 MCP 不可用，请明确说明 fallback，并给出备选操作",
+    "conversationCount" : 1,
+    "updatedAt" : "2026-05-15T13:57:24.3948302"
+  },
+  "agentSteps" : [ {
+    "name" : "Coordinator",
+    "role" : "CoordinatorAgent",
+    "status" : "DONE",
+    "detail" : "接收学习任务，按 Planner -> Research -> Teacher -> Reviewer 串行协作。"
+  }, {
+    "name" : "PlannerAgent",
+    "role" : "PlannerAgent",
+    "status" : "DONE",
+    "detail" : "识别意图：MIXED；学习状态：用户阶段：初学者；关注主题：暂无；历史对话轮次：0；上次意图：GENERAL_CHAT。；子任务：明确学习目标、收集项目证据、组织学习回答、评审回答质量。"
+  }, {
+    "name" : "ResearchAgent",
+    "role" : "ResearchAgent",
+    "status" : "DONE",
+    "detail" : "ResearchAgent 已收集上下文：RAG 摘要：本地文档检索结果： [1] README.md 路径：spring-ai-alibaba-chat-example\\minimax-chat\\README.md 摘要：arning Memory - 多用户 Learning Memory - Memory 查看和清空管理 - 本地文档 Simple RAG 检索 - 轻量 Graph 工作流节点 - 真实 MCP 学习资源查询和写入 - MCP 写入安全开关和 dry-run 模式 - 流式模式 SSE 调试事件 ## 当前请求链路 最新调用链路： ```text...；MCP 模式：REAL_MCP，真实 MCP 可用。"
+  }, {
+    "name" : "TeacherAgent",
+    "role" : "TeacherAgent",
+    "status" : "DONE",
+    "detail" : "复用 LearningAgentService 生成教学回答，并注入 PlannerAgent 规划和 ResearchAgent 的 RAG/MCP 上下文。"
+  }, {
+    "name" : "ReviewerAgent",
+    "role" : "ReviewerAgent",
+    "status" : "DONE",
+    "detail" : "回答非空：是；包含实践/测试/下一步：是；本轮工具调用：5 次。ReviewerAgent 认为回答可以交付。"
+  }, {
+    "name" : "Coordinator",
+    "role" : "CoordinatorAgent",
+    "status" : "DONE",
+    "detail" : "汇总角色产物，输出最终回答和可观察的多 Agent 调试步骤。"
+  } ],
+  "graphSteps" : [ {
+    "id" : "receive",
+    "name" : "Receive",
+    "status" : "DONE",
+    "detail" : "接收用户 user-c 的问题。"
+  }, {
+    "id" : "memory-read",
+    "name" : "Memory Read",
+    "status" : "DONE",
+    "detail" : "按 userId 从 JSON 文件读取长期学习记忆。"
+  }, {
+    "id" : "planner",
+    "name" : "Planner",
+    "status" : "DONE",
+    "detail" : "识别学习意图：MIXED。"
+  }, {
+    "id" : "strategy",
+    "name" : "Strategy",
+    "status" : "DONE",
+    "detail" : "混合问题允许组合多个工具路径。"
+  }, {
+    "id" : "model-call",
+    "name" : "Model Call",
+    "status" : "DONE",
+    "detail" : "调用 MiniMax-M2.7，并暴露 Tool、Skill、RAG 能力。"
+  }, {
+    "id" : "tool-execute",
+    "name" : "Tool Execute",
+    "status" : "WAITING",
+    "detail" : "由模型按需触发工具，例如时间、学习计划、概念解释或本地文档检索。"
+  }, {
+    "id" : "memory-write",
+    "name" : "Memory Write",
+    "status" : "DONE",
+    "detail" : "回答完成后更新当前用户长期记忆。"
+  }, {
+    "id" : "response",
+    "name" : "Response",
+    "status" : "DONE",
+    "detail" : "返回回答、Graph 节点、Tool 调用和 Memory 调试信息。"
+  } ],
+  "toolCalls" : [ {
+    "name" : "searchLearningDocs",
+    "arguments" : {
+      "limit" : 5,
+      "query" : "Workflow AgentGraph Graph 工作流 节点实现"
+    },
+    "result" : "本地文档检索结果：\n\n[1] README.md\n路径：spring-ai-alibaba-chat-example\\minimax-chat\\README.md\n摘要：。\n\n## 当前功能\n\n- 多轮聊天页面\n- Markdown 回答渲染\n- MiniMax-M2.7 模型接入\n- Tool Calling 调试信息展示\n- Skill 业务能力层\n- 轻量 Planner 意图识别\n- 轻量 Agent 编排层\n- JSON 文件持久化 Learning Memory\n- 多用户 Learning Memory\n- Memory 查看和清空管理\n- 本地文档 Simple RAG 检索\n- 轻量 Graph 工作流节点\n- 真实 MCP 学习资源查询和写入\n- MCP 写入安全开关和 dry-run 模式\n- 流式模式 SSE 调试事件\n\n## 当前请求链路\n\n最新调用链路：\n\n```text\n前端问题\n -> 前端携带 userId\n -> Controller\n -> LearningAgentService\n -> LearningGraphService 生成 Graph 节点\n -> LearningMemoryService 按 userId 从 JSON 文件读取记忆\n -> Planner 判断意图\n -> MiniMax + Tools\n -> searchLearningDocs Tool 按需检索本地文档\n -> search/create/update MCP Learning Resource Tool 按需查询或沉淀外部学习资源\n -> LearningMemoryService 按 userId 更新记忆并写回 JSON 文件\n -> 前端展示回答 + Graph节点 + Agent步骤 + Tool调用 + 当前用户Memory信息\n```\n\n流式模式会额外通过 SSE 事件分阶段返回：\n\n```text\ndebug -> message -> done\n```\n\n## 各层职责\n\n| 层 | 类 | 职责 |\n| --- | --- | --- |\n| 前端 | `src/main/resources/static/index.html` | 发送用户 ID 和用户问题，维护短期聊天历史，渲染 M\n\n[2] MiniMaxChatClientController.java\n路径：spring-ai-alibaba-chat-example\\minimax-chat\\src\\main\\java\\com\\alibaba\\cloud\\ai\\controller\\MiniMaxChatClientController.java\n摘要：baba.cloud.ai.controller;\n\nimport java.util.ArrayList;\nimport java.util.List;\nimport java.util.concurrent.atomic.AtomicReference;\n\nimport com.alibaba.cloud.ai.agent.LearningAgentResult;\nimport com.alibaba.cloud.ai.agent.LearningAgentService;\nimport com.alibaba.cloud.ai.agent.LearningAgentService.LearningAgentMessage;\nimport com.alibaba.cloud.ai.agent.LearningStreamEvent;\nimport com.alibaba.cloud.ai.evaluation.AgentEvaluationResult;\nimport com.alibaba.cloud.ai.evaluation.AgentEvaluationService;\nimport com.alibaba.cloud.ai.judge.AgentJudgeResult;\nimport com.alibaba.cloud.ai.judge.AgentJudgeService;\nimport com.alibaba.cloud.ai.mcp.LearningMcpService;\nimport com.alibaba.cloud.ai.mcp.LearningMcpService.LearningMcpStatus;\nimport com.alibaba.cloud.ai.mcp.LearningMcpService.McpWriteResult;\nimport com.alibaba.cloud.ai.mcp.PendingMcpWrite;\nimport com.alibaba.cloud.ai.memory.LearningMemory;\nimport\n\n[3] LearningAgentService.java\n路径：spring-ai-alibaba-chat-example\\minimax-chat\\src\\main\\java\\com\\alibaba\\cloud\\ai\\agent\\LearningAgentService.java\n摘要：tions under the License.\n */\n\npackage com.alibaba.cloud.ai.agent;\n\nimport java.util.ArrayList;\nimport java.util.List;\n\nimport com.alibaba.cloud.ai.agent.LearningAgentResult.LearningAgentStep;\nimport com.alibaba.cloud.ai.graph.LearningGraphResult;\nimport com.alibaba.cloud.ai.graph.LearningGraphService;\nimport com.alibaba.cloud.ai.mcp.LearningMcpService;\nimport com.alibaba.cloud.ai.mcp.McpDebugInfo;\nimport com.alibaba.cloud.ai.memory.LearningMemory;\nimport com.alibaba.cloud.ai.memory.LearningMemoryService;\nimport com.alibaba.cloud.ai.planner.LearningIntent;\nimport com.alibaba.cloud.ai.planner.LearningIntentPlanner;\nimport com.alibaba.cloud.ai.tool.MiniMaxLearningTools;\nimport com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;\nimport org.springframework.ai.chat.client.ChatClient;\nimport org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;\nimport org.springframework.ai.chat.messages\n\n[4] LearningSkillService.java\n路径：spring-ai-alibaba-chat-example\\minimax-chat\\src\\main\\java\\com\\alibaba\\cloud\\ai\\skill\\LearningSkillService.java\n摘要：.stereotype.Service;\n\n/**\n * Learning skill implementation.\n *\n * <p>\n * Tool classes expose callable entry points to the model. This service owns the actual\n * learning-domain logic, so it can be reused later by Agent, Graph, REST APIs, or tests.\n */\n@Service\npublic class LearningSkillService {\n\n\tprivate static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(\"yyyy-MM-dd HH:mm:ss z\");\n\n\tprivate static final Set<String> SUPPORTED_ZONES = Set.of(\"Asia/Shanghai\", \"UTC\", \"America/New_York\",\n\t\t\t\"Europe/London\", \"Asia/Tokyo\");\n\n\tprivate static final Map<String, String> CONCEPTS = Map.of(\n\t\t\t\"tool calling\", \"Tool Calling 是让模型在需要真实能力时调用 Java 方法。它解决的是“模型不会凭空知道实时信息或业务系统数据”的问题。\",\n\t\t\t\"tool\", \"Tool 是一个可被模型调用的函数入口，通常用 @Tool 暴露。它应该小而明确，比如获取当前时间、查询订单、检索知识库。\",\n\t\t\t\"skill\", \"Skill 是一组围绕同一目标组织起来的能力。它可以包含多个 Tool、提示词模板、业务规则和执行步骤。\",\n\t\t\t\"agent\", \"Agent 是能够理解目标、选择工具或技能、执行步骤并根据结果继续推理的智能体。\",\n\n[5] LearningMemoryService.java\n路径：spring-ai-alibaba-chat-example\\minimax-chat\\src\\main\\java\\com\\alibaba\\cloud\\ai\\memory\\LearningMemoryService.java\n摘要：cs().add(\"Tool Calling\");\n\t\t}\n\t\tif (containsAny(text, \"skill\", \"技能\")) {\n\t\t\tmemory.getTopics().add(\"Skill\");\n\t\t}\n\t\tif (containsAny(text, \"agent\", \"智能体\")) {\n\t\t\tmemory.getTopics().add(\"Agent\");\n\t\t}\n\t\tif (containsAny(text, \"graph\", \"工作流\", \"图\")) {\n\t\t\tmemory.getTopics().add(\"Graph\");\n\t\t}\n\t\tif (containsAny(text, \"rag\", \"检索\")) {\n\t\t\tmemory.getTopics().add(\"RAG\");\n\t\t}\n\t\tif (containsAny(text, \"mcp\")) {\n\t\t\tmemory.getTopics().add(\"MCP\");\n\t\t}\n\t}\n\n\tprivate String normalize(String message) {\n\t\treturn message == null ? \"\" : message.toLowerCase(Locale.ROOT).replaceAll(\"\\\\s+\", \" \").trim();\n\t}\n\n\tprivate boolean containsAny(String text, String... keywords) {\n\t\tfor (String keyword : keywords) {\n\t\t\tif (text.contains(keyword.toLowerCase(Locale.ROOT))) {\n\t\t\t\treturn true;\n\t\t\t}\n\t\t}\n\t\treturn false;\n\t}\n\n\tpublic record StoredLearningMemory(String level, List<String> topics, String lastIntent, String lastQuestion,\n"
+  }, {
+    "name" : "explainConcept",
+    "arguments" : {
+      "concept" : "Graph",
+      "level" : "初学者"
+    },
+    "result" : "概念解释：\n- 概念：Graph\n- 学习阶段：初学者\n- 核心含义：Graph 是显式工作流编排。开发者把任务拆成节点和边，适合多步骤、可控、可恢复的 Agent 流程。\n- 在当前项目中的位置：你现在的 minimax-chat 已经完成 Chat、多轮上下文、Markdown 和 Tool Calling，下一步通过 Skill Service 把工具背后的业务逻辑沉淀成可复用能力。\n"
+  }, {
+    "name" : "generateLearningAdvice",
+    "arguments" : {
+      "topic" : "AgentGraph Workflow",
+      "level" : "初学者"
+    },
+    "result" : "学习建议：\n1. 当前主题：AgentGraph Workflow。\n2. 当前阶段：初学者。\n3. 推荐顺序：先跑通 ChatClient，再学习 Tool Calling，然后封装 Skill，最后进入 Agent 编排。\n4. 实践任务：先写一个无外部依赖的本地 Java Tool，例如获取当前时间或生成学习建议。\n5. 验收标准：模型能根据用户问题自动决定是否调用工具，并把工具结果整合成自然语言回答。\n"
+  }, {
+    "name" : "searchMcpLearningResources",
+    "arguments" : {
+      "selectedToolName" : "searchLearningResources",
+      "source" : "REAL_MCP",
+      "realMcpAvailable" : true,
+      "limit" : 5,
+      "query" : "Graph Workflow Agent"
+    },
+    "result" : "[{\"text\":\"\\\"真实 MCP Server 调用结果\\\\n- Server：minimax-learning-mcp-server\\\\n- 资源来源：file:F:\\\\\\\\project\\\\\\\\spring-ai-alibaba-example-xyd\\\\\\\\spring-ai-alibaba-chat-example\\\\\\\\minimax-learning-mcp-server\\\\\\\\src\\\\\\\\main\\\\\\\\resources\\\\\\\\learning-resources.json\\\\n- 查询：Graph Workflow Agent\\\\n- 可用主题：Tool、Skill、Agent、Graph、Memory、RAG、MCP、Workflow\\\\n- 命中资源数：5\\\\n\\\\n### Skill 业务封装\\\\n- 资源 ID：mcp-skill\\\\n- 主题：Skill\\\\n- 摘要：Skill 负责稳定业务逻辑，Tool 只负责暴露给模型调用。这样以后接 Agent、Graph 或 MCP 时，业务逻辑可以继续复用。\\\\n- 下一步：阅读 LearningSkillService，确认学习建议、计划生成、概念解释是如何被 Tool 和 Agent 复用的。\\\\n\\\\n\\\\n### ReactAgent 调用链\\\\n- 资源 ID：mcp-agent\\\\n- 主题：Agent\\\\n- 摘要：Agent 负责把模型、工具、上下文和执行状态组织起来，让模型可以按需调用工具，再基于工具结果生成最终回答。\\\\n- 下一步：测试 /minimax/chat-client/official-agent/chat，并观察 agentSteps、toolCalls 和最终 content 的关系。\\\\n\\\\n\\\\n### StateGraph 编排\\\\n- 资源 ID：mcp-graph\\\\n- 主题：Graph\\\\n- 摘要：Graph 用节点显式编排流程，例如 memory_read、planner、mcp_node、react_agent、memory_write，适合把复杂流程拆成可观察步骤。\\\\n- 下一步：测试 /minimax/chat-client/official-graph/chat，并查看 graphSteps、graphDefinition 和 MCP 调用节点。\\\\n\\\\n\\\\n### MCP Server / Client\\\\n- 资源 ID：mcp-mcp\\\\n- 主题：MCP\\\\n- 摘要：MCP 把外部工具和资源作为协议化能力提供给 Agent。minimax-chat 是 MCP Client，本模块是真实 MCP Server。\\\\n- 下一步：启动本模块后访问 /minimax/chat-client/mcp/status，确认 mode 为 REAL_MCP_READY。\\\\n\\\\n\\\\n### Learning Workflow 业务场景重构：从技术步骤到学习辅导五步法\\\\n- 资源 ID：learning-workflow-design\\\\n- 主题：Workflow\\\\n- 摘要：把 minimax-chat 的技术调用链重构成学习辅导业务场景，每个步骤赋予真实业务含义：理解问题 → 识别意图 → 激活能力 → 交付价值 → 记录成长\\\\n- 下一步：下一步可以把 LearningWorkflowService 中的节点名称替换为业务步骤描述，实现 Workflow 可视化的业务语义升级\\\\n\\\\n\\\"\"}]"
+  }, {
+    "name" : "generateDailyPlan",
+    "arguments" : {
+      "level" : "初学者",
+      "topic" : "AgentGraph Workflow",
+      "minutes" : 120
+    },
+    "result" : "今日学习计划：\n- 主题：AgentGraph Workflow\n- 阶段：初学者\n- 总时长：120 分钟\n\n时间安排：\n1. 40 分钟：阅读当前模块代码，重点看 Controller、Tool、Skill Service 的调用链。\n2. 60 分钟：动手改一个小功能，例如新增一个 @Tool 参数或调整 Skill 返回内容。\n3. 20 分钟：用页面和 .http 文件测试，记录模型是否真的调用了工具。\n\n验收问题：\n- 模型什么时候应该调用 Tool？\n- Tool 和 Skill Service 的边界分别是什么？\n- 如果后面升级到 Agent，哪些逻辑可以继续复用？\n"
+  } ],
+  "mcpDebugInfo" : {
+    "mode" : "REAL_MCP",
+    "realMcpAvailable" : true,
+    "selectedToolName" : "searchLearningResources",
+    "availableToolNames" : [ "updateLearningResource", "createLearningResource", "listLearningTopics", "getLearningResource", "searchLearningResources" ],
+    "fallbackReason" : "",
+    "query" : "Graph Workflow Agent",
+    "limit" : 5,
+    "writeEnabled" : true,
+    "writeMode" : "dry-run",
+    "pendingWrite" : null
   }
 } ]

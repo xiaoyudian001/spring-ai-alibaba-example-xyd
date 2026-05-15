@@ -788,9 +788,15 @@ CoordinatorAgent
 
 - `PlannerAgent`：识别学习意图，拆解学习子任务
 - `ResearchAgent`：收集当前项目 RAG 和 MCP 学习资源上下文
-- `TeacherAgent`：复用 `LearningAgentService` 生成教学回答，保留 Tool、Skill、RAG、MCP、Memory 能力
+- `TeacherAgent`：复用 `LearningAgentService` 生成教学回答，并显式注入 Planner 与 ResearchAgent 产出的 RAG/MCP 上下文
 - `ReviewerAgent`：检查回答是否非空、是否包含实践/测试/下一步、项目问题是否使用工具
 - `CoordinatorAgent`：串联角色并输出最终回答与协作摘要
+
+优化说明：
+
+- `AgentRunReport` 同时保存 `answerSummary` 和 `answerContent`。`answerSummary` 用于列表展示，`answerContent` 保留完整回答，供 AI Judge 评审使用。
+- 当真实 MCP 不可用时，`ResearchAgent` 会明确说明已使用 Mock/Fallback，并提示检查 `mcp` profile、MCP Server 端口、`spring.ai.mcp.client` 配置和 `ToolCallbackProvider`。
+- `TeacherAgent` 会基于 ResearchAgent 的 RAG/MCP 摘要生成回答，减少“ResearchAgent 收集了资料但回答没用上”的问题。
 
 调用入口：
 

@@ -62,9 +62,9 @@ public class LearningCoordinatorAgent {
 		steps.add(step("PlannerAgent", "PlannerAgent", "DONE", plan.detail()));
 		ResearchOutput research = this.researchAgent.research(userId, message);
 		steps.add(step("ResearchAgent", "ResearchAgent", "DONE", research.detail()));
-		LearningAgentResult teacherResult = this.teacherAgent.teach(userId, message, history);
+		LearningAgentResult teacherResult = this.teacherAgent.teach(userId, message, history, plan, research);
 		steps.add(step("TeacherAgent", "TeacherAgent", "DONE",
-				"复用 LearningAgentService 生成教学回答，并保留 Tool、RAG、MCP、Memory 调用能力。"));
+				"复用 LearningAgentService 生成教学回答，并注入 PlannerAgent 规划和 ResearchAgent 的 RAG/MCP 上下文。"));
 		ReviewerOutput review = this.reviewerAgent.review(message, teacherResult);
 		steps.add(step("ReviewerAgent", "ReviewerAgent", "DONE", review.detail() + review.advice()));
 		steps.add(step("Coordinator", "CoordinatorAgent", "DONE", "汇总角色产物，输出最终回答和可观察的多 Agent 调试步骤。"));

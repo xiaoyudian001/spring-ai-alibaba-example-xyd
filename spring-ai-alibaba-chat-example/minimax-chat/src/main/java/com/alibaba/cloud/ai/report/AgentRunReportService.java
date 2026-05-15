@@ -64,55 +64,57 @@ public class AgentRunReportService {
 	public AgentRunReport saveHandwritten(String userId, String message, int historySize, LearningAgentResult result) {
 		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "HANDWRITTEN_AGENT",
 				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
-				mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()), safeSize(result.toolCalls()),
-				safeSize(result.agentSteps()), safeSize(result.graphSteps()), result.memoryBefore(), result.memoryAfter(),
-				result.agentSteps(), result.graphSteps(), result.toolCalls(), result.mcpDebugInfo()));
+				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
+				safeSize(result.toolCalls()), safeSize(result.agentSteps()), safeSize(result.graphSteps()),
+				result.memoryBefore(), result.memoryAfter(), result.agentSteps(), result.graphSteps(),
+				result.toolCalls(), result.mcpDebugInfo()));
 	}
 
 	public AgentRunReport saveStream(String userId, String message, int historySize, String content,
 			LearningStreamEvent debugEvent, LearningStreamEvent doneEvent) {
 		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "HANDWRITTEN_AGENT_STREAM",
 				normalizeText(message), historySize, intentName(debugEvent == null ? null : debugEvent.intent()),
-				summarize(content), mcpMode(doneEvent.mcpDebugInfo()), hasPendingWrite(doneEvent.mcpDebugInfo()),
-				safeSize(doneEvent.toolCalls()), safeSize(doneEvent.agentSteps()), safeSize(doneEvent.graphSteps()),
-				debugEvent == null ? null : debugEvent.memoryBefore(), doneEvent.memoryAfter(), doneEvent.agentSteps(),
-				doneEvent.graphSteps(), doneEvent.toolCalls(), doneEvent.mcpDebugInfo()));
+				summarize(content), fullAnswer(content), mcpMode(doneEvent.mcpDebugInfo()),
+				hasPendingWrite(doneEvent.mcpDebugInfo()), safeSize(doneEvent.toolCalls()),
+				safeSize(doneEvent.agentSteps()), safeSize(doneEvent.graphSteps()),
+				debugEvent == null ? null : debugEvent.memoryBefore(), doneEvent.memoryAfter(),
+				doneEvent.agentSteps(), doneEvent.graphSteps(), doneEvent.toolCalls(), doneEvent.mcpDebugInfo()));
 	}
 
 	public AgentRunReport saveOfficialAgent(String userId, String message, int historySize,
 			OfficialLearningAgentResult result) {
 		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "OFFICIAL_REACT_AGENT",
 				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
-				mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()), safeSize(result.toolCalls()),
-				safeSize(result.agentSteps()), 0, result.memoryBefore(), result.memoryAfter(), result.agentSteps(),
-				List.of(), result.toolCalls(), result.mcpDebugInfo()));
+				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
+				safeSize(result.toolCalls()), safeSize(result.agentSteps()), 0, result.memoryBefore(),
+				result.memoryAfter(), result.agentSteps(), List.of(), result.toolCalls(), result.mcpDebugInfo()));
 	}
 
 	public AgentRunReport saveOfficialGraph(String userId, String message, int historySize,
 			OfficialLearningGraphResult result) {
 		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "OFFICIAL_STATE_GRAPH",
 				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
-				mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()), safeSize(result.toolCalls()), 0,
-				safeSize(result.graphSteps()), result.memoryBefore(), result.memoryAfter(), List.of(),
-				result.graphSteps(), result.toolCalls(), result.mcpDebugInfo()));
+				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
+				safeSize(result.toolCalls()), 0, safeSize(result.graphSteps()), result.memoryBefore(),
+				result.memoryAfter(), List.of(), result.graphSteps(), result.toolCalls(), result.mcpDebugInfo()));
 	}
 
 	public AgentRunReport saveWorkflow(String userId, String message, int historySize, LearningWorkflowResult result) {
 		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "LEARNING_WORKFLOW",
 				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
-				mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()), safeSize(result.toolCalls()),
-				safeSize(result.workflowSteps()), safeSize(result.graphSteps()), result.memoryBefore(),
-				result.memoryAfter(), result.workflowSteps(), result.graphSteps(), result.toolCalls(),
-				result.mcpDebugInfo()));
+				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
+				safeSize(result.toolCalls()), safeSize(result.workflowSteps()), safeSize(result.graphSteps()),
+				result.memoryBefore(), result.memoryAfter(), result.workflowSteps(), result.graphSteps(),
+				result.toolCalls(), result.mcpDebugInfo()));
 	}
 
 	public AgentRunReport saveMultiAgent(String userId, String message, int historySize, MultiAgentResult result) {
 		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "LEARNING_MULTI_AGENT",
 				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
-				mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()), safeSize(result.toolCalls()),
-				safeSize(result.multiAgentSteps()), safeSize(result.graphSteps()), result.memoryBefore(),
-				result.memoryAfter(), result.multiAgentSteps(), result.graphSteps(), result.toolCalls(),
-				result.mcpDebugInfo()));
+				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
+				safeSize(result.toolCalls()), safeSize(result.multiAgentSteps()), safeSize(result.graphSteps()),
+				result.memoryBefore(), result.memoryAfter(), result.multiAgentSteps(), result.graphSteps(),
+				result.toolCalls(), result.mcpDebugInfo()));
 	}
 
 	public synchronized List<AgentRunReport> latest(int limit) {
@@ -183,6 +185,10 @@ public class AgentRunReportService {
 			return text;
 		}
 		return text.substring(0, SUMMARY_MAX_LENGTH) + "...";
+	}
+
+	private String fullAnswer(String content) {
+		return normalizeText(content).replaceAll("<think>[\\s\\S]*?</think>", "").trim();
 	}
 
 	private String intentName(Object intent) {

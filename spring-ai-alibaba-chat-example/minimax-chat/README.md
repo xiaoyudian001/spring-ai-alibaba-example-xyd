@@ -733,7 +733,7 @@ DELETE /minimax/chat-client/judge/runs
 ```text
 识别学习目标
  -> 判断当前学习阶段
- -> 收集项目上下文
+ -> 判断是否需要项目上下文
  -> 选择学习路径
  -> 生成学习计划
  -> 给出验证任务
@@ -741,6 +741,11 @@ DELETE /minimax/chat-client/judge/runs
 ```
 
 Workflow 固定的是学习辅导过程，不再只是技术调用链。每个节点会根据用户问题、Memory、Planner 意图、Tool/RAG/MCP 调用情况生成真实业务含义。回答生成仍复用现有 `LearningAgentService`，因此不会重复实现 Tool、Skill、RAG、MCP、Memory 逻辑。
+
+为了避免把通用概念问题误收窄为当前项目实现，Workflow 会区分两类问题：
+
+- 通用概念学习：例如“Workflow、Multi-Agent 和 AgentGraph 区别是什么？”，先解释通用定义、适用场景、设计原则和验证方法。
+- 当前项目实现分析：例如“基于当前 minimax-chat 项目源码说明 Workflow 如何实现”，再优先结合 RAG/MCP、README 和源码上下文。
 
 调用入口：
 
@@ -787,7 +792,7 @@ CoordinatorAgent
 职责说明：
 
 - `PlannerAgent`：识别学习意图，拆解学习子任务
-- `ResearchAgent`：收集当前项目 RAG 和 MCP 学习资源上下文
+- `ResearchAgent`：判断本轮是通用概念学习还是当前项目实现分析；通用概念问题不强制绑定项目源码，项目实现问题才收集 RAG 和 MCP 上下文
 - `TeacherAgent`：复用 `LearningAgentService` 生成教学回答，并显式注入 Planner 与 ResearchAgent 产出的 RAG/MCP 上下文
 - `ReviewerAgent`：检查回答是否非空、是否包含实践/测试/下一步、项目问题是否使用工具
 - `CoordinatorAgent`：串联角色并输出最终回答与协作摘要
@@ -795,6 +800,8 @@ CoordinatorAgent
 优化说明：
 
 - `AgentRunReport` 同时保存 `answerSummary` 和 `answerContent`。`answerSummary` 用于列表展示，`answerContent` 保留完整回答，供 AI Judge 评审使用。
+- `ResearchAgent` 新增范围判断：`GENERAL_CONCEPT` 用于通用 Workflow / AgentGraph / Multi-Agent 学习，`PROJECT_IMPLEMENTATION` 用于当前项目源码和实现分析。
+- `TeacherAgent` 会根据 ResearchAgent 的范围调整回答方式：通用概念先讲原理，项目映射只作为补充；项目实现问题才优先使用当前项目上下文。
 - 当真实 MCP 不可用时，`ResearchAgent` 会明确说明已使用 Mock/Fallback，并提示检查 `mcp` profile、MCP Server 端口、`spring.ai.mcp.client` 配置和 `ToolCallbackProvider`。
 - `TeacherAgent` 会基于 ResearchAgent 的 RAG/MCP 摘要生成回答，减少“ResearchAgent 收集了资料但回答没用上”的问题。
 

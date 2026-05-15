@@ -49,6 +49,7 @@ public class LearningTeacherAgent {
 				【Multi-Agent 上下文】
 				PlannerAgent 识别意图：%s
 				PlannerAgent 规划：%s
+				ResearchAgent 判断范围：%s
 
 				ResearchAgent RAG 摘要：
 				%s
@@ -56,12 +57,17 @@ public class LearningTeacherAgent {
 				ResearchAgent MCP 摘要：
 				%s
 
+				【回答范围规则】
+				- 如果范围是 GENERAL_CONCEPT：请先解释通用 AI 工程概念，不要默认绑定 minimax-chat 项目结构；当前项目只能作为“本项目可以如何落地”的补充小节。
+				- 如果范围是 PROJECT_IMPLEMENTATION：请优先结合当前项目源码、RAG/MCP 上下文和调试信息解释实现细节。
+
 				请基于上述上下文回答用户原始问题。回答必须包含：
 				1. 完整学习路线
 				2. 具体实践任务
 				3. 可执行测试方法
-				4. 如果真实 MCP 不可用，请明确说明 fallback，并给出备选操作
-				""".formatted(message, plan.intent(), plan.detail(), research.ragSummary(), research.mcpSummary());
+				4. 如果真实 MCP 不可用且本轮确实需要 MCP，请明确说明 fallback，并给出备选操作
+				""".formatted(message, plan.intent(), plan.detail(), research.scope(), research.ragSummary(),
+				research.mcpSummary());
 	}
 
 }

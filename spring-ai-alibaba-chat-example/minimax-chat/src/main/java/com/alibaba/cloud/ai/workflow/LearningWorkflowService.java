@@ -55,7 +55,7 @@ public class LearningWorkflowService {
 		List<LearningWorkflowStep> steps = new ArrayList<>();
 		steps.add(step("analyze_goal", "识别学习目标", "DONE", analyzeGoal(message, intent)));
 		steps.add(step("check_foundation", "判断当前学习阶段", "DONE", checkFoundation(result.memoryBefore())));
-		steps.add(step("collect_project_context", "收集项目上下文", "DONE",
+		steps.add(step("collect_project_context", "判断是否需要项目上下文", "DONE",
 				collectProjectContext(message, result.toolCalls(), result.mcpDebugInfo())));
 		steps.add(step("choose_learning_path", "选择学习路径", "DONE", chooseLearningPath(message, intent)));
 		steps.add(step("generate_learning_plan", "生成学习计划", "DONE", generateLearningPlan(intent)));
@@ -96,13 +96,12 @@ public class LearningWorkflowService {
 
 	private String collectProjectContext(String message, List<ToolCallDebugRecorder.ToolCallDebug> toolCalls,
 			McpDebugInfo mcpDebugInfo) {
-		boolean projectQuestion = containsAny(message, "项目", "源码", "当前", "minimax-chat", "workflow", "multi-agent",
-				"agentgraph", "graph", "mcp", "rag", "tool", "skill");
+		boolean projectQuestion = isProjectImplementationQuestion(message);
 		boolean usedRag = hasTool(toolCalls, "searchLearningDocs");
 		boolean usedMcp = hasTool(toolCalls, "searchMcpLearningResources") || hasTool(toolCalls, "createMcpLearningResource")
 				|| hasTool(toolCalls, "updateMcpLearningResource") || isMcpUsed(mcpDebugInfo);
 		if (!projectQuestion) {
-			return "本轮不是强项目上下文问题，Workflow 主要使用 Memory、Planner 和模型自身能力组织学习回答。";
+			return "本轮属于通用概念学习问题，Workflow 不强制收集当前项目上下文；应先输出通用模型、核心区别和适用场景，再按需补充本项目落地方式。";
 		}
 		if (usedRag && usedMcp) {
 			return "本轮已同时使用本地 RAG 和 MCP 上下文，适合回答当前项目实现、外部学习资源和下一步实践。";
@@ -116,20 +115,26 @@ public class LearningWorkflowService {
 		return "本轮问题涉及项目上下文，但未明显触发 RAG/MCP。后续可优化 Planner，让项目类问题优先检索资料。";
 	}
 
+	private boolean isProjectImplementationQuestion(String message) {
+		return containsAny(message, "当前项目", "这个项目", "本项目", "项目中", "项目里", "项目里面", "当前实现",
+				"源码", "代码", "readme", "minimax-chat", "application.yml", "controller", "service", "接口",
+				"类", "包", "文件");
+	}
+
 	private String chooseLearningPath(String message, LearningIntent intent) {
 		String topic = learningTopic(message);
 		if (containsAny(message, "multi-agent", "multi_agent", "多智能体")) {
-			return "选择 Multi-Agent 学习路径：先实现 Coordinator，再拆出 PlannerAgent、ResearchAgent、TeacherAgent、ReviewerAgent。";
+			return "选择 Multi-Agent 学习路径：先理解角色分工、消息传递和协作策略，再按需映射到 Coordinator、PlannerAgent、ResearchAgent、TeacherAgent、ReviewerAgent。";
 		}
 		if (containsAny(message, "workflow", "工作流")) {
-			return "选择 Workflow 学习路径：先固定学习辅导业务流程，再把复杂节点逐步升级为 Agent 或 Graph 节点。";
+			return "选择 Workflow 学习路径：先理解固定步骤、状态流转、输入输出契约和失败处理，再按需把复杂节点升级为 Agent 或 Graph 节点。";
 		}
 		if (containsAny(message, "agentgraph", "graph", "stategraph")) {
-			return "选择 AgentGraph 学习路径：重点观察节点、边、状态和条件路由如何承载 Workflow 或 Multi-Agent。";
+			return "选择 AgentGraph 学习路径：重点理解节点、边、共享状态、条件路由和循环控制如何承载 Workflow 或 Multi-Agent。";
 		}
 		return switch (intent) {
 			case DAILY_PLAN -> "选择计划型学习路径：围绕「" + topic + "」拆成时间块、产出物和测试点。";
-			case CONCEPT_EXPLAIN -> "选择概念型学习路径：围绕「" + topic + "」先解释定义，再对比区别，最后落到项目实践。";
+			case CONCEPT_EXPLAIN -> "选择概念型学习路径：围绕「" + topic + "」先解释通用定义，再对比区别，最后给出可选项目落地映射。";
 			case LEARNING_ADVICE, MIXED -> "选择进阶型学习路径：围绕「" + topic + "」先补齐概念，再进入代码实现和评估复盘。";
 			default -> "选择通用学习路径：先明确目标，再补项目上下文，最后给出一个小步可验证任务。";
 		};
@@ -160,10 +165,14 @@ public class LearningWorkflowService {
 
 	private String recommendNextStep(String message, LearningIntent intent, LearningAgentResult result) {
 		if (containsAny(message, "multi-agent", "multi_agent", "多智能体")) {
-			return "下一步建议：新增 multiagent 包，实现 CoordinatorAgent、ResearchAgent、TeacherAgent、ReviewerAgent，并先让 Coordinator 串行调用这些角色。";
+			return isProjectImplementationQuestion(message)
+					? "下一步建议：继续完善当前 multiagent 包，让 CoordinatorAgent、ResearchAgent、TeacherAgent、ReviewerAgent 的输入输出更清晰。"
+					: "下一步建议：先画出 Multi-Agent 通用协作图，明确每个角色的职责、输入、输出和失败兜底，再决定是否落到当前项目代码。";
 		}
 		if (containsAny(message, "workflow", "工作流")) {
-			return "下一步建议：把 Workflow 的 collect_project_context 节点从说明型升级为显式 RAG/MCP 调用节点，并记录每个节点输入输出。";
+			return isProjectImplementationQuestion(message)
+					? "下一步建议：把 Workflow 的 collect_project_context 节点从说明型升级为显式 RAG/MCP 调用节点，并记录每个节点输入输出。"
+					: "下一步建议：先用一个真实学习场景设计 Workflow 节点，例如目标识别、阶段判断、路径选择、计划生成和验证任务，再考虑代码实现。";
 		}
 		if (result.mcpDebugInfo() != null && result.mcpDebugInfo().pendingWrite() != null) {
 			return "下一步建议：先确认或取消本轮 MCP 写入草稿，再观察 Report、Evaluation 和 Judge 对写入流程的评价。";

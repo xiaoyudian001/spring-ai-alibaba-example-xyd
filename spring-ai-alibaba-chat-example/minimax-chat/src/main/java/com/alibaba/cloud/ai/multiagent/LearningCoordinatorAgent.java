@@ -84,9 +84,10 @@ public class LearningCoordinatorAgent {
 				---
 				### Multi-Agent 协作摘要
 				- PlannerAgent：%s
+				- ResearchScope：%s
 				- ResearchAgent：%s
 				- ReviewerAgent：%s
-				""".formatted(plan.intent(), research.detail(), review.advice());
+				""".formatted(plan.intent(), research.scope(), research.detail(), review.advice());
 	}
 
 }

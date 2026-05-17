@@ -755,6 +755,17 @@
 				<input id="userIdInput" type="text" value="default-user" aria-label="用户 ID" placeholder="例如 user-a">
 				<span class="field-hint">用于隔离长期 Memory</span>
 			</label>
+			<label class="field user-field">
+				<span class="field-label">客服渠道</span>
+				<select id="channelInput" aria-label="客服渠道">
+					<option value="WEB">网页客服</option>
+					<option value="XIANYU">闲鱼 Mock</option>
+					<option value="WECHAT_OFFICIAL_ACCOUNT">微信公众号 Mock</option>
+					<option value="WECHAT_WORK">企业微信 Mock</option>
+					<option value="WECHAT_MINI_PROGRAM">小程序 Mock</option>
+				</select>
+				<span class="field-hint">智能客服模式使用</span>
+			</label>
 			<label class="field message-field">
 				<span class="field-label">消息</span>
 				<textarea id="messageInput" placeholder="输入问题，按 Ctrl + Enter 发送">现在北京时间几点？然后给我一个今天 30 分钟的 Agent 学习计划。</textarea>
@@ -780,6 +791,10 @@
 					<label>
 						<input type="radio" name="agentModeSelect" value="multi-agent">
 						<span>Multi-Agent</span>
+					</label>
+					<label>
+						<input type="radio" name="agentModeSelect" value="customer-service">
+						<span>智能客服</span>
 					</label>
 				</div>
 				<div class="mode-radio" role="radiogroup" aria-label="响应模式">
@@ -814,6 +829,7 @@
 	const messages = document.getElementById("messages");
 	const composer = document.getElementById("composer");
 	const userIdInput = document.getElementById("userIdInput");
+	const channelInput = document.getElementById("channelInput");
 	const input = document.getElementById("messageInput");
 	const agentModeInputs = Array.from(document.querySelectorAll("input[name='agentModeSelect']"));
 	const modeInputs = Array.from(document.querySelectorAll("input[name='modeSelect']"));
@@ -979,6 +995,24 @@
 
 	function formatMemory(memory) {
 		if (!memory) return "暂无";
+		if (memory.channel) {
+			const products = Array.isArray(memory.recentProductIds) && memory.recentProductIds.length
+				? memory.recentProductIds.join("、") : "暂无";
+			const orders = Array.isArray(memory.recentOrderIds) && memory.recentOrderIds.length
+				? memory.recentOrderIds.join("、") : "暂无";
+			const risks = Array.isArray(memory.riskFlags) && memory.riskFlags.length
+				? memory.riskFlags.join("、") : "暂无";
+			return `
+				<div>用户：${escapeHtml(memory.userId || currentUserId())}</div>
+				<div>渠道：${escapeHtml(memory.channel || "WEB")}</div>
+				<div>最近商品：${escapeHtml(products)}</div>
+				<div>最近订单：${escapeHtml(orders)}</div>
+				<div>语气：${escapeHtml(memory.preferredTone || "简洁友好")}</div>
+				<div>风险：${escapeHtml(risks)}</div>
+				<div>轮次：${escapeHtml(memory.conversationCount ?? 0)}</div>
+				<div>上次意图：${escapeHtml(memory.lastIntent || "GENERAL_CHAT")}</div>
+			`;
+		}
 		const topics = Array.isArray(memory.topics) && memory.topics.length ? memory.topics.join("、") : "暂无";
 		return `
 			<div>用户：${escapeHtml(memory.userId || currentUserId())}</div>
@@ -1129,7 +1163,7 @@
 
 	function buildPayload(message) {
 		const history = currentHistory();
-		return { userId: currentUserId(), message, history: history.slice() };
+		return { userId: currentUserId(), channel: channelInput?.value || "WEB", message, history: history.slice() };
 	}
 
 	function currentMode() {
@@ -1148,7 +1182,8 @@
 			"official-agent": "官方 ReactAgent",
 			"official-graph": "官方 StateGraph",
 			"workflow": "Learning Workflow",
-			"multi-agent": "Learning Multi-Agent"
+			"multi-agent": "Learning Multi-Agent",
+			"customer-service": "智能客服助手"
 		}[currentAgentMode()] || "手写 LearningAgent";
 	}
 
@@ -1158,7 +1193,8 @@
 			"official-agent": "/minimax/chat-client/official-agent/chat",
 			"official-graph": "/minimax/chat-client/official-graph/chat",
 			"workflow": "/minimax/chat-client/workflow/chat",
-			"multi-agent": "/minimax/chat-client/multi-agent/chat"
+			"multi-agent": "/minimax/chat-client/multi-agent/chat",
+			"customer-service": "/minimax/chat-client/customer-service/chat"
 		}[currentAgentMode()] || "/minimax/chat-client/conversation/chat";
 	}
 

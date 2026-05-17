@@ -24,6 +24,9 @@ import com.alibaba.cloud.ai.agent.LearningAgentResult;
 import com.alibaba.cloud.ai.agent.LearningAgentService;
 import com.alibaba.cloud.ai.agent.LearningAgentService.LearningAgentMessage;
 import com.alibaba.cloud.ai.agent.LearningStreamEvent;
+import com.alibaba.cloud.ai.customer.ChannelType;
+import com.alibaba.cloud.ai.customer.CustomerServiceAgentService;
+import com.alibaba.cloud.ai.customer.CustomerServiceResult;
 import com.alibaba.cloud.ai.evaluation.AgentEvaluationResult;
 import com.alibaba.cloud.ai.evaluation.AgentEvaluationService;
 import com.alibaba.cloud.ai.judge.AgentJudgeResult;
@@ -87,6 +90,8 @@ public class MiniMaxChatClientController {
 
 	private final LearningCoordinatorAgent learningCoordinatorAgent;
 
+	private final CustomerServiceAgentService customerServiceAgentService;
+
 	private final AgentRunReportService agentRunReportService;
 
 	private final AgentEvaluationService agentEvaluationService;
@@ -97,8 +102,9 @@ public class MiniMaxChatClientController {
 			LearningMemoryService learningMemoryService, LearningMcpService learningMcpService,
 			OfficialLearningAgentService officialLearningAgentService,
 			OfficialLearningGraphService officialLearningGraphService, LearningWorkflowService learningWorkflowService,
-			LearningCoordinatorAgent learningCoordinatorAgent, AgentRunReportService agentRunReportService,
-			AgentEvaluationService agentEvaluationService, AgentJudgeService agentJudgeService) {
+			LearningCoordinatorAgent learningCoordinatorAgent, CustomerServiceAgentService customerServiceAgentService,
+			AgentRunReportService agentRunReportService, AgentEvaluationService agentEvaluationService,
+			AgentJudgeService agentJudgeService) {
 		this.learningAgentService = learningAgentService;
 		this.learningMemoryService = learningMemoryService;
 		this.learningMcpService = learningMcpService;
@@ -106,6 +112,7 @@ public class MiniMaxChatClientController {
 		this.officialLearningGraphService = officialLearningGraphService;
 		this.learningWorkflowService = learningWorkflowService;
 		this.learningCoordinatorAgent = learningCoordinatorAgent;
+		this.customerServiceAgentService = customerServiceAgentService;
 		this.agentRunReportService = agentRunReportService;
 		this.agentEvaluationService = agentEvaluationService;
 		this.agentJudgeService = agentJudgeService;
@@ -203,6 +210,24 @@ public class MiniMaxChatClientController {
 		return result;
 	}
 
+	/**
+	 * 执行智能客服助手对话，面向网页客服、闲鱼 Mock、微信 Mock 等真实客服场景。
+	 * @param request 前端聊天请求
+	 * @return 智能客服助手响应结果
+	 * @author xyd
+	 * @date 2026-05-15 14:57:11
+	 */
+	@PostMapping(value = "/customer-service/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public CustomerServiceResult customerServiceChat(@RequestBody ChatRequest request) {
+		String userId = extractUserId(request);
+		String message = extractMessage(request);
+		List<LearningAgentMessage> history = toAgentHistory(request);
+		CustomerServiceResult result = this.customerServiceAgentService.chat(userId, extractChannel(request), message,
+				history);
+		saveEvaluation(this.agentRunReportService.saveCustomerService(userId, message, history.size(), result));
+		return result;
+	}
+
 	@GetMapping("/memory")
 	public LearningMemory getMemory(@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
 		return this.learningMemoryService.read(userId);
@@ -293,6 +318,25 @@ public class MiniMaxChatClientController {
 		return messages;
 	}
 
+	/**
+	 * 从请求中提取客服渠道，缺省使用 WEB，非法渠道也回退到 WEB。
+	 * @param request 前端聊天请求
+	 * @return 客服渠道
+	 * @author xyd
+	 * @date 2026-05-15 14:57:11
+	 */
+	private ChannelType extractChannel(ChatRequest request) {
+		if (request == null || request.channel() == null || request.channel().isBlank()) {
+			return ChannelType.WEB;
+		}
+		try {
+			return ChannelType.valueOf(request.channel().trim().toUpperCase().replace('-', '_'));
+		}
+		catch (IllegalArgumentException ex) {
+			return ChannelType.WEB;
+		}
+	}
+
 	private OpenAiChatOptions defaultOptions() {
 		return OpenAiChatOptions.builder()
 				.model("MiniMax-M2.7")
@@ -304,7 +348,7 @@ public class MiniMaxChatClientController {
 		this.agentEvaluationService.evaluateAndSave(report);
 	}
 
-	public record ChatRequest(String userId, String message, List<ChatMessage> history) {
+	public record ChatRequest(String userId, String message, List<ChatMessage> history, String channel) {
 	}
 
 	public record ChatMessage(String role, String content) {

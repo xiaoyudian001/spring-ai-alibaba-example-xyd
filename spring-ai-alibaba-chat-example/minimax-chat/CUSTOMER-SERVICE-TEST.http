@@ -1,0 +1,54 @@
+### 智能客服 - 闲鱼商品咨询
+POST http://localhost:8080/minimax/chat-client/customer-service/chat
+Content-Type: application/json
+
+{
+  "userId": "xianyu-user",
+  "channel": "XIANYU",
+  "message": "这个 p-1001 商品还在吗？能简单介绍一下吗？",
+  "history": []
+}
+
+### 智能客服 - 闲鱼议价
+POST http://localhost:8080/minimax/chat-client/customer-service/chat
+Content-Type: application/json
+
+{
+  "userId": "xianyu-user",
+  "channel": "XIANYU",
+  "message": "p-1001 能便宜 50 吗？",
+  "history": []
+}
+
+### 智能客服 - 微信物流查询
+POST http://localhost:8080/minimax/chat-client/customer-service/chat
+Content-Type: application/json
+
+{
+  "userId": "wechat-user",
+  "channel": "WECHAT_OFFICIAL_ACCOUNT",
+  "message": "我的订单 o-202605150001 怎么还没到？帮我查一下物流。",
+  "history": []
+}
+
+### 智能客服 - 退款请求
+POST http://localhost:8080/minimax/chat-client/customer-service/chat
+Content-Type: application/json
+
+{
+  "userId": "refund-user",
+  "channel": "WEB",
+  "message": "订单 o-202605150001 我想退款，能直接帮我退吗？",
+  "history": []
+}
+
+### 智能客服 - 投诉转人工
+POST http://localhost:8080/minimax/chat-client/customer-service/chat
+Content-Type: application/json
+
+{
+  "userId": "complaint-user",
+  "channel": "WECHAT_WORK",
+  "message": "你们服务太差了，我要投诉，给我转人工。",
+  "history": []
+}

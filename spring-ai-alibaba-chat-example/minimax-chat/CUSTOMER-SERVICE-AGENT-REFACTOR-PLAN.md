@@ -914,3 +914,34 @@ LearningCoordinatorAgent   -> CustomerCoordinatorAgent
 7. Workflow 负责稳定流程，Agent 负责动态判断，Graph 负责复杂分支。
 8. 前端必须展示调试链路，让每次回复可以解释、可以复盘。
 
+## 22. 第一轮代码落地情况
+
+已完成第一轮智能客服主线改造，保留原学习助手能力，同时新增独立客服链路：
+
+```text
+前端智能客服模式
+ -> /minimax/chat-client/customer-service/chat
+ -> CustomerServiceAgentService
+ -> CustomerServiceIntentPlanner
+ -> CustomerMemoryService
+ -> CustomerSkillService
+ -> CustomerPolicyRagService
+ -> CustomerServiceTools
+ -> MiniMax-M2.7
+ -> 前端展示回答 + Workflow 步骤 + Multi-Agent 步骤 + Tool 调用 + 客服 Memory
+```
+
+已新增核心能力：
+
+- `ChannelType`：支持 `WEB`、`XIANYU`、`WECHAT_OFFICIAL_ACCOUNT`、`WECHAT_WORK`、`WECHAT_MINI_PROGRAM`。
+- `CustomerServiceIntent`：支持商品咨询、议价、订单状态、物流、退款、退换货政策、投诉、人工接管和一般对话。
+- `CustomerMemory` / `CustomerMemoryService`：独立客服长期记忆，持久化到 `memory/customer-memory.json`。
+- `MockCustomerDataService`：提供商品、订单、物流和工单 Mock 数据。
+- `CustomerPolicyRagService`：提供客服政策、发货规则、闲鱼回复、微信客服和投诉处理知识检索。
+- `CustomerSkillService`：模拟 `SkillRegistry` 和 `read_skill`，提供客服技能索引和按需读取。
+- `CustomerServiceTools`：提供模型可调用的商品、订单、物流、RAG、Skill、工单和人工接管工具。
+- `CustomerServiceAgentService`：整合客服 Workflow、Multi-Agent 调试步骤和 MiniMax 工具调用。
+- 前端新增“智能客服”链路模式和“客服渠道”选择。
+- 新增 `CUSTOMER-SERVICE-TEST.http` 用于接口测试。
+
+第一轮仍是 Mock 业务系统，不直接接入真实闲鱼或微信授权接口；后续可以把 `CustomerServiceTools` 背后的 Mock 服务替换为真实 MCP Server。

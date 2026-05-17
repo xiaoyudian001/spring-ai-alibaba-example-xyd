@@ -250,4 +250,46 @@
     "passed" : true,
     "detail" : "项目知识类问题使用了 RAG 或 MCP 检索。"
   } ]
+}, {
+  "id" : "eval-716c0a2b-002f-443a-9908-64875b513284",
+  "reportId" : "run-9a57ee50-fb7a-47e5-863c-87b0c482ef4b",
+  "createdAt" : "2026-05-17T02:40:03.159405100Z",
+  "userId" : "default-user",
+  "chainMode" : "CUSTOMER_SERVICE_AGENT",
+  "intent" : "PRICE_NEGOTIATION",
+  "score" : 3,
+  "maxScore" : 3,
+  "level" : "PASS",
+  "passed" : true,
+  "checks" : [ {
+    "name" : "意图识别",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Planner 返回了有效意图：PRICE_NEGOTIATION"
+  }, {
+    "name" : "回答非空",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "回答摘要非空。"
+  }, {
+    "name" : "Memory 更新",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Memory 在本轮调用后发生变化。"
+  }, {
+    "name" : "时间工具",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮不是时间问题。"
+  }, {
+    "name" : "MCP 写入意图",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮没有明确保存或更新资源诉求。"
+  }, {
+    "name" : "项目知识检索",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮不是项目知识类问题。"
+  } ]
 } ]

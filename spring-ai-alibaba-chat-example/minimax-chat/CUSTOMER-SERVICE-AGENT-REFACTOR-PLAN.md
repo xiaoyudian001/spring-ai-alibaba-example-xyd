@@ -945,3 +945,44 @@ LearningCoordinatorAgent   -> CustomerCoordinatorAgent
 - 新增 `CUSTOMER-SERVICE-TEST.http` 用于接口测试。
 
 第一轮仍是 Mock 业务系统，不直接接入真实闲鱼或微信授权接口；后续可以把 `CustomerServiceTools` 背后的 Mock 服务替换为真实 MCP Server。
+
+## 23. 第二轮代码落地情况：客服 MCP 门面
+
+已新增 `CustomerMcpService`，让智能客服工具层从“直接调用 Mock 数据”升级为：
+
+```text
+CustomerServiceTools
+ -> CustomerMcpService
+ -> 优先查找真实 MCP ToolCallback
+ -> 调用失败或未发现工具时回退 MockCustomerDataService
+ -> 前端调试区展示 MCP 模式
+```
+
+新增接口：
+
+```http
+GET /minimax/chat-client/customer-service/mcp/status
+```
+
+返回含义：
+
+- `REAL_CUSTOMER_MCP_READY`：当前应用已发现客服相关 MCP 工具。
+- `CUSTOMER_MOCK_FALLBACK`：未发现客服相关 MCP 工具，本轮仍使用本地 Mock 数据兜底。
+
+当前真实 MCP 工具名匹配规则支持以下关键词：
+
+```text
+product / order / logistics / ticket / handoff / customer
+```
+
+后续如果新增独立 `customer-mcp-server`，建议暴露工具：
+
+```text
+get_product
+get_order
+get_logistics
+create_ticket
+request_human_handoff
+```
+
+这样 `CustomerMcpService` 可以自动发现并优先调用真实 MCP 工具。

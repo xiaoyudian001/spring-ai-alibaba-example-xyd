@@ -63,6 +63,8 @@ public class CustomerServiceAgentService {
 
 	private final CustomerSkillService skillService;
 
+	private final CustomerMcpService customerMcpService;
+
 	private final ToolCallDebugRecorder debugRecorder;
 
 	/**
@@ -72,17 +74,20 @@ public class CustomerServiceAgentService {
 	 * @param intentPlanner 客服意图规划器
 	 * @param memoryService 客服长期记忆服务
 	 * @param skillService 客服 Skills 服务
+	 * @param customerMcpService 智能客服 MCP 门面服务
 	 * @param debugRecorder 工具调用调试记录器
 	 * @author xyd
 	 * @date 2026-05-15 14:57:11
 	 */
 	public CustomerServiceAgentService(ChatModel chatModel, CustomerServiceTools customerServiceTools,
 			CustomerServiceIntentPlanner intentPlanner, CustomerMemoryService memoryService,
-			CustomerSkillService skillService, ToolCallDebugRecorder debugRecorder) {
+			CustomerSkillService skillService, CustomerMcpService customerMcpService,
+			ToolCallDebugRecorder debugRecorder) {
 		this.customerServiceTools = customerServiceTools;
 		this.intentPlanner = intentPlanner;
 		this.memoryService = memoryService;
 		this.skillService = skillService;
+		this.customerMcpService = customerMcpService;
 		this.debugRecorder = debugRecorder;
 		this.chatClient = ChatClient.builder(chatModel)
 				.defaultAdvisors(new SimpleLoggerAdvisor())
@@ -103,6 +108,7 @@ public class CustomerServiceAgentService {
 	public CustomerServiceResult chat(String userId, ChannelType channel, String message,
 			List<LearningAgentMessage> history) {
 		this.debugRecorder.clear();
+		this.customerMcpService.clearDebugInfo();
 		CustomerMemory memoryBefore = this.memoryService.read(userId);
 		CustomerServiceIntent intent = this.intentPlanner.plan(message);
 		String selectedSkill = this.skillService.selectSkill(channel, intent);
@@ -118,10 +124,11 @@ public class CustomerServiceAgentService {
 			List<ToolCallDebugRecorder.ToolCallDebug> toolCalls = this.debugRecorder.snapshot();
 			CustomerMemory memoryAfter = this.memoryService.update(userId, channel, message, intent);
 			return new CustomerServiceResult(content, intent, memoryBefore, memoryAfter, workflowSteps,
-					multiAgentSteps, toolCalls, null);
+					multiAgentSteps, toolCalls, this.customerMcpService.snapshotDebugInfo());
 		}
 		finally {
 			this.debugRecorder.remove();
+			this.customerMcpService.clearDebugInfo();
 		}
 	}
 

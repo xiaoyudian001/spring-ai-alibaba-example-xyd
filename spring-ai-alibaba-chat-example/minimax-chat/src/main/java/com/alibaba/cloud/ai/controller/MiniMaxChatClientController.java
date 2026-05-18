@@ -25,6 +25,8 @@ import com.alibaba.cloud.ai.agent.LearningAgentService;
 import com.alibaba.cloud.ai.agent.LearningAgentService.LearningAgentMessage;
 import com.alibaba.cloud.ai.agent.LearningStreamEvent;
 import com.alibaba.cloud.ai.customer.ChannelType;
+import com.alibaba.cloud.ai.customer.CustomerMcpService;
+import com.alibaba.cloud.ai.customer.CustomerMcpService.CustomerMcpStatus;
 import com.alibaba.cloud.ai.customer.CustomerServiceAgentService;
 import com.alibaba.cloud.ai.customer.CustomerServiceResult;
 import com.alibaba.cloud.ai.evaluation.AgentEvaluationResult;
@@ -92,6 +94,8 @@ public class MiniMaxChatClientController {
 
 	private final CustomerServiceAgentService customerServiceAgentService;
 
+	private final CustomerMcpService customerMcpService;
+
 	private final AgentRunReportService agentRunReportService;
 
 	private final AgentEvaluationService agentEvaluationService;
@@ -103,8 +107,8 @@ public class MiniMaxChatClientController {
 			OfficialLearningAgentService officialLearningAgentService,
 			OfficialLearningGraphService officialLearningGraphService, LearningWorkflowService learningWorkflowService,
 			LearningCoordinatorAgent learningCoordinatorAgent, CustomerServiceAgentService customerServiceAgentService,
-			AgentRunReportService agentRunReportService, AgentEvaluationService agentEvaluationService,
-			AgentJudgeService agentJudgeService) {
+			CustomerMcpService customerMcpService, AgentRunReportService agentRunReportService,
+			AgentEvaluationService agentEvaluationService, AgentJudgeService agentJudgeService) {
 		this.learningAgentService = learningAgentService;
 		this.learningMemoryService = learningMemoryService;
 		this.learningMcpService = learningMcpService;
@@ -113,6 +117,7 @@ public class MiniMaxChatClientController {
 		this.learningWorkflowService = learningWorkflowService;
 		this.learningCoordinatorAgent = learningCoordinatorAgent;
 		this.customerServiceAgentService = customerServiceAgentService;
+		this.customerMcpService = customerMcpService;
 		this.agentRunReportService = agentRunReportService;
 		this.agentEvaluationService = agentEvaluationService;
 		this.agentJudgeService = agentJudgeService;
@@ -226,6 +231,17 @@ public class MiniMaxChatClientController {
 				history);
 		saveEvaluation(this.agentRunReportService.saveCustomerService(userId, message, history.size(), result));
 		return result;
+	}
+
+	/**
+	 * 查询智能客服 MCP 接入状态，便于确认当前是调用真实 MCP 还是 Mock 兜底。
+	 * @return 智能客服 MCP 状态
+	 * @author xyd
+	 * @date 2026-05-17 10:43:52
+	 */
+	@GetMapping("/customer-service/mcp/status")
+	public CustomerMcpStatus customerMcpStatus() {
+		return this.customerMcpService.status();
 	}
 
 	@GetMapping("/memory")

@@ -9,6 +9,9 @@ Content-Type: application/json
   "history": []
 }
 
+### 智能客服 - MCP 状态
+GET http://localhost:8080/minimax/chat-client/customer-service/mcp/status
+
 ### 智能客服 - 闲鱼议价
 POST http://localhost:8080/minimax/chat-client/customer-service/chat
 Content-Type: application/json

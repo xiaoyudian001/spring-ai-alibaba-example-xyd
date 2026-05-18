@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CustomerServiceTools {
 
-	private final MockCustomerDataService dataService;
+	private final CustomerMcpService customerMcpService;
 
 	private final CustomerPolicyRagService policyRagService;
 
@@ -43,16 +43,16 @@ public class CustomerServiceTools {
 
 	/**
 	 * 创建智能客服工具入口，并注入 Mock 数据、客服 RAG、客服 Skills 和调试记录器。
-	 * @param dataService Mock 客服业务数据服务
+	 * @param customerMcpService 智能客服 MCP 门面服务
 	 * @param policyRagService 客服政策 RAG 服务
 	 * @param skillService 客服技能服务
 	 * @param debugRecorder 工具调用调试记录器
 	 * @author xyd
 	 * @date 2026-05-15 14:57:11
 	 */
-	public CustomerServiceTools(MockCustomerDataService dataService, CustomerPolicyRagService policyRagService,
+	public CustomerServiceTools(CustomerMcpService customerMcpService, CustomerPolicyRagService policyRagService,
 			CustomerSkillService skillService, ToolCallDebugRecorder debugRecorder) {
-		this.dataService = dataService;
+		this.customerMcpService = customerMcpService;
 		this.policyRagService = policyRagService;
 		this.skillService = skillService;
 		this.debugRecorder = debugRecorder;
@@ -67,7 +67,7 @@ public class CustomerServiceTools {
 	 */
 	@Tool(description = "查询商品信息。当用户询问商品是否还在、价格、成色、库存、闲鱼议价时使用。")
 	public String getProductInfo(@ToolParam(description = "商品 ID，例如 p-1001。用户没有提供时可使用 p-1001 测试。") String productId) {
-		String result = this.dataService.getProductInfo(productId);
+		String result = this.customerMcpService.getProductInfo(productId);
 		this.debugRecorder.record("getProductInfo", arguments("productId", productId), result);
 		return result;
 	}
@@ -82,7 +82,7 @@ public class CustomerServiceTools {
 	@Tool(description = "查询订单信息。当用户询问订单状态、是否发货、退款条件或售后处理时使用。")
 	public String getOrderInfo(
 			@ToolParam(description = "订单 ID，例如 o-202605150001。用户没有提供时可使用 o-202605150001 测试。") String orderId) {
-		String result = this.dataService.getOrderInfo(orderId);
+		String result = this.customerMcpService.getOrderInfo(orderId);
 		this.debugRecorder.record("getOrderInfo", arguments("orderId", orderId), result);
 		return result;
 	}
@@ -97,7 +97,7 @@ public class CustomerServiceTools {
 	@Tool(description = "查询物流信息。当用户询问快递、包裹到哪、为什么没到或是否签收时使用。")
 	public String getLogisticsInfo(
 			@ToolParam(description = "订单 ID，例如 o-202605150001。用户没有提供时可使用 o-202605150001 测试。") String orderId) {
-		String result = this.dataService.getLogisticsInfo(orderId);
+		String result = this.customerMcpService.getLogisticsInfo(orderId);
 		this.debugRecorder.record("getLogisticsInfo", arguments("orderId", orderId), result);
 		return result;
 	}
@@ -159,7 +159,7 @@ public class CustomerServiceTools {
 	public String createCustomerTicket(
 			@ToolParam(description = "会话 ID，没有时可使用当前用户 ID。") String conversationId,
 			@ToolParam(description = "工单摘要，说明用户问题和建议处理动作。") String summary) {
-		String result = this.dataService.createTicket(conversationId, summary);
+		String result = this.customerMcpService.createTicket(conversationId, summary);
 		this.debugRecorder.record("createCustomerTicket", arguments("conversationId", conversationId, "summary", summary),
 				result);
 		return result;
@@ -177,8 +177,7 @@ public class CustomerServiceTools {
 	public String requestHumanHandoff(
 			@ToolParam(description = "会话 ID，没有时可使用当前用户 ID。") String conversationId,
 			@ToolParam(description = "人工接管原因。") String reason) {
-		String result = "已生成待人工确认任务：handoff-" + Math.abs((conversationId + reason).hashCode()) + "；原因："
-				+ reason + "。模型不得直接执行退款、赔付、取消订单等高风险动作。";
+		String result = this.customerMcpService.requestHumanHandoff(conversationId, reason);
 		this.debugRecorder.record("requestHumanHandoff",
 				arguments("conversationId", conversationId, "reason", reason), result);
 		return result;

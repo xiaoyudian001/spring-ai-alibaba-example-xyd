@@ -1,0 +1,13 @@
+{
+  "default-user" : {
+    "userId" : "default-user",
+    "channel" : "XIANYU",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "PRICE_NEGOTIATION",
+    "riskFlags" : [ ],
+    "conversationCount" : 1,
+    "lastQuestion" : "这个 p-1001 商品还在吗？能便宜 50 吗？"
+  }
+}

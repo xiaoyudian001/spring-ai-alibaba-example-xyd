@@ -34,6 +34,7 @@ import com.alibaba.cloud.ai.planner.LearningIntent;
 import com.alibaba.cloud.ai.planner.LearningIntentPlanner;
 import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
 import org.springframework.ai.chat.messages.AbstractMessage;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 /**
@@ -53,7 +54,7 @@ public class OfficialLearningAgentService {
 
 	private final LearningMcpService mcpService;
 
-	public OfficialLearningAgentService(ReactAgent officialLearningAgent, LearningIntentPlanner intentPlanner,
+	public OfficialLearningAgentService(@Qualifier("officialLearningAgent") ReactAgent officialLearningAgent, LearningIntentPlanner intentPlanner,
 			LearningMemoryService memoryService, ToolCallDebugRecorder debugRecorder, LearningMcpService mcpService) {
 		this.officialLearningAgent = officialLearningAgent;
 		this.intentPlanner = intentPlanner;

@@ -1,9 +1,9 @@
 @baseUrl = http://localhost:8080
 @userId = tool-test-user
 
-### Tool Calling：获取当前北京时间
+### 官方 ReactAgent Tool Calling：获取当前北京时间
 # 预期：toolCalls 中出现 getCurrentTime。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
+POST {{baseUrl}}/minimax/chat-client/official-agent/chat
 Content-Type: application/json; charset=utf-8
 
 {
@@ -12,9 +12,9 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### Skill：生成 Spring AI Alibaba 学习建议
+### 官方 ReactAgent Skill：生成 Spring AI Alibaba 学习建议
 # 预期：toolCalls 中出现 generateLearningAdvice。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
+POST {{baseUrl}}/minimax/chat-client/official-agent/chat
 Content-Type: application/json; charset=utf-8
 
 {
@@ -23,9 +23,9 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### Skill：生成今日 30 分钟学习计划
+### 官方 ReactAgent Skill：生成今日 30 分钟学习计划
 # 预期：toolCalls 中出现 generateDailyPlan。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
+POST {{baseUrl}}/minimax/chat-client/official-agent/chat
 Content-Type: application/json; charset=utf-8
 
 {
@@ -34,9 +34,9 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### Skill：解释概念
+### 官方 ReactAgent Skill：解释概念
 # 预期：toolCalls 中出现 explainConcept。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
+POST {{baseUrl}}/minimax/chat-client/official-agent/chat
 Content-Type: application/json; charset=utf-8
 
 {
@@ -45,9 +45,9 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### RAG：检索当前项目文档
+### 官方 ReactAgent RAG：检索当前项目文档
 # 预期：toolCalls 中出现 searchLearningDocs。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
+POST {{baseUrl}}/minimax/chat-client/official-agent/chat
 Content-Type: application/json; charset=utf-8
 
 {
@@ -56,25 +56,25 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### Graph：查看节点调试信息
-# 预期：响应中 graphSteps 包含 Receive、Memory Read、Planner、Strategy、Model Call、Tool Execute、Memory Write、Response。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
+### 官方 StateGraph：查看节点调试信息
+# 预期：响应中 graphSteps 包含 memory_read、planner、mcp_node、react_agent、memory_write、response。
+POST {{baseUrl}}/minimax/chat-client/official-graph/chat
 Content-Type: application/json; charset=utf-8
 
 {
   "userId": "{{userId}}",
-  "message": "请说明当前 Agent 的 Graph 工作流节点有哪些，每个节点负责什么。",
+  "message": "请说明当前官方 StateGraph 的节点有哪些，每个节点负责什么。",
   "history": []
 }
 
-### 流式 SSE：Tool + RAG + Graph 调试
-# 预期：响应中按 debug -> message -> done 返回事件。
-POST {{baseUrl}}/minimax/chat-client/conversation/stream
+### 智能客服 Tool Calling：查询订单和物流
+# 预期：toolCalls 中出现 getOrderInfo / getLogisticsInfo，mcpDebugInfo 展示真实 MCP 或 Mock fallback 状态。
+POST {{baseUrl}}/minimax/chat-client/customer-service/chat
 Content-Type: application/json; charset=utf-8
-Accept: text/event-stream
 
 {
   "userId": "{{userId}}",
-  "message": "请流式解释当前项目 Tool、RAG 和 Graph 的关系。",
+  "channel": "WECHAT_OFFICIAL_ACCOUNT",
+  "message": "我的订单 o-202605150001 怎么还没到？帮我查一下物流。",
   "history": []
 }

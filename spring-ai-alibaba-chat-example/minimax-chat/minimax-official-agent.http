@@ -26,18 +26,7 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### 03 对比：原有手写 LearningAgent 链路
-# 目标：和官方 ReactAgent 接口对比，观察原有链路额外返回 graphSteps 和更完整的前端调试信息。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
-Content-Type: application/json; charset=utf-8
-
-{
-  "userId": "{{userA}}",
-  "message": "现在北京时间几点？然后给我一个 30 分钟 Agent 学习计划。",
-  "history": []
-}
-
-### 04 官方 Graph Framework：StateGraph 编排调用
+### 03 官方 Graph Framework：StateGraph 编排调用
 # 目标：验证 Memory Read、Planner、ReactAgent、Memory Write、Response 已被官方 StateGraph 编排。
 # 观察点：
 # - graphSteps 依次包含 memory_read、planner、react_agent、memory_write、response。
@@ -52,7 +41,7 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### 05 官方 Graph Framework：检索当前项目资料
+### 04 官方 Graph Framework：检索当前项目资料
 # 目标：验证官方 StateGraph 中的 ReactAgent 节点可以继续复用 searchLearningDocs 工具。
 POST {{baseUrl}}/minimax/chat-client/official-graph/chat
 Content-Type: application/json; charset=utf-8
@@ -63,18 +52,7 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### 06 Mock MCP：手写 Agent 触发 MCP 学习资源工具
-# 目标：验证模型可以通过 searchMcpLearningResources 获取 mock MCP 学习资源。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
-Content-Type: application/json; charset=utf-8
-
-{
-  "userId": "{{userA}}",
-  "message": "通过 MCP 给我列出 Agent 和 Graph 的学习资源，并说明下一步怎么学。",
-  "history": []
-}
-
-### 07 Mock MCP：官方 ReactAgent 触发 MCP 学习资源工具
+### 05 Mock MCP：官方 ReactAgent 触发 MCP 学习资源工具
 # 目标：验证官方 ReactAgent 可以调用 searchMcpLearningResources。
 POST {{baseUrl}}/minimax/chat-client/official-agent/chat
 Content-Type: application/json; charset=utf-8
@@ -85,7 +63,7 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### 08 Mock MCP：官方 StateGraph 包含 mcp_node
+### 06 Mock MCP：官方 StateGraph 包含 mcp_node
 # 目标：验证 graphSteps 中出现 mcp_node，并且 ReactAgent 仍可调用 MCP Tool。
 POST {{baseUrl}}/minimax/chat-client/official-graph/chat
 Content-Type: application/json; charset=utf-8
@@ -96,7 +74,7 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### 09 真实 MCP Client 状态检查
+### 07 真实 MCP Client 状态检查
 # 完整真实 MCP 测试请先启动：
 # spring-ai-alibaba-chat-example/minimax-learning-mcp-server
 # 并按 minimax-learning-mcp-server.http 从 01 到 06 执行。

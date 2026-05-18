@@ -18,44 +18,31 @@ package com.alibaba.cloud.ai.customer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import com.alibaba.cloud.ai.agent.LearningAgentService.LearningAgentMessage;
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.mcp.McpDebugInfo;
 import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.chat.messages.AbstractMessage;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 /**
- * 智能客服主 Agent 服务，整合渠道、意图、Memory、Skills、RAG、Tool 和可观察执行步骤。
+ * 智能客服官方 Agent 服务，统一通过 Spring AI Alibaba ReactAgent 执行客服对话。
  *
  * @author xyd
- * @date 2026-05-15 14:57:11
+ * @date 2026-05-18 11:34:38
  */
 @Service
 public class CustomerServiceAgentService {
 
 	private static final int MAX_HISTORY_MESSAGES = 20;
 
-	private static final String SYSTEM_PROMPT = """
-			你是一个多渠道智能客服助手，服务网页客服、闲鱼、微信、企业微信和小程序客服场景。
-			请始终使用中文回答，语气自然、礼貌、简洁。
-			你可以调用客服工具查询商品、订单、物流，检索客服政策，读取客服 Skill，创建工单或请求人工接管。
-			订单、物流、库存、退款状态属于实时事实，必须优先使用 Tool 查询。
-			售后政策、发货规则、闲鱼回复规范、微信客服规范属于知识内容，优先使用 searchCustomerPolicy 检索。
-			遇到议价、退款、投诉、闲鱼或微信特定话术时，优先读取对应 Skill。
-			涉及退款、赔偿、取消订单、修改地址、承诺额外优惠、投诉升级等高风险动作时，不得直接执行，必须调用 requestHumanHandoff 生成人工确认建议。
-			不要输出 <think>、</think> 或任何思考标签。
-			""";
-
-	private final ChatClient chatClient;
-
-	private final CustomerServiceTools customerServiceTools;
+	private final ReactAgent customerServiceReactAgent;
 
 	private final CustomerServiceIntentPlanner intentPlanner;
 
@@ -68,45 +55,40 @@ public class CustomerServiceAgentService {
 	private final ToolCallDebugRecorder debugRecorder;
 
 	/**
-	 * 创建智能客服主 Agent 服务，并配置 MiniMax ChatClient 与客服工具集合。
-	 * @param chatModel 聊天模型
-	 * @param customerServiceTools 客服工具集合
+	 * 创建智能客服官方 Agent 服务。
+	 * @param customerServiceReactAgent 智能客服官方 ReactAgent
 	 * @param intentPlanner 客服意图规划器
 	 * @param memoryService 客服长期记忆服务
 	 * @param skillService 客服 Skills 服务
 	 * @param customerMcpService 智能客服 MCP 门面服务
 	 * @param debugRecorder 工具调用调试记录器
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-18 11:34:38
 	 */
-	public CustomerServiceAgentService(ChatModel chatModel, CustomerServiceTools customerServiceTools,
+	public CustomerServiceAgentService(@Qualifier("customerServiceReactAgent") ReactAgent customerServiceReactAgent,
 			CustomerServiceIntentPlanner intentPlanner, CustomerMemoryService memoryService,
 			CustomerSkillService skillService, CustomerMcpService customerMcpService,
 			ToolCallDebugRecorder debugRecorder) {
-		this.customerServiceTools = customerServiceTools;
+		this.customerServiceReactAgent = customerServiceReactAgent;
 		this.intentPlanner = intentPlanner;
 		this.memoryService = memoryService;
 		this.skillService = skillService;
 		this.customerMcpService = customerMcpService;
 		this.debugRecorder = debugRecorder;
-		this.chatClient = ChatClient.builder(chatModel)
-				.defaultAdvisors(new SimpleLoggerAdvisor())
-				.defaultOptions(defaultOptions())
-				.build();
 	}
 
 	/**
-	 * 执行一轮智能客服对话，输出客服回复、Workflow、Multi-Agent 步骤、Memory 和 Tool 调用信息。
+	 * 执行一轮智能客服对话，内部调用官方 ReactAgent，由 Agent Framework 决定工具调用。
 	 * @param userId 用户唯一标识
 	 * @param channel 客服渠道
 	 * @param message 用户原始输入
 	 * @param history 多轮对话历史
 	 * @return 智能客服响应结果
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-18 11:34:38
 	 */
 	public CustomerServiceResult chat(String userId, ChannelType channel, String message,
-			List<LearningAgentMessage> history) {
+			List<CustomerConversationMessage> history) {
 		this.debugRecorder.clear();
 		this.customerMcpService.clearDebugInfo();
 		CustomerMemory memoryBefore = this.memoryService.read(userId);
@@ -115,16 +97,25 @@ public class CustomerServiceAgentService {
 		List<CustomerServiceStep> workflowSteps = workflowSteps(channel, message, intent, selectedSkill, memoryBefore);
 		List<CustomerServiceStep> multiAgentSteps = multiAgentSteps(intent, selectedSkill);
 		try {
-			String content = this.chatClient.prompt()
-					.messages(buildMessages(channel, message, history, intent, selectedSkill, memoryBefore))
-					.options(defaultOptions())
-					.tools(this.customerServiceTools)
-					.call()
-					.content();
+			RunnableConfig config = RunnableConfig.builder()
+					.threadId(normalizeUserId(userId))
+					.build();
+			Optional<NodeOutput> output = this.customerServiceReactAgent.invokeAndGetOutput(
+					buildPrompt(channel, message, history, intent, selectedSkill, memoryBefore), config);
+			OverAllState state = output.map(NodeOutput::state).orElse(null);
+			String content = extractContent(state);
 			List<ToolCallDebugRecorder.ToolCallDebug> toolCalls = this.debugRecorder.snapshot();
 			CustomerMemory memoryAfter = this.memoryService.update(userId, channel, message, intent);
+			McpDebugInfo mcpDebugInfo = this.customerMcpService.snapshotDebugInfo();
 			return new CustomerServiceResult(content, intent, memoryBefore, memoryAfter, workflowSteps,
-					multiAgentSteps, toolCalls, this.customerMcpService.snapshotDebugInfo());
+					multiAgentSteps, toolCalls, mcpDebugInfo);
+		}
+		catch (Exception ex) {
+			CustomerMemory memoryAfter = this.memoryService.read(userId);
+			List<ToolCallDebugRecorder.ToolCallDebug> toolCalls = this.debugRecorder.snapshot();
+			return new CustomerServiceResult("官方智能客服 ReactAgent 调用失败：" + ex.getMessage(), intent,
+					memoryBefore, memoryAfter, workflowSteps, multiAgentSteps, toolCalls,
+					this.customerMcpService.snapshotDebugInfo());
 		}
 		finally {
 			this.debugRecorder.remove();
@@ -133,7 +124,7 @@ public class CustomerServiceAgentService {
 	}
 
 	/**
-	 * 生成客服 Workflow 业务步骤，用于观察本轮客服任务的稳定处理流程。
+	 * 生成客服业务流程步骤，用于展示官方 ReactAgent 调用前后的业务处理路径。
 	 * @param channel 客服渠道
 	 * @param message 用户原始输入
 	 * @param intent 客服意图
@@ -141,7 +132,7 @@ public class CustomerServiceAgentService {
 	 * @param memory 调用前客服记忆
 	 * @return Workflow 步骤列表
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-18 11:34:38
 	 */
 	private List<CustomerServiceStep> workflowSteps(ChannelType channel, String message, CustomerServiceIntent intent,
 			String selectedSkill, CustomerMemory memory) {
@@ -150,85 +141,114 @@ public class CustomerServiceAgentService {
 		steps.add(new CustomerServiceStep("识别客服意图", "Planner 识别为 " + intent + "。"));
 		steps.add(new CustomerServiceStep("读取用户记忆", memory.summary()));
 		steps.add(new CustomerServiceStep("选择客服技能", "命中 Skill：" + selectedSkill + "。"));
-		steps.add(new CustomerServiceStep("判断外部能力",
-				"订单/物流/商品事实走 Tool/MCP；客服政策和话术走 RAG；高风险动作走人工确认。"));
-		steps.add(new CustomerServiceStep("生成客服回复", "携带渠道、意图、Memory、Skill 列表和可用工具调用 MiniMax-M2.7。"));
+		steps.add(new CustomerServiceStep("官方 ReactAgent",
+				"调用 Spring AI Alibaba ReactAgent，由 Agent Framework 自主决定 Tool、RAG、Skill 和人工接管调用。"));
 		return steps;
 	}
 
 	/**
-	 * 生成客服 Multi-Agent 角色步骤，用于展示真实业务职责拆分。
+	 * 生成客服 Multi-Agent 角色步骤，表达后续接入 SequentialAgent 的业务角色边界。
 	 * @param intent 客服意图
 	 * @param selectedSkill 命中的客服技能
 	 * @return Multi-Agent 步骤列表
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-18 11:34:38
 	 */
 	private List<CustomerServiceStep> multiAgentSteps(CustomerServiceIntent intent, String selectedSkill) {
 		List<CustomerServiceStep> steps = new ArrayList<>();
 		steps.add(new CustomerServiceStep("ReceptionAgent", "接待用户并识别客服意图：" + intent + "。"));
 		steps.add(new CustomerServiceStep("SkillAgent", "根据渠道和意图选择客服技能：" + selectedSkill + "。"));
-		steps.add(new CustomerServiceStep("FactAgent", "必要时通过 Tool/MCP 查询商品、订单或物流事实。"));
-		steps.add(new CustomerServiceStep("PolicyAgent", "必要时通过 RAG 检索退款、发货、投诉或渠道回复规范。"));
-		steps.add(new CustomerServiceStep("ReplyWriterAgent", "整合事实、政策、技能和渠道语气生成客服回复。"));
-		steps.add(new CustomerServiceStep("RiskReviewerAgent", "检查退款、赔偿、取消订单和投诉升级等高风险动作是否需要人工确认。"));
+		steps.add(new CustomerServiceStep("OfficialReactAgent", "由 Spring AI Alibaba ReactAgent 执行工具选择和回复生成。"));
+		steps.add(new CustomerServiceStep("RiskReviewerAgent", "通过提示词和 requestHumanHandoff 工具约束高风险动作。"));
 		return steps;
 	}
 
 	/**
-	 * 构造发给模型的系统消息、历史消息和用户消息。
+	 * 构造传入官方 ReactAgent 的业务提示词。
 	 * @param channel 客服渠道
 	 * @param message 用户原始输入
 	 * @param history 多轮对话历史
 	 * @param intent 客服意图
 	 * @param selectedSkill 命中的客服技能
 	 * @param memory 客服长期记忆
-	 * @return 模型消息列表
+	 * @return ReactAgent 输入提示词
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-18 11:34:38
 	 */
-	private List<Message> buildMessages(ChannelType channel, String message, List<LearningAgentMessage> history,
+	private String buildPrompt(ChannelType channel, String message, List<CustomerConversationMessage> history,
 			CustomerServiceIntent intent, String selectedSkill, CustomerMemory memory) {
-		List<Message> messages = new ArrayList<>();
-		messages.add(new SystemMessage(SYSTEM_PROMPT + "\n" + "当前渠道：" + channel + "\n" + "客服意图：" + intent + "\n"
-				+ this.intentPlanner.instructionFor(intent) + "\n" + "可用 Skills：\n" + this.skillService.listSkills()
-				+ "\n" + "建议优先读取 Skill：" + selectedSkill + "\n" + "客服记忆：" + memory.summary()));
-		List<LearningAgentMessage> safeHistory = history == null ? List.of() : history;
+		return """
+				用户问题：
+				%s
+
+				当前渠道：
+				%s
+
+				识别意图：
+				%s
+
+				客服处理策略：
+				%s
+
+				建议优先读取 Skill：
+				%s
+
+				可用 Skills：
+				%s
+
+				客服长期记忆：
+				%s
+
+				最近对话历史：
+				%s
+
+				请使用 Spring AI Alibaba ReactAgent 的工具能力完成本轮客服处理。
+				需要商品、订单、物流事实时调用工具；需要政策或话术时检索知识库或读取 Skill；
+				涉及高风险动作必须请求人工接管。
+				""".formatted(message, channel, intent, this.intentPlanner.instructionFor(intent), selectedSkill,
+				this.skillService.listSkills(), memory.summary(), historySummary(history));
+	}
+
+	/**
+	 * 从官方 ReactAgent 输出状态中提取最终回复内容。
+	 * @param state 官方 ReactAgent 输出状态
+	 * @return 最终回复内容
+	 * @author xyd
+	 * @date 2026-05-18 11:34:38
+	 */
+	private String extractContent(OverAllState state) {
+		if (state == null) {
+			return "官方智能客服 ReactAgent 没有返回结果。";
+		}
+		Optional<Object> output = state.value("output");
+		if (output.isPresent()) {
+			return String.valueOf(output.get());
+		}
+		Optional<List<AbstractMessage>> messages = state.value("messages");
+		if (messages.isPresent() && !messages.get().isEmpty()) {
+			return messages.get().get(messages.get().size() - 1).getText();
+		}
+		Optional<Map<String, Object>> data = Optional.ofNullable(state.data());
+		return data.map(String::valueOf).orElse("官方智能客服 ReactAgent 没有返回可展示内容。");
+	}
+
+	/**
+	 * 生成最近对话历史摘要，避免一次性塞入过长上下文。
+	 * @param history 多轮对话历史
+	 * @return 历史摘要
+	 * @author xyd
+	 * @date 2026-05-18 11:34:38
+	 */
+	private String historySummary(List<CustomerConversationMessage> history) {
+		List<CustomerConversationMessage> safeHistory = history == null ? List.of() : history;
 		int start = Math.max(0, safeHistory.size() - MAX_HISTORY_MESSAGES);
-		for (LearningAgentMessage item : safeHistory.subList(start, safeHistory.size())) {
-			Message historyMessage = toMessage(item);
-			if (historyMessage != null) {
-				messages.add(historyMessage);
+		StringBuilder builder = new StringBuilder();
+		for (CustomerConversationMessage item : safeHistory.subList(start, safeHistory.size())) {
+			if (item != null && item.content() != null && !item.content().isBlank()) {
+				builder.append("- ").append(item.role()).append("：").append(item.content()).append("\n");
 			}
 		}
-		messages.add(new UserMessage(message));
-		return messages;
-	}
-
-	/**
-	 * 把前端历史消息转换成 Spring AI 消息对象。
-	 * @param message 前端历史消息
-	 * @return Spring AI 消息对象
-	 * @author xyd
-	 * @date 2026-05-15 14:57:11
-	 */
-	private Message toMessage(LearningAgentMessage message) {
-		if (message == null || message.content() == null || message.content().isBlank()) {
-			return null;
-		}
-		return "assistant".equals(normalizeRole(message.role())) ? new AssistantMessage(message.content())
-				: new UserMessage(message.content());
-	}
-
-	/**
-	 * 规范化前端历史消息角色。
-	 * @param role 原始角色
-	 * @return 规范化角色
-	 * @author xyd
-	 * @date 2026-05-15 14:57:11
-	 */
-	private String normalizeRole(String role) {
-		return role == null ? "user" : role.trim().toLowerCase();
+		return builder.isEmpty() ? "暂无" : builder.toString().trim();
 	}
 
 	/**
@@ -236,7 +256,7 @@ public class CustomerServiceAgentService {
 	 * @param message 用户原始输入
 	 * @return 可展示文本
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-18 11:34:38
 	 */
 	private String normalizeForStep(String message) {
 		if (message == null || message.isBlank()) {
@@ -247,16 +267,14 @@ public class CustomerServiceAgentService {
 	}
 
 	/**
-	 * 创建 MiniMax-M2.7 默认调用参数。
-	 * @return OpenAI 兼容 Chat Options
+	 * 规范化用户 ID，空值统一映射为 default-user。
+	 * @param userId 原始用户 ID
+	 * @return 规范化用户 ID
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-18 11:34:38
 	 */
-	private OpenAiChatOptions defaultOptions() {
-		return OpenAiChatOptions.builder()
-				.model("MiniMax-M2.7")
-				.temperature(0.4)
-				.build();
+	private String normalizeUserId(String userId) {
+		return userId == null || userId.isBlank() ? "default-user" : userId.trim();
 	}
 
 }

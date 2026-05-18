@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.graph;
+package com.alibaba.cloud.ai.customer;
 
 /**
- * One node in the lightweight learning workflow graph.
+ * 智能客服会话历史消息，用于在官方 ReactAgent 调用前构造业务上下文摘要。
+ *
+ * @param role 消息角色，例如 user 或 assistant
+ * @param content 消息内容
+ * @author xyd
+ * @date 2026-05-18 11:34:38
  */
-public record LearningGraphStep(String id, String name, String status, String detail) {
+public record CustomerConversationMessage(String role, String content) {
 }

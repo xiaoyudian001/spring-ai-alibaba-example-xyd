@@ -986,3 +986,64 @@ request_human_handoff
 ```
 
 这样 `CustomerMcpService` 可以自动发现并优先调用真实 MCP 工具。
+
+## 24. 第三轮代码落地情况：全面转入 Spring AI Alibaba 官方框架
+
+本轮已把 `minimax-chat` 的主执行链路从手写学习编排切换为 Spring AI Alibaba 官方框架系列。
+
+已移除的手写编排入口：
+
+```text
+LearningAgentService
+LearningWorkflowService
+LearningCoordinatorAgent / PlannerAgent / ResearchAgent / TeacherAgent / ReviewerAgent
+LearningGraphService
+/minimax/chat-client/conversation/chat
+/minimax/chat-client/conversation/stream
+/minimax/chat-client/workflow/chat
+/minimax/chat-client/multi-agent/chat
+```
+
+当前保留并推荐测试的官方入口：
+
+```text
+智能客服官方 ReactAgent：
+POST /minimax/chat-client/customer-service/chat
+
+官方学习 ReactAgent：
+POST /minimax/chat-client/official-agent/chat
+
+官方学习 StateGraph：
+POST /minimax/chat-client/official-graph/chat
+```
+
+新的智能客服主链路：
+
+```text
+前端智能客服模式
+ -> MiniMaxChatClientController
+ -> CustomerServiceAgentService
+ -> Spring AI Alibaba ReactAgent
+ -> OfficialCustomerServiceToolCallbacks
+ -> CustomerServiceTools
+ -> CustomerMcpService / CustomerSkillService / CustomerPolicyRagService / CustomerMemoryService
+ -> 前端展示回答、Agent 步骤、Tool 调用、MCP 状态和客服 Memory
+```
+
+说明：
+
+- `CustomerServiceAgentService` 不再直接使用 `ChatClient` 拼接模型调用，而是统一调用官方 `ReactAgent`。
+- `OfficialCustomerServiceToolCallbacks` 负责把客服工具注册为官方 `FunctionToolCallback`。
+- `OfficialCustomerServiceAgentConfiguration` 负责构建客服 `ReactAgent`，并通过 `MemorySaver` 交给官方 Agent Framework 管理运行状态。
+- 前端“Agent 链路模式”已收敛为：智能客服、官方 ReactAgent、官方 StateGraph。
+- 流式调试入口暂时下线，因为当前主线优先保证官方 `ReactAgent` / `StateGraph` 的同步可观测链路稳定。
+
+下一阶段建议：
+
+```text
+1. 把客服 Workflow 步骤从展示信息升级为官方 StateGraph 客服图。
+2. 把客服多角色步骤升级为官方 SequentialAgent。
+3. 把 CustomerMcpService 后面的 Mock 数据替换为真实 customer-mcp-server。
+4. 把 CustomerPolicyRagService 从本地关键词检索升级为 PGVector / Milvus 向量库。
+5. 引入 Human-in-the-loop 确认接口，让退款、赔付、改地址等高风险动作必须人工确认。
+```

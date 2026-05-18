@@ -47,6 +47,7 @@ import com.alibaba.cloud.ai.planner.LearningIntent;
 import com.alibaba.cloud.ai.planner.LearningIntentPlanner;
 import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
 import org.springframework.ai.chat.messages.AbstractMessage;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -54,7 +55,10 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
- * Official StateGraph orchestration for the learning agent.
+ * 官方 StateGraph 学习编排服务，通过 Spring AI Alibaba Graph 串联记忆、规划、MCP 和 ReactAgent。
+ *
+ * @author xyd
+ * @date 2026-05-18 11:34:38
  */
 @Service
 public class OfficialLearningGraphService {
@@ -73,8 +77,19 @@ public class OfficialLearningGraphService {
 
 	private final String graphDefinition;
 
-	public OfficialLearningGraphService(ReactAgent officialLearningAgent, LearningMemoryService memoryService,
-			LearningIntentPlanner intentPlanner, LearningMcpService mcpService,
+	/**
+	 * 创建官方 StateGraph 学习编排服务。
+	 * @param officialLearningAgent 官方学习 ReactAgent
+	 * @param memoryService 学习记忆服务
+	 * @param intentPlanner 学习意图规划器
+	 * @param mcpService MCP 学习资源服务
+	 * @param debugRecorder 工具调用调试记录器
+	 * @throws GraphStateException 官方 StateGraph 构建失败时抛出
+	 * @author xyd
+	 * @date 2026-05-18 11:34:38
+	 */
+	public OfficialLearningGraphService(@Qualifier("officialLearningAgent") ReactAgent officialLearningAgent,
+			LearningMemoryService memoryService, LearningIntentPlanner intentPlanner, LearningMcpService mcpService,
 			ToolCallDebugRecorder debugRecorder) throws GraphStateException {
 		this.officialLearningAgent = officialLearningAgent;
 		this.memoryService = memoryService;
@@ -86,6 +101,14 @@ public class OfficialLearningGraphService {
 		this.compiledGraph = graph.compile();
 	}
 
+	/**
+	 * 执行一轮官方 StateGraph 学习对话。
+	 * @param userId 用户唯一标识
+	 * @param message 用户问题
+	 * @return 官方 StateGraph 响应结果
+	 * @author xyd
+	 * @date 2026-05-18 11:34:38
+	 */
 	public OfficialLearningGraphResult chat(String userId, String message) {
 		this.debugRecorder.clear();
 		this.mcpService.clearDebugInfo();
@@ -114,6 +137,13 @@ public class OfficialLearningGraphService {
 		}
 	}
 
+	/**
+	 * 构建官方 StateGraph 节点和边。
+	 * @return 官方 StateGraph
+	 * @throws GraphStateException 图状态构建失败时抛出
+	 * @author xyd
+	 * @date 2026-05-18 11:34:38
+	 */
 	private StateGraph buildGraph() throws GraphStateException {
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
 				.addPatternStrategy("userId", new ReplaceStrategy())
@@ -145,6 +175,12 @@ public class OfficialLearningGraphService {
 				.addEdge("response", END);
 	}
 
+	/**
+	 * 读取用户长期学习记忆节点。
+	 * @return 官方 Graph 节点动作
+	 * @author xyd
+	 * @date 2026-05-18 11:34:38
+	 */
 	private NodeAction memoryReadNode() {
 		return state -> {
 			String userId = stringValue(state, "userId", "default-user");
@@ -154,6 +190,12 @@ public class OfficialLearningGraphService {
 		};
 	}
 
+	/**
+	 * 识别学习意图节点。
+	 * @return 官方 Graph 节点动作
+	 * @author xyd
+	 * @date 2026-05-18 11:34:38
+	 */
 	private NodeAction plannerNode() {
 		return state -> {
 			String message = stringValue(state, "message", "");
@@ -162,6 +204,12 @@ public class OfficialLearningGraphService {
 		};
 	}
 
+	/**
+	 * 预取 MCP 学习资源节点。
+	 * @return 官方 Graph 节点动作
+	 * @author xyd
+	 * @date 2026-05-18 11:34:38
+	 */
 	private NodeAction mcpNode() {
 		return state -> {
 			String message = stringValue(state, "message", "");
@@ -170,10 +218,16 @@ public class OfficialLearningGraphService {
 					"mcpDebugInfo", toDebugInfo(message, 2, mcpResult),
 					"graphSteps",
 					appendStep(state, "mcp_node", "MCP Node 使用 " + mcpResult.source()
-							+ " 准备学习资源，真实 MCP 可用：" + mcpResult.realMcpAvailable() + "。"));
+							+ " 准备学习资源；真实 MCP 可用：" + mcpResult.realMcpAvailable() + "。"));
 		};
 	}
 
+	/**
+	 * 调用官方 ReactAgent 节点。
+	 * @return 官方 Graph 节点动作
+	 * @author xyd
+	 * @date 2026-05-18 11:34:38
+	 */
 	private NodeAction reactAgentNode() {
 		return state -> {
 			this.debugRecorder.clear();
@@ -197,6 +251,12 @@ public class OfficialLearningGraphService {
 		};
 	}
 
+	/**
+	 * 写入用户长期学习记忆节点。
+	 * @return 官方 Graph 节点动作
+	 * @author xyd
+	 * @date 2026-05-18 11:34:38
+	 */
 	private NodeAction memoryWriteNode() {
 		return state -> {
 			String userId = stringValue(state, "userId", "default-user");
@@ -208,10 +268,24 @@ public class OfficialLearningGraphService {
 		};
 	}
 
+	/**
+	 * 汇总响应节点。
+	 * @return 官方 Graph 节点动作
+	 * @author xyd
+	 * @date 2026-05-18 11:34:38
+	 */
 	private NodeAction responseNode() {
-		return state -> Map.of("graphSteps", appendStep(state, "response", "汇总回答、Graph 节点、工具调用和 Memory 信息。"));
+		return state -> Map.of("graphSteps",
+				appendStep(state, "response", "汇总回答、Graph 节点、工具调用和 Memory 信息。"));
 	}
 
+	/**
+	 * 将官方 Graph 状态转换为前端响应结果。
+	 * @param state 官方 Graph 总状态
+	 * @return 官方 StateGraph 响应结果
+	 * @author xyd
+	 * @date 2026-05-18 11:34:38
+	 */
 	private OfficialLearningGraphResult toResult(OverAllState state) {
 		String userId = stringValue(state, "userId", "default-user");
 		LearningMemory memoryBefore = memoryValue(state, "memoryBefore", this.memoryService.read(userId));
@@ -225,6 +299,16 @@ public class OfficialLearningGraphService {
 				mcpDebugInfo, state.data(), this.graphDefinition);
 	}
 
+	/**
+	 * 构造传入官方 ReactAgent 的提示词。
+	 * @param message 用户问题
+	 * @param intent 学习意图
+	 * @param memory 用户长期学习记忆
+	 * @param mcpContext MCP 预取上下文
+	 * @return ReactAgent 输入提示词
+	 * @author xyd
+	 * @date 2026-05-18 11:34:38
+	 */
 	private String buildAgentPrompt(String message, LearningIntent intent, LearningMemory memory, String mcpContext) {
 		return """
 				用户问题：
@@ -239,7 +323,8 @@ public class OfficialLearningGraphService {
 				Graph MCP Node 预取资源：
 				%s
 
-				请结合用户问题、记忆和 MCP 预取资源回答。需要真实时间、学习建议、学习计划、概念解释或当前项目资料时，请调用可用工具。
+				请结合用户问题、记忆和 MCP 预取资源回答。
+				需要真实时间、学习建议、学习计划、概念解释或当前项目资料时，请调用可用工具。
 				如果用户明确要求保存、记录、沉淀或新增学习资源，请调用 createMcpLearningResource。
 				如果用户明确要求修改、更新或完善已有学习资源，请调用 updateMcpLearningResource。
 				""".formatted(message, intent, memory.summary(), mcpContext);

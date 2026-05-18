@@ -22,9 +22,9 @@ GET {{baseUrl}}/minimax/chat-client/simple/chat?message=你好，请介绍一下
 # 目标：验证 ChatClient 基础流式接口是否可用。
 GET {{baseUrl}}/minimax/chat-client/stream/chat?message=请用列表说明学习 Agent 的三个步骤。
 
-### 06 Agent 同步：Tool Calling 获取当前时间
-# 目标：验证 intent、graphSteps、agentSteps、toolCalls、memoryBefore、memoryAfter 是否完整返回。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
+### 06 官方 ReactAgent：Tool Calling 获取当前时间
+# 目标：验证官方 ReactAgent 能调用 getCurrentTime 等学习工具。
+POST {{baseUrl}}/minimax/chat-client/official-agent/chat
 Content-Type: application/json; charset=utf-8
 
 {
@@ -33,9 +33,9 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### 07 Agent 同步：Skill 生成学习计划
-# 目标：验证 generateDailyPlan 工具和 LearningSkillService 是否可用。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
+### 07 官方 ReactAgent：Skill 生成学习计划
+# 目标：验证官方 ReactAgent 能调用 generateDailyPlan 等 Skill 工具。
+POST {{baseUrl}}/minimax/chat-client/official-agent/chat
 Content-Type: application/json; charset=utf-8
 
 {
@@ -44,29 +44,20 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### 08 Agent 同步：多轮上下文
-# 目标：验证前端传入的短期 history 能参与回答。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
+### 08 官方 StateGraph：Graph 编排节点
+# 目标：验证官方 StateGraph 返回 graphSteps 和 graphDefinition。
+POST {{baseUrl}}/minimax/chat-client/official-graph/chat
 Content-Type: application/json; charset=utf-8
 
 {
   "userId": "{{userA}}",
-  "message": "基于我的目标，下一步应该做什么？",
-  "history": [
-    {
-      "role": "user",
-      "content": "我正在学习 Spring AI Alibaba Agent，目标是理解 Tool、Skill、Memory 和 Graph。"
-    },
-    {
-      "role": "assistant",
-      "content": "好的，你当前目标是理解 Agent 周边核心组件。"
-    }
-  ]
+  "message": "请结合当前项目调用链，说明官方 StateGraph 节点在 Agent 中的作用。",
+  "history": []
 }
 
-### 09 Agent 同步：Simple RAG 检索当前项目文档
+### 09 官方 ReactAgent：Simple RAG 检索当前项目文档
 # 目标：验证 searchLearningDocs 工具是否触发，回答是否基于 README/源码检索结果。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
+POST {{baseUrl}}/minimax/chat-client/official-agent/chat
 Content-Type: application/json; charset=utf-8
 
 {
@@ -75,41 +66,50 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### 10 Agent 同步：Graph 调试节点
-# 目标：验证响应中 graphSteps 包含 Receive、Memory Read、Planner、Model Call 等节点。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
+### 10 智能客服官方 ReactAgent：闲鱼商品咨询
+# 目标：验证智能客服主线通过官方 ReactAgent 查询商品、读取 Skill 并返回客服回复。
+POST {{baseUrl}}/minimax/chat-client/customer-service/chat
 Content-Type: application/json; charset=utf-8
 
 {
   "userId": "{{userA}}",
-  "message": "请结合当前项目调用链，说明 Graph 节点在 Agent 中的作用。",
+  "channel": "XIANYU",
+  "message": "这个 p-1001 商品还在吗？能简单介绍一下吗？",
   "history": []
 }
 
-### 11 Agent 流式：SSE 多事件调试
-# 目标：验证流式接口按 debug -> message -> done 返回事件。
-# 预期：响应中能看到 event:debug、event:message、event:done。
-POST {{baseUrl}}/minimax/chat-client/conversation/stream
+### 11 智能客服官方 ReactAgent：多轮上下文
+# 目标：验证客服主线能接收短期 history 并结合用户上一轮咨询回复。
+POST {{baseUrl}}/minimax/chat-client/customer-service/chat
 Content-Type: application/json; charset=utf-8
-Accept: text/event-stream
 
 {
   "userId": "{{userA}}",
-  "message": "请用流式回答：当前项目的 Tool、Memory、RAG 和 Graph 分别负责什么？",
-  "history": []
+  "channel": "XIANYU",
+  "message": "那这个还能便宜一点吗？",
+  "history": [
+    {
+      "role": "user",
+      "content": "这个 p-1001 商品还在吗？"
+    },
+    {
+      "role": "assistant",
+      "content": "在的，商品 p-1001 当前还有库存。"
+    }
+  ]
 }
 
-### 12 Memory 查看：user-a
-# 目标：验证可以读取 user-a 的长期 Memory。
+### 12 Learning Memory 查看：user-a
+# 目标：验证可以读取 user-a 的长期 Learning Memory。
 GET {{baseUrl}}/minimax/chat-client/memory?userId={{userA}}
 
-### 13 Memory 清空：user-a
-# 目标：验证可以清空 user-a 的长期 Memory，并写回 JSON 文件。
+### 13 Learning Memory 清空：user-a
+# 目标：验证可以清空 user-a 的长期 Learning Memory，并写回 JSON 文件。
 DELETE {{baseUrl}}/minimax/chat-client/memory?userId={{userA}}
 
-### 14 多用户 Memory：user-a 写入 Agent 方向
+### 14 官方 ReactAgent：user-a 写入 Agent 方向
 # 目标：验证 user-a 的关注主题写入 Agent，不影响 user-b。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
+POST {{baseUrl}}/minimax/chat-client/official-agent/chat
 Content-Type: application/json; charset=utf-8
 
 {
@@ -118,9 +118,9 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### 15 多用户 Memory：user-b 写入 RAG 方向
+### 15 官方 ReactAgent：user-b 写入 RAG 方向
 # 目标：验证 user-b 的关注主题写入 RAG，不影响 user-a。
-POST {{baseUrl}}/minimax/chat-client/conversation/chat
+POST {{baseUrl}}/minimax/chat-client/official-agent/chat
 Content-Type: application/json; charset=utf-8
 
 {
@@ -129,6 +129,6 @@ Content-Type: application/json; charset=utf-8
   "history": []
 }
 
-### 16 Memory 查看：user-b
-# 目标：验证 user-b 拥有独立 Memory。
+### 16 Learning Memory 查看：user-b
+# 目标：验证 user-b 拥有独立 Learning Memory。
 GET {{baseUrl}}/minimax/chat-client/memory?userId={{userB}}

@@ -47,7 +47,9 @@ public class LearningRagService {
 	private static final List<Path> DOCUMENT_PATHS = List.of(
 			Path.of("spring-ai-alibaba-chat-example/minimax-chat/README.md"),
 			Path.of("spring-ai-alibaba-chat-example/minimax-chat/src/main/java/com/alibaba/cloud/ai/controller/MiniMaxChatClientController.java"),
-			Path.of("spring-ai-alibaba-chat-example/minimax-chat/src/main/java/com/alibaba/cloud/ai/agent/LearningAgentService.java"),
+			Path.of("spring-ai-alibaba-chat-example/minimax-chat/src/main/java/com/alibaba/cloud/ai/official/OfficialLearningAgentService.java"),
+			Path.of("spring-ai-alibaba-chat-example/minimax-chat/src/main/java/com/alibaba/cloud/ai/officialgraph/OfficialLearningGraphService.java"),
+			Path.of("spring-ai-alibaba-chat-example/minimax-chat/src/main/java/com/alibaba/cloud/ai/customer/CustomerServiceAgentService.java"),
 			Path.of("spring-ai-alibaba-chat-example/minimax-chat/src/main/java/com/alibaba/cloud/ai/tool/MiniMaxLearningTools.java"),
 			Path.of("spring-ai-alibaba-chat-example/minimax-chat/src/main/java/com/alibaba/cloud/ai/skill/LearningSkillService.java"),
 			Path.of("spring-ai-alibaba-chat-example/minimax-chat/src/main/java/com/alibaba/cloud/ai/planner/LearningIntentPlanner.java"),
@@ -180,10 +182,15 @@ public class LearningRagService {
 		addIfContains(text, keywords, "readme", "README");
 		addIfContains(text, keywords, "文档", "README");
 		addIfContains(text, keywords, "源码", "Service", "Controller", "Tool");
-		addIfContains(text, keywords, "调用链", "LearningAgentService", "MiniMaxLearningTools");
+		addIfContains(text, keywords, "调用链", "OfficialLearningAgentService", "OfficialLearningGraphService",
+				"CustomerServiceAgentService", "MiniMaxLearningTools");
 		addIfContains(text, keywords, "tool", "MiniMaxLearningTools", "Tool Calling");
 		addIfContains(text, keywords, "skill", "LearningSkillService");
-		addIfContains(text, keywords, "agent", "LearningAgentService");
+		addIfContains(text, keywords, "agent", "OfficialLearningAgentService", "CustomerServiceAgentService",
+				"ReactAgent");
+		addIfContains(text, keywords, "graph", "OfficialLearningGraphService", "StateGraph");
+		addIfContains(text, keywords, "客服", "CustomerServiceAgentService", "CustomerServiceTools",
+				"CustomerMcpService");
 		addIfContains(text, keywords, "memory", "LearningMemoryService");
 		addIfContains(text, keywords, "rag", "LearningRagService");
 		if (keywords.isEmpty()) {

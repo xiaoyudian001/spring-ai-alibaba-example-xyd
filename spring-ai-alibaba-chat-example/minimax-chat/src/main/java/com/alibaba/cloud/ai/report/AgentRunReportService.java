@@ -25,14 +25,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import com.alibaba.cloud.ai.agent.LearningAgentResult;
-import com.alibaba.cloud.ai.agent.LearningStreamEvent;
 import com.alibaba.cloud.ai.customer.CustomerServiceResult;
 import com.alibaba.cloud.ai.mcp.McpDebugInfo;
-import com.alibaba.cloud.ai.multiagent.MultiAgentResult;
 import com.alibaba.cloud.ai.official.OfficialLearningAgentResult;
 import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphResult;
-import com.alibaba.cloud.ai.workflow.LearningWorkflowResult;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,26 +58,6 @@ public class AgentRunReportService {
 		this.maxReports = Math.max(20, maxReports);
 	}
 
-	public AgentRunReport saveHandwritten(String userId, String message, int historySize, LearningAgentResult result) {
-		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "HANDWRITTEN_AGENT",
-				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
-				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
-				safeSize(result.toolCalls()), safeSize(result.agentSteps()), safeSize(result.graphSteps()),
-				result.memoryBefore(), result.memoryAfter(), result.agentSteps(), result.graphSteps(),
-				result.toolCalls(), result.mcpDebugInfo()));
-	}
-
-	public AgentRunReport saveStream(String userId, String message, int historySize, String content,
-			LearningStreamEvent debugEvent, LearningStreamEvent doneEvent) {
-		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "HANDWRITTEN_AGENT_STREAM",
-				normalizeText(message), historySize, intentName(debugEvent == null ? null : debugEvent.intent()),
-				summarize(content), fullAnswer(content), mcpMode(doneEvent.mcpDebugInfo()),
-				hasPendingWrite(doneEvent.mcpDebugInfo()), safeSize(doneEvent.toolCalls()),
-				safeSize(doneEvent.agentSteps()), safeSize(doneEvent.graphSteps()),
-				debugEvent == null ? null : debugEvent.memoryBefore(), doneEvent.memoryAfter(),
-				doneEvent.agentSteps(), doneEvent.graphSteps(), doneEvent.toolCalls(), doneEvent.mcpDebugInfo()));
-	}
-
 	public AgentRunReport saveOfficialAgent(String userId, String message, int historySize,
 			OfficialLearningAgentResult result) {
 		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "OFFICIAL_REACT_AGENT",
@@ -98,24 +74,6 @@ public class AgentRunReportService {
 				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
 				safeSize(result.toolCalls()), 0, safeSize(result.graphSteps()), result.memoryBefore(),
 				result.memoryAfter(), List.of(), result.graphSteps(), result.toolCalls(), result.mcpDebugInfo()));
-	}
-
-	public AgentRunReport saveWorkflow(String userId, String message, int historySize, LearningWorkflowResult result) {
-		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "LEARNING_WORKFLOW",
-				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
-				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
-				safeSize(result.toolCalls()), safeSize(result.workflowSteps()), safeSize(result.graphSteps()),
-				result.memoryBefore(), result.memoryAfter(), result.workflowSteps(), result.graphSteps(),
-				result.toolCalls(), result.mcpDebugInfo()));
-	}
-
-	public AgentRunReport saveMultiAgent(String userId, String message, int historySize, MultiAgentResult result) {
-		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "LEARNING_MULTI_AGENT",
-				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
-				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
-				safeSize(result.toolCalls()), safeSize(result.multiAgentSteps()), safeSize(result.graphSteps()),
-				result.memoryBefore(), result.memoryAfter(), result.multiAgentSteps(), result.graphSteps(),
-				result.toolCalls(), result.mcpDebugInfo()));
 	}
 
 	/**

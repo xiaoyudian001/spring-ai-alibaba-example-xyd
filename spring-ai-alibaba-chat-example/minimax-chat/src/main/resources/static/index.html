@@ -773,8 +773,8 @@
 			<div class="composer-tools">
 				<div class="mode-radio agent-mode-radio" role="radiogroup" aria-label="Agent 链路模式">
 					<label>
-						<input type="radio" name="agentModeSelect" value="handwritten" checked>
-						<span>手写</span>
+						<input type="radio" name="agentModeSelect" value="customer-service" checked>
+						<span>智能客服</span>
 					</label>
 					<label>
 						<input type="radio" name="agentModeSelect" value="official-agent">
@@ -783,18 +783,6 @@
 					<label>
 						<input type="radio" name="agentModeSelect" value="official-graph">
 						<span>官方 Graph</span>
-					</label>
-					<label>
-						<input type="radio" name="agentModeSelect" value="workflow">
-						<span>Workflow</span>
-					</label>
-					<label>
-						<input type="radio" name="agentModeSelect" value="multi-agent">
-						<span>Multi-Agent</span>
-					</label>
-					<label>
-						<input type="radio" name="agentModeSelect" value="customer-service">
-						<span>智能客服</span>
 					</label>
 				</div>
 				<div class="mode-radio" role="radiogroup" aria-label="响应模式">
@@ -1173,35 +1161,29 @@
 
 	function currentAgentMode() {
 		const selected = agentModeInputs.find(item => item.checked);
-		return selected ? selected.value : "handwritten";
+		return selected ? selected.value : "customer-service";
 	}
 
 	function currentAgentModeLabel() {
 		return {
-			"handwritten": "手写 LearningAgent",
+			"customer-service": "智能客服官方 ReactAgent",
 			"official-agent": "官方 ReactAgent",
-			"official-graph": "官方 StateGraph",
-			"workflow": "Learning Workflow",
-			"multi-agent": "Learning Multi-Agent",
-			"customer-service": "智能客服助手"
-		}[currentAgentMode()] || "手写 LearningAgent";
+			"official-graph": "官方 StateGraph"
+		}[currentAgentMode()] || "智能客服官方 ReactAgent";
 	}
 
 	function endpointForAgentMode() {
 		return {
-			"handwritten": "/minimax/chat-client/conversation/chat",
+			"customer-service": "/minimax/chat-client/customer-service/chat",
 			"official-agent": "/minimax/chat-client/official-agent/chat",
-			"official-graph": "/minimax/chat-client/official-graph/chat",
-			"workflow": "/minimax/chat-client/workflow/chat",
-			"multi-agent": "/minimax/chat-client/multi-agent/chat",
-			"customer-service": "/minimax/chat-client/customer-service/chat"
-		}[currentAgentMode()] || "/minimax/chat-client/conversation/chat";
+			"official-graph": "/minimax/chat-client/official-graph/chat"
+		}[currentAgentMode()] || "/minimax/chat-client/customer-service/chat";
 	}
 
 	function syncResponseModeAvailability() {
 		const streamInput = modeInputs.find(item => item.value === "stream");
 		const simpleInput = modeInputs.find(item => item.value === "simple");
-		const officialMode = currentAgentMode() !== "handwritten";
+		const officialMode = true;
 		if (streamInput) {
 			streamInput.disabled = officialMode;
 		}
@@ -1456,64 +1438,6 @@
 			graphDefinition, mergedMcpDebugInfo);
 	}
 
-	async function sendConversationStream(message, target, messageNode) {
-		const response = await fetch("/minimax/chat-client/conversation/stream", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(buildPayload(message))
-		});
-		if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`);
-		const reader = response.body.getReader();
-		const decoder = new TextDecoder("utf-8");
-		let buffer = "";
-		let rawText = "";
-		let debugData = {};
-		while (true) {
-			const { value, done } = await reader.read();
-			if (done) break;
-			buffer += decoder.decode(value, { stream: true });
-			const parts = buffer.split("\n\n");
-			buffer = parts.pop() || "";
-			for (const part of parts) {
-				const lines = part.split("\n");
-				const eventType = lines.find(line => line.startsWith("event:"))?.slice(6).trim() || "message";
-				const dataText = lines
-					.filter(line => line.startsWith("data:"))
-					.map(line => line.slice(5).trimStart())
-					.join("\n");
-				if (!dataText || dataText === "[DONE]") continue;
-				let payload;
-				try {
-					payload = JSON.parse(dataText);
-				}
-				catch (ignored) {
-					payload = { type: eventType, content: dataText };
-				}
-				const type = payload.type || eventType;
-				if (type === "debug") {
-					debugData = payload;
-				}
-				else if (type === "done") {
-					await renderDebugWithPending(messageNode, debugData.intent, payload.toolCalls || [],
-						payload.graphSteps || debugData.graphSteps || [], payload.agentSteps || debugData.agentSteps || [],
-						debugData.memoryBefore, payload.memoryAfter, currentAgentModeLabel(), payload.graphDefinition,
-						payload.mcpDebugInfo || debugData.mcpDebugInfo);
-				}
-				else {
-					rawText += payload.content || "";
-					setAssistantContent(target, rawText);
-					target.scrollIntoView({ behavior: "smooth", block: "end" });
-				}
-			}
-		}
-		const answer = cleanAssistantText(rawText);
-		if (!answer.trim()) {
-			setAssistantContent(target, "流式接口没有返回可展示文本，请先确认同步接口是否正常。");
-			return target.textContent;
-		}
-		return answer;
-	}
-
 	composer.addEventListener("submit", async (event) => {
 		event.preventDefault();
 		const message = input.value.trim();
@@ -1523,19 +1447,13 @@
 		const assistantNode = assistant.closest(".message");
 		setBusy(true);
 		try {
-			let answer;
-			if (currentMode() === "stream" && currentAgentMode() === "handwritten") {
-				answer = await sendConversationStream(message, assistant, assistantNode);
-			}
-			else {
-				const data = await sendConversation(message);
-				answer = cleanAssistantText(data.content || "");
-				setAssistantContent(assistant, answer);
-				await renderDebugWithPending(assistantNode, data.intent, data.toolCalls || [],
-					data.workflowSteps || data.graphSteps || [],
-					data.multiAgentSteps || data.agentSteps || [], data.memoryBefore, data.memoryAfter, currentAgentModeLabel(),
-					data.graphDefinition, data.mcpDebugInfo);
-			}
+			const data = await sendConversation(message);
+			const answer = cleanAssistantText(data.content || "");
+			setAssistantContent(assistant, answer);
+			await renderDebugWithPending(assistantNode, data.intent, data.toolCalls || [],
+				data.workflowSteps || data.graphSteps || [],
+				data.multiAgentSteps || data.agentSteps || [], data.memoryBefore, data.memoryAfter, currentAgentModeLabel(),
+				data.graphDefinition, data.mcpDebugInfo);
 			addHistory("user", message);
 			addHistory("assistant", answer);
 			await refreshEvaluationDashboard();

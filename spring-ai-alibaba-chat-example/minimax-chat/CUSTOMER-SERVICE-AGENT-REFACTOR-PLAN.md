@@ -1038,12 +1038,78 @@ POST /minimax/chat-client/official-graph/chat
 - 前端“Agent 链路模式”已收敛为：智能客服、官方 ReactAgent、官方 StateGraph。
 - 流式调试入口暂时下线，因为当前主线优先保证官方 `ReactAgent` / `StateGraph` 的同步可观测链路稳定。
 
+## 25. 第四轮代码落地情况：智能客服官方 StateGraph
+
+本轮已把智能客服 Workflow 从“展示步骤”升级为真正的 Spring AI Alibaba 官方 `StateGraph` 编排。
+
+新增核心代码：
+
+```text
+CustomerServiceGraphService
+CustomerServiceGraphResult
+POST /minimax/chat-client/customer-service/graph/chat
+```
+
+新的客服 Graph 链路：
+
+```text
+前端客服 Graph 模式
+ -> MiniMaxChatClientController
+ -> CustomerServiceGraphService
+ -> Spring AI Alibaba StateGraph
+ -> memory_read
+ -> intent_plan
+ -> skill_select
+ -> react_agent
+ -> risk_review
+ -> memory_write
+ -> response
+ -> 前端展示回答、Graph 节点、Agent 步骤、Tool 调用、MCP 状态和客服 Memory
+```
+
+节点职责：
+
+- `memory_read`：按 `userId` 读取客服长期记忆。
+- `intent_plan`：识别商品咨询、议价、物流、退款、投诉、人工接管等客服意图。
+- `skill_select`：根据渠道和意图选择闲鱼、微信、议价、退款或投诉 Skill。
+- `react_agent`：调用官方客服 `ReactAgent`，由模型自主决定是否调用 Tool、RAG、Skill 或 MCP。
+- `risk_review`：对退款、投诉、人工接管等高风险场景做显式风控提示。
+- `memory_write`：根据本轮消息更新客服长期记忆。
+- `response`：汇总客服回复、Graph 节点、工具调用、MCP 和 Memory 信息。
+
+前端“Agent 链路模式”现在包含：
+
+```text
+智能客服
+客服 Graph
+官方 Agent
+官方 Graph
+```
+
+推荐测试：
+
+```http
+POST /minimax/chat-client/customer-service/graph/chat
+```
+
+测试问题：
+
+```text
+我的订单 o-202605150001 怎么还没到？帮我查一下物流。
+```
+
+预期：
+
+- `graphSteps` 包含 `memory_read`、`intent_plan`、`skill_select`、`react_agent`、`risk_review`、`memory_write`、`response`。
+- `toolCalls` 中应出现订单或物流相关工具。
+- `mcpDebugInfo` 显示真实 MCP 或 Mock fallback。
+- `memoryBefore` / `memoryAfter` 显示客服长期记忆变化。
+
 下一阶段建议：
 
 ```text
-1. 把客服 Workflow 步骤从展示信息升级为官方 StateGraph 客服图。
-2. 把客服多角色步骤升级为官方 SequentialAgent。
-3. 把 CustomerMcpService 后面的 Mock 数据替换为真实 customer-mcp-server。
-4. 把 CustomerPolicyRagService 从本地关键词检索升级为 PGVector / Milvus 向量库。
-5. 引入 Human-in-the-loop 确认接口，让退款、赔付、改地址等高风险动作必须人工确认。
+1. 把客服多角色步骤升级为官方 SequentialAgent。
+2. 把 CustomerMcpService 后面的 Mock 数据替换为真实 customer-mcp-server。
+3. 把 CustomerPolicyRagService 从本地关键词检索升级为 PGVector / Milvus 向量库。
+4. 引入 Human-in-the-loop 确认接口，让退款、赔付、改地址等高风险动作必须人工确认。
 ```

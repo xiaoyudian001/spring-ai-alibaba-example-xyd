@@ -12,6 +12,17 @@ Content-Type: application/json
 ### 智能客服 - MCP 状态
 GET http://localhost:8080/minimax/chat-client/customer-service/mcp/status
 
+### 智能客服 Graph - 闲鱼商品咨询
+POST http://localhost:8080/minimax/chat-client/customer-service/graph/chat
+Content-Type: application/json
+
+{
+  "userId": "xianyu-graph-user",
+  "channel": "XIANYU",
+  "message": "这个 p-1001 商品还在吗？能简单介绍一下吗？",
+  "history": []
+}
+
 ### 智能客服 - 闲鱼议价
 POST http://localhost:8080/minimax/chat-client/customer-service/chat
 Content-Type: application/json
@@ -40,6 +51,17 @@ Content-Type: application/json
 
 {
   "userId": "refund-user",
+  "channel": "WEB",
+  "message": "订单 o-202605150001 我想退款，能直接帮我退吗？",
+  "history": []
+}
+
+### 智能客服 Graph - 退款请求风控
+POST http://localhost:8080/minimax/chat-client/customer-service/graph/chat
+Content-Type: application/json
+
+{
+  "userId": "refund-graph-user",
   "channel": "WEB",
   "message": "订单 o-202605150001 我想退款，能直接帮我退吗？",
   "history": []

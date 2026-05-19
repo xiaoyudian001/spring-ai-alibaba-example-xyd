@@ -777,6 +777,10 @@
 						<span>智能客服</span>
 					</label>
 					<label>
+						<input type="radio" name="agentModeSelect" value="customer-service-graph">
+						<span>客服 Graph</span>
+					</label>
+					<label>
 						<input type="radio" name="agentModeSelect" value="official-agent">
 						<span>官方 Agent</span>
 					</label>
@@ -1167,6 +1171,7 @@
 	function currentAgentModeLabel() {
 		return {
 			"customer-service": "智能客服官方 ReactAgent",
+			"customer-service-graph": "智能客服官方 StateGraph",
 			"official-agent": "官方 ReactAgent",
 			"official-graph": "官方 StateGraph"
 		}[currentAgentMode()] || "智能客服官方 ReactAgent";
@@ -1175,6 +1180,7 @@
 	function endpointForAgentMode() {
 		return {
 			"customer-service": "/minimax/chat-client/customer-service/chat",
+			"customer-service-graph": "/minimax/chat-client/customer-service/graph/chat",
 			"official-agent": "/minimax/chat-client/official-agent/chat",
 			"official-graph": "/minimax/chat-client/official-graph/chat"
 		}[currentAgentMode()] || "/minimax/chat-client/customer-service/chat";

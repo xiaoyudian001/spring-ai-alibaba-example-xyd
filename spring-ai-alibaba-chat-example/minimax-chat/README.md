@@ -17,6 +17,7 @@ README-LEARNING-FLOW.md
 - MiniMax-M2.7 模型接入
 - Tool Calling 调试信息展示
 - 智能客服官方 `ReactAgent`
+- 智能客服官方 `StateGraph`
 - 官方学习 `ReactAgent`
 - 官方 `StateGraph`
 - 客服 Skill、RAG、MCP、Memory 和人工接管工具
@@ -42,6 +43,23 @@ README-LEARNING-FLOW.md
  -> 前端展示回答 + Agent步骤 + Tool调用 + MCP状态 + 客服Memory信息
 ```
 
+智能客服 Graph 链路：
+
+```text
+前端问题
+ -> Controller
+ -> CustomerServiceGraphService
+ -> Spring AI Alibaba StateGraph
+ -> memory_read
+ -> intent_plan
+ -> skill_select
+ -> react_agent
+ -> risk_review
+ -> memory_write
+ -> response
+ -> 前端展示回答 + Graph节点 + Agent步骤 + Tool调用 + MCP状态 + 客服Memory信息
+```
+
 官方 Graph 学习链路：
 
 ```text
@@ -65,7 +83,7 @@ README-LEARNING-FLOW.md
 | 前端 | `src/main/resources/static/index.html` | 发送用户 ID 和用户问题，维护短期聊天历史，渲染 Markdown，展示调试信息。 |
 | Controller | `MiniMaxChatClientController` | 接收 HTTP 请求，把对话处理委托给 Agent 层。 |
 | Agent | `CustomerServiceAgentService` / `OfficialLearningAgentService` | 通过 Spring AI Alibaba 官方 `ReactAgent` 调用模型和工具。 |
-| Graph | `OfficialLearningGraphService` | 通过 Spring AI Alibaba 官方 `StateGraph` 编排记忆、Planner、MCP、ReactAgent 和响应节点。 |
+| Graph | `CustomerServiceGraphService` / `OfficialLearningGraphService` | 通过 Spring AI Alibaba 官方 `StateGraph` 编排客服节点或学习节点。 |
 | Memory | `LearningMemoryService` | 按 userId 从 JSON 文件读取用户学习记忆，并在每轮对话后写回该用户的学习阶段、关注主题、最近意图和对话轮次。 |
 | RAG | `LearningRagService` | 基于关键词检索当前 minimax-chat 的 README 和关键源码，为模型回答当前项目实现细节提供本地资料。 |
 | MCP | `LearningMcpService` | 通过真实 MCP Client 查询、创建和更新外部学习资源；未启用真实 MCP 时提供 mock fallback。 |

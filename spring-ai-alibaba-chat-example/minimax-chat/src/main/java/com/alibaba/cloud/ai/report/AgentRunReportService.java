@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import com.alibaba.cloud.ai.customer.CustomerServiceGraphResult;
 import com.alibaba.cloud.ai.customer.CustomerServiceResult;
 import com.alibaba.cloud.ai.mcp.McpDebugInfo;
 import com.alibaba.cloud.ai.official.OfficialLearningAgentResult;
@@ -93,6 +94,26 @@ public class AgentRunReportService {
 				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
 				safeSize(result.toolCalls()), safeSize(result.multiAgentSteps()), safeSize(result.workflowSteps()),
 				result.memoryBefore(), result.memoryAfter(), result.multiAgentSteps(), result.workflowSteps(),
+				result.toolCalls(), result.mcpDebugInfo()));
+	}
+
+	/**
+	 * 保存智能客服官方 StateGraph 执行报告，用于观察真实客服 Graph 节点和工具调用效果。
+	 * @param userId 用户唯一标识
+	 * @param message 用户原始输入
+	 * @param historySize 历史消息数量
+	 * @param result 智能客服官方 StateGraph 响应结果
+	 * @return 已持久化的执行报告
+	 * @author xyd
+	 * @date 2026-05-19 00:20:26
+	 */
+	public AgentRunReport saveCustomerServiceGraph(String userId, String message, int historySize,
+			CustomerServiceGraphResult result) {
+		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "CUSTOMER_SERVICE_GRAPH",
+				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
+				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
+				safeSize(result.toolCalls()), safeSize(result.agentSteps()), safeSize(result.graphSteps()),
+				result.memoryBefore(), result.memoryAfter(), result.agentSteps(), result.graphSteps(),
 				result.toolCalls(), result.mcpDebugInfo()));
 	}
 

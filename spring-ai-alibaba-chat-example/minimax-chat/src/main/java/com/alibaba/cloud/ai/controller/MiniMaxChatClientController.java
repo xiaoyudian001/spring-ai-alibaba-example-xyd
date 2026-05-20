@@ -33,6 +33,8 @@ import com.alibaba.cloud.ai.customer.CustomerMcpService;
 import com.alibaba.cloud.ai.customer.CustomerMcpService.CustomerMcpStatus;
 import com.alibaba.cloud.ai.customer.CustomerPolicyRagService;
 import com.alibaba.cloud.ai.customer.CustomerPolicySearchResult;
+import com.alibaba.cloud.ai.customer.CustomerServiceAssistantResult;
+import com.alibaba.cloud.ai.customer.CustomerServiceAssistantService;
 import com.alibaba.cloud.ai.customer.CustomerServiceAgentService;
 import com.alibaba.cloud.ai.customer.CustomerServiceGraphResult;
 import com.alibaba.cloud.ai.customer.CustomerServiceGraphService;
@@ -65,6 +67,8 @@ public class MiniMaxChatClientController {
 
 	private final CustomerServiceAgentService customerServiceAgentService;
 
+	private final CustomerServiceAssistantService customerServiceAssistantService;
+
 	private final CustomerServiceGraphService customerServiceGraphService;
 
 	private final CustomerServiceMultiAgentService customerServiceMultiAgentService;
@@ -82,6 +86,7 @@ public class MiniMaxChatClientController {
 	private final AgentJudgeService agentJudgeService;
 
 	public MiniMaxChatClientController(CustomerServiceAgentService customerServiceAgentService,
+			CustomerServiceAssistantService customerServiceAssistantService,
 			CustomerServiceGraphService customerServiceGraphService,
 			CustomerServiceMultiAgentService customerServiceMultiAgentService,
 			CustomerMemoryService customerMemoryService, CustomerMcpService customerMcpService,
@@ -89,6 +94,7 @@ public class MiniMaxChatClientController {
 			AgentRunReportService agentRunReportService,
 			AgentEvaluationService agentEvaluationService, AgentJudgeService agentJudgeService) {
 		this.customerServiceAgentService = customerServiceAgentService;
+		this.customerServiceAssistantService = customerServiceAssistantService;
 		this.customerServiceGraphService = customerServiceGraphService;
 		this.customerServiceMultiAgentService = customerServiceMultiAgentService;
 		this.customerMemoryService = customerMemoryService;
@@ -113,6 +119,24 @@ public class MiniMaxChatClientController {
 		CustomerServiceResult result = this.customerServiceAgentService.chat(userId, extractChannel(request), message,
 				toCustomerHistory(request));
 		saveEvaluation(this.agentRunReportService.saveCustomerService(userId, message, historySize(request), result));
+		return result;
+	}
+
+	/**
+	 * 执行客户无感智能客服对话，前端无需关心 ReactAgent、Graph、Multi-Agent、同步或流式等技术选项。
+	 * @param request 前端聊天请求
+	 * @return 统一客服响应结果
+	 * @author xyd
+	 * @date 2026-05-20 09:43:00
+	 */
+	@PostMapping(value = "/customer-service/assistant/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public CustomerServiceAssistantResult customerServiceAssistantChat(@RequestBody ChatRequest request) {
+		String userId = extractUserId(request);
+		String message = extractMessage(request);
+		CustomerServiceAssistantResult result = this.customerServiceAssistantService.chat(userId,
+				extractChannel(request), message, toCustomerHistory(request));
+		saveEvaluation(this.agentRunReportService.saveCustomerServiceAssistant(userId, message, historySize(request),
+				result));
 		return result;
 	}
 

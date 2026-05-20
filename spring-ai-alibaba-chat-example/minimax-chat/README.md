@@ -5,7 +5,7 @@
 ## v1.0 功能清单
 
 - MiniMax-M2.7 模型接入，兼容 OpenAI 风格 Chat Completions。
-- 前端聊天页面支持多轮上下文、Markdown、用户 ID、渠道选择、同步/流式切换和调试区。
+- 前端聊天主页面只保留客户对话体验；用户 ID、渠道、链路模式、调试信息、RAG 和评估能力集中到运营调试工作台。
 - Spring AI Alibaba `ReactAgent`：由模型自主选择客服工具并生成回答。
 - Spring AI Alibaba `StateGraph`：固定编排客服流程，展示 Graph 节点。
 - Spring AI Alibaba `SequentialAgent`：客服处理 Agent 和质检 Agent 串行协作。
@@ -99,10 +99,16 @@ cd F:\project\spring-ai-alibaba-example-xyd
 mvn -pl spring-ai-alibaba-chat-example/minimax-chat -am spring-boot:run
 ```
 
-访问页面：
+访问聊天主页面：
 
 ```text
 http://localhost:8080/index.html
+```
+
+访问运营调试工作台：
+
+```text
+http://localhost:8080/dashboard.html
 ```
 
 如需开启真实 MCP Client：
@@ -121,8 +127,8 @@ mvn -pl spring-ai-alibaba-chat-example/minimax-chat -am spring-boot:run "-Dsprin
 
 | 能力 | 接口 |
 | --- | --- |
+| 客户无感统一客服入口 | `POST /minimax/chat-client/customer-service/assistant/chat` |
 | ReactAgent 客服对话 | `POST /minimax/chat-client/customer-service/chat` |
-| ReactAgent 流式客服对话 | `POST /minimax/chat-client/customer-service/stream` |
 | StateGraph 客服对话 | `POST /minimax/chat-client/customer-service/graph/chat` |
 | Multi-Agent 客服对话 | `POST /minimax/chat-client/customer-service/multi-agent/chat` |
 | 查看客服 Memory | `GET /minimax/chat-client/customer-service/memory?userId=default-user` |
@@ -140,15 +146,12 @@ mvn -pl spring-ai-alibaba-chat-example/minimax-chat -am spring-boot:run "-Dsprin
 
 ## 页面测试建议
 
-1. 打开 `http://localhost:8080/index.html`。
-2. 用户 ID 输入 `default-user`，渠道选择 `闲鱼`。
-3. 模式先选 `客服 ReactAgent`，发送：`这个 p-1001 商品还在吗？能简单介绍一下吗？`
-4. 观察调试区是否出现商品工具调用、MCP fallback 或真实 MCP 状态、Memory 更新。
-5. 切换 `客服 StateGraph`，发送：`订单 o-9001 物流到哪了？`
-6. 观察 Graph 节点是否按 `memory_read -> intent_plan -> skill_select -> react_agent -> risk_review -> memory_write -> response` 展示。
-7. 切换 `客服 Multi-Agent`，发送：`订单 o-9002 想退款，可以直接帮我退吗？`
-8. 观察是否触发退款资格、人工接管或工单类工具，回答不能直接承诺高风险动作。
-9. 打开报告、评估、Judge 按钮，检查本轮执行质量。
+1. 打开聊天主页面 `http://localhost:8080/index.html`。
+2. 直接发送：`这个 p-1001 商品还在吗？能简单介绍一下吗？`
+3. 再发送：`订单 o-9002 想退款，可以直接帮我退吗？`
+4. 主页面不会暴露 ReactAgent、Graph、Multi-Agent、同步、流式等技术选项，后端会自动选择处理策略。
+5. 点击页面顶部“运营调试工作台”，进入 `http://localhost:8080/dashboard.html`。
+6. 在工作台查看报告、评估、Judge、RAG 召回率和知识库维护能力。
 
 ## HTTP 测试
 

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.alibaba.cloud.ai.customer.CustomerServiceGraphResult;
+import com.alibaba.cloud.ai.customer.CustomerServiceAssistantResult;
 import com.alibaba.cloud.ai.customer.CustomerServiceMultiAgentResult;
 import com.alibaba.cloud.ai.customer.CustomerServiceResult;
 import com.alibaba.cloud.ai.mcp.McpDebugInfo;
@@ -71,6 +72,26 @@ public class AgentRunReportService {
 	public AgentRunReport saveCustomerService(String userId, String message, int historySize,
 			CustomerServiceResult result) {
 		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "CUSTOMER_SERVICE_AGENT",
+				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
+				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
+				safeSize(result.toolCalls()), safeSize(result.multiAgentSteps()), safeSize(result.workflowSteps()),
+				result.memoryBefore(), result.memoryAfter(), result.multiAgentSteps(), result.workflowSteps(),
+				result.toolCalls(), result.mcpDebugInfo()));
+	}
+
+	/**
+	 * 保存客户无感统一客服入口的执行报告，用于记录后端自动选择的真实执行链路。
+	 * @param userId 用户唯一标识
+	 * @param message 用户原始输入
+	 * @param historySize 历史消息数量
+	 * @param result 统一客服响应结果
+	 * @return 已持久化的执行报告
+	 * @author xyd
+	 * @date 2026-05-20 09:42:00
+	 */
+	public AgentRunReport saveCustomerServiceAssistant(String userId, String message, int historySize,
+			CustomerServiceAssistantResult result) {
+		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), result.chainMode(),
 				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
 				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
 				safeSize(result.toolCalls()), safeSize(result.multiAgentSteps()), safeSize(result.workflowSteps()),

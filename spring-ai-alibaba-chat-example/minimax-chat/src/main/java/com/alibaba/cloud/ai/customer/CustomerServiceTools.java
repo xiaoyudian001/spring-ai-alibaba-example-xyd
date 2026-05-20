@@ -16,8 +16,11 @@
 
 package com.alibaba.cloud.ai.customer;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
 import org.springframework.ai.tool.annotation.Tool;
@@ -103,6 +106,51 @@ public class CustomerServiceTools {
 	}
 
 	/**
+	 * 查询商品议价策略，适合用户砍价、要求包邮、要求优惠时调用。
+	 * @param productId 商品 ID，例如 p-1001
+	 * @return 商品议价策略
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	@Tool(description = "查询商品议价策略。当用户要求便宜、优惠、包邮、小刀或砍价时使用。")
+	public String getPricePolicy(
+			@ToolParam(description = "商品 ID，例如 p-1001。用户没有提供时可使用 p-1001 测试。") String productId) {
+		String result = this.customerMcpService.getPricePolicy(productId);
+		this.debugRecorder.record("getPricePolicy", arguments("productId", productId), result);
+		return result;
+	}
+
+	/**
+	 * 查询订单退款资格，适合退款、退货、取消订单和售后解释。
+	 * @param orderId 订单 ID，例如 o-202605150001
+	 * @return 退款资格说明
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	@Tool(description = "查询订单退款资格。当用户申请退款、退货、取消订单或询问售后条件时使用。")
+	public String getRefundEligibility(
+			@ToolParam(description = "订单 ID，例如 o-202605150001。用户没有提供时可使用 o-202605150001 测试。") String orderId) {
+		String result = this.customerMcpService.getRefundEligibility(orderId);
+		this.debugRecorder.record("getRefundEligibility", arguments("orderId", orderId), result);
+		return result;
+	}
+
+	/**
+	 * 查询售后处理状态，适合用户追问退款、投诉或工单进度。
+	 * @param orderId 订单 ID，例如 o-202605150001
+	 * @return 售后处理状态
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	@Tool(description = "查询售后处理状态。当用户追问退款进度、投诉处理或售后工单状态时使用。")
+	public String getAfterSaleStatus(
+			@ToolParam(description = "订单 ID，例如 o-202605150001。用户没有提供时可使用 o-202605150001 测试。") String orderId) {
+		String result = this.customerMcpService.getAfterSaleStatus(orderId);
+		this.debugRecorder.record("getAfterSaleStatus", arguments("orderId", orderId), result);
+		return result;
+	}
+
+	/**
 	 * 检索客服政策和话术知识，适合退换货、发货、投诉和渠道规范问答。
 	 * @param query 检索问题或关键词
 	 * @param limit 返回结果数量
@@ -117,6 +165,31 @@ public class CustomerServiceTools {
 		String result = this.policyRagService.search(query, limit);
 		this.debugRecorder.record("searchCustomerPolicy", arguments("query", query, "limit", limit), result);
 		return result;
+	}
+
+	/**
+	 * 检索客服知识并输出召回率，用于调试 RAG 是否命中预期业务主题。
+	 * @param query 检索问题或关键词
+	 * @param expectedTopics 期望主题，逗号分隔，例如 refund,shipping
+	 * @param limit 返回结果数量
+	 * @return 带召回率的客服知识检索结果
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	@Tool(description = "检索客服知识并输出召回率。当需要评估 RAG 召回率、命中主题或真实向量库状态时使用。")
+	public String evaluateCustomerPolicyRecall(
+			@ToolParam(description = "检索问题或关键词。") String query,
+			@ToolParam(description = "期望命中的主题，逗号分隔，例如 refund,shipping,price,xianyu,wechat。") String expectedTopics,
+			@ToolParam(description = "返回结果数量，建议 1 到 8。") Integer limit) {
+		Set<String> topics = Arrays.stream((expectedTopics == null ? "" : expectedTopics).split("[,，\\s]+"))
+				.map(String::trim)
+				.filter(text -> !text.isBlank())
+				.collect(Collectors.toSet());
+		CustomerPolicySearchResult result = this.policyRagService.searchWithMetrics(query, limit, topics);
+		String summary = result.summary();
+		this.debugRecorder.record("evaluateCustomerPolicyRecall",
+				arguments("query", query, "expectedTopics", expectedTopics, "limit", limit), summary);
+		return summary;
 	}
 
 	/**

@@ -18,12 +18,30 @@ package com.alibaba.cloud.ai.mcp;
 
 import java.util.List;
 
+/**
+ * MCP 调试信息，记录智能客服本轮是否命中真实 MCP 工具以及 fallback 原因。
+ *
+ * @param mode MCP 调用模式
+ * @param realMcpAvailable 是否发现真实 MCP 工具
+ * @param selectedToolName 本轮实际选择的 MCP 工具名称
+ * @param availableToolNames 当前已发现的 MCP 工具名称列表
+ * @param fallbackReason 未命中真实 MCP 时的兜底原因
+ * @param query 本轮逻辑工具或检索查询
+ * @param limit 本轮检索限制数量
+ * @author xyd
+ * @date 2026-05-20 09:15:00
+ */
 public record McpDebugInfo(String mode, boolean realMcpAvailable, String selectedToolName,
-		List<String> availableToolNames, String fallbackReason, String query, Integer limit,
-		boolean writeEnabled, String writeMode, PendingMcpWrite pendingWrite) {
+		List<String> availableToolNames, String fallbackReason, String query, Integer limit) {
 
+	/**
+	 * 创建未使用 MCP 时的空调试信息。
+	 * @return 空 MCP 调试信息
+	 * @author xyd
+	 * @date 2026-05-20 09:15:00
+	 */
 	public static McpDebugInfo none() {
-		return new McpDebugInfo("NOT_USED", false, "", List.of(), "", "", null, false, "disabled", null);
+		return new McpDebugInfo("NOT_USED", false, "", List.of(), "", "", null);
 	}
 
 }

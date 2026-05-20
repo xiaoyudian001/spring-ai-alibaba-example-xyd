@@ -40,11 +40,22 @@ public class CustomerSkillService {
 	 * @date 2026-05-15 14:57:11
 	 */
 	public CustomerSkillService() {
-		this.skills.put("xianyu-reply", "闲鱼回复技能：回复要短、自然、像真人；优先确认商品事实；议价先查底价；高风险动作转人工。");
-		this.skills.put("wechat-service", "微信客服技能：回复要完整礼貌；保留订单号、工单号；复杂问题说明处理时效。");
-		this.skills.put("price-negotiation", "议价技能：先看商品底价；可接受范围内给出温和让步；低于底价时礼貌拒绝并说明原因。");
-		this.skills.put("refund-handling", "退款处理技能：先查订单，再查退款政策；满足条件也只生成建议；真实退款必须人工确认。");
-		this.skills.put("complaint-handling", "投诉处理技能：先安抚情绪，再复述问题，给出明确处理动作；必要时创建工单并转人工。");
+		this.skills.put("xianyu-reply",
+				"闲鱼回复技能：回复要短、自然、像真人；先查商品事实，再回答“还在/成色/能否小刀”；议价必须查 getPricePolicy；不要承诺无法确认的信息。");
+		this.skills.put("wechat-service",
+				"微信客服技能：回复要完整礼貌，可追踪；订单类问题保留订单号、物流单号、工单号；复杂售后说明处理时效和下一步。");
+		this.skills.put("price-negotiation",
+				"议价技能：先调用 getProductInfo 和 getPricePolicy；高于底价可温和让步；低于底价要礼貌拒绝，给出商品成色、成本或包邮成本解释。");
+		this.skills.put("refund-handling",
+				"退款处理技能：先查 getOrderInfo，再查 getRefundEligibility 和 searchCustomerPolicy；回答要说明订单状态、适用规则、用户下一步操作。");
+		this.skills.put("complaint-handling",
+				"投诉处理技能：先安抚情绪，再复述问题，随后调用 createCustomerTicket 记录诉求；回复要给出处理时效和可追踪编号。");
+		this.skills.put("logistics-follow-up",
+				"物流跟进技能：先查 getOrderInfo 和 getLogisticsInfo；如果运输中，说明最新节点和预计处理；如果无物流，说明待发货或等待揽收。");
+		this.skills.put("address-change",
+				"地址修改技能：先查订单状态；待发货可记录新地址并创建工单；已发货只建议联系快递或尝试改派，不承诺一定成功。");
+		this.skills.put("quality-dispute",
+				"质量争议技能：先确认商品说明、签收时间、开箱证据和问题描述；检索质量/售后政策；回复要避免直接判责。");
 	}
 
 	/**
@@ -89,6 +100,9 @@ public class CustomerSkillService {
 		}
 		if (intent == CustomerServiceIntent.PRICE_NEGOTIATION) {
 			return "price-negotiation";
+		}
+		if (intent == CustomerServiceIntent.LOGISTICS_QUERY || intent == CustomerServiceIntent.ORDER_STATUS) {
+			return "logistics-follow-up";
 		}
 		if (channel == ChannelType.XIANYU) {
 			return "xianyu-reply";

@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.mcp;
+package com.alibaba.cloud.ai.customer;
 
-import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.Set;
 
-public record PendingMcpWrite(String userId, String operation, String resourceId, String topic, String title,
-		String summary, String nextAction, LocalDateTime createdAt) {
-
-	public Map<String, Object> arguments() {
-		return Map.of(
-				"id", this.resourceId,
-				"topic", this.topic,
-				"title", this.title,
-				"summary", this.summary,
-				"nextAction", this.nextAction);
-	}
-
+/**
+ * 智能客服知识文档，用于统一承载 RAG 检索、召回率评估和后续向量库入库所需的内容。
+ *
+ * @param id 文档唯一标识
+ * @param title 文档标题
+ * @param topic 业务主题
+ * @param content 文档内容
+ * @param keywords 召回关键词集合
+ * @author xyd
+ * @date 2026-05-19 13:31:27
+ */
+public record CustomerKnowledgeDocument(String id, String title, String topic, String content, Set<String> keywords) {
 }

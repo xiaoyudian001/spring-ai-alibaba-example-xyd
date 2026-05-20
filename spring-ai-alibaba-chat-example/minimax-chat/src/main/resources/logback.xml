@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+
+	<property name="LOG_PATH" value="logs"/>
+	<property name="APP_LOG_FILE" value="${LOG_PATH}/minimax-chat.log"/>
+	<property name="FLOW_LOG_FILE" value="${LOG_PATH}/customer-flow.log"/>
+	<property name="CONSOLE_PATTERN"
+			value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"/>
+	<property name="FILE_PATTERN"
+			value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{60} - %msg%n"/>
+
+	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder charset="UTF-8">
+			<pattern>${CONSOLE_PATTERN}</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${APP_LOG_FILE}</file>
+		<encoder charset="UTF-8">
+			<pattern>${FILE_PATTERN}</pattern>
+		</encoder>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${LOG_PATH}/minimax-chat.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+			<maxFileSize>20MB</maxFileSize>
+			<maxHistory>14</maxHistory>
+			<totalSizeCap>500MB</totalSizeCap>
+		</rollingPolicy>
+	</appender>
+
+	<appender name="FLOW_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${FLOW_LOG_FILE}</file>
+		<encoder charset="UTF-8">
+			<pattern>${FILE_PATTERN}</pattern>
+		</encoder>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${LOG_PATH}/customer-flow.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+			<maxFileSize>20MB</maxFileSize>
+			<maxHistory>14</maxHistory>
+			<totalSizeCap>500MB</totalSizeCap>
+		</rollingPolicy>
+	</appender>
+
+	<!--
+		流程调用日志单独开启 DEBUG，并写入 customer-flow.log。
+		additivity=false 避免流程日志重复写入普通应用日志文件。
+	-->
+	<logger name="com.alibaba.cloud.ai.customer.CustomerServiceTraceLogger" level="DEBUG" additivity="false">
+		<appender-ref ref="CONSOLE"/>
+		<appender-ref ref="FLOW_FILE"/>
+	</logger>
+
+	<!-- 其他业务与框架日志保持 INFO。 -->
+	<root level="INFO">
+		<appender-ref ref="CONSOLE"/>
+		<appender-ref ref="APP_FILE"/>
+	</root>
+
+</configuration>

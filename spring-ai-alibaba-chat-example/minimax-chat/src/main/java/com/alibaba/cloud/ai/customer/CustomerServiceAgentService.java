@@ -54,6 +54,8 @@ public class CustomerServiceAgentService {
 
 	private final ToolCallDebugRecorder debugRecorder;
 
+	private final CustomerServiceTraceLogger traceLogger;
+
 	/**
 	 * 创建智能客服官方 Agent 服务。
 	 * @param customerServiceReactAgent 智能客服官方 ReactAgent
@@ -62,19 +64,21 @@ public class CustomerServiceAgentService {
 	 * @param skillService 客服 Skills 服务
 	 * @param customerMcpService 智能客服 MCP 门面服务
 	 * @param debugRecorder 工具调用调试记录器
+	 * @param traceLogger 智能客服链路日志埋点
 	 * @author xyd
 	 * @date 2026-05-18 11:34:38
 	 */
 	public CustomerServiceAgentService(@Qualifier("customerServiceReactAgent") ReactAgent customerServiceReactAgent,
 			CustomerServiceIntentPlanner intentPlanner, CustomerMemoryService memoryService,
 			CustomerSkillService skillService, CustomerMcpService customerMcpService,
-			ToolCallDebugRecorder debugRecorder) {
+			ToolCallDebugRecorder debugRecorder, CustomerServiceTraceLogger traceLogger) {
 		this.customerServiceReactAgent = customerServiceReactAgent;
 		this.intentPlanner = intentPlanner;
 		this.memoryService = memoryService;
 		this.skillService = skillService;
 		this.customerMcpService = customerMcpService;
 		this.debugRecorder = debugRecorder;
+		this.traceLogger = traceLogger;
 	}
 
 	/**
@@ -91,26 +95,36 @@ public class CustomerServiceAgentService {
 			List<CustomerConversationMessage> history) {
 		this.debugRecorder.clear();
 		this.customerMcpService.clearDebugInfo();
+		String traceId = this.traceLogger.start("CUSTOMER_SERVICE_REACT_AGENT", userId, channel, message);
 		CustomerMemory memoryBefore = this.memoryService.read(userId);
+		this.traceLogger.step("CUSTOMER_SERVICE_REACT_AGENT", traceId, "MEMORY_READ", memoryBefore.summary());
 		CustomerServiceIntent intent = this.intentPlanner.plan(message);
+		this.traceLogger.step("CUSTOMER_SERVICE_REACT_AGENT", traceId, "INTENT_PLAN", String.valueOf(intent));
 		String selectedSkill = this.skillService.selectSkill(channel, intent);
+		this.traceLogger.step("CUSTOMER_SERVICE_REACT_AGENT", traceId, "SKILL_SELECT", selectedSkill);
 		List<CustomerServiceStep> workflowSteps = workflowSteps(channel, message, intent, selectedSkill, memoryBefore);
 		List<CustomerServiceStep> multiAgentSteps = multiAgentSteps(intent, selectedSkill);
 		try {
 			RunnableConfig config = RunnableConfig.builder()
 					.threadId(normalizeUserId(userId))
 					.build();
+			this.traceLogger.step("CUSTOMER_SERVICE_REACT_AGENT", traceId, "MODEL_CALL",
+					"调用 Spring AI Alibaba ReactAgent");
 			Optional<NodeOutput> output = this.customerServiceReactAgent.invokeAndGetOutput(
 					buildPrompt(channel, message, history, intent, selectedSkill, memoryBefore), config);
 			OverAllState state = output.map(NodeOutput::state).orElse(null);
 			String content = extractContent(state);
 			List<ToolCallDebugRecorder.ToolCallDebug> toolCalls = this.debugRecorder.snapshot();
+			this.traceLogger.tools("CUSTOMER_SERVICE_REACT_AGENT", traceId, toolCalls);
 			CustomerMemory memoryAfter = this.memoryService.update(userId, channel, message, intent);
+			this.traceLogger.step("CUSTOMER_SERVICE_REACT_AGENT", traceId, "MEMORY_WRITE", memoryAfter.summary());
 			McpDebugInfo mcpDebugInfo = this.customerMcpService.snapshotDebugInfo();
+			this.traceLogger.finish("CUSTOMER_SERVICE_REACT_AGENT", traceId, intent, content);
 			return new CustomerServiceResult(content, intent, memoryBefore, memoryAfter, workflowSteps,
 					multiAgentSteps, toolCalls, mcpDebugInfo);
 		}
 		catch (Exception ex) {
+			this.traceLogger.error("CUSTOMER_SERVICE_REACT_AGENT", traceId, ex);
 			CustomerMemory memoryAfter = this.memoryService.read(userId);
 			List<ToolCallDebugRecorder.ToolCallDebug> toolCalls = this.debugRecorder.snapshot();
 			return new CustomerServiceResult("官方智能客服 ReactAgent 调用失败：" + ex.getMessage(), intent,
@@ -203,7 +217,7 @@ public class CustomerServiceAgentService {
 				%s
 
 				请使用 Spring AI Alibaba ReactAgent 的工具能力完成本轮客服处理。
-				需要商品、订单、物流事实时调用工具；需要政策或话术时检索知识库或读取 Skill；
+				需要商品、订单、物流、议价底价、退款资格或售后状态事实时调用工具；需要政策或话术时检索知识库或读取 Skill；
 				涉及高风险动作必须请求人工接管。
 				""".formatted(message, channel, intent, this.intentPlanner.instructionFor(intent), selectedSkill,
 				this.skillService.listSkills(), memory.summary(), historySummary(history));

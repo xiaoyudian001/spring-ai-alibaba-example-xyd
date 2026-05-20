@@ -1,13 +1,15 @@
 server:
   port: 8080
 minimax:
-  memory:
-    file: spring-ai-alibaba-chat-example/minimax-chat/memory/learning-memory.json
-  mcp:
-    # Agent 写入 MCP Server 是外部系统变更能力，默认关闭。
-    write-enabled: false
-    # dry-run 只预览写入内容；commit 才真正调用 MCP Server 写回 JSON。
-    write-mode: dry-run
+  customer:
+    memory:
+      file: spring-ai-alibaba-chat-example/minimax-chat/memory/customer-memory.json
+    rag:
+      # false：使用本地高召回关键词知识库；true：如果存在 Spring AI VectorStore Bean，则写入并使用真实向量库。
+      vector-enabled: false
+      knowledge-file: spring-ai-alibaba-chat-example/minimax-chat/memory/customer-knowledge.json
+      # 真实向量库建议使用 PGVector / Milvus。当前模块只做 VectorStore 适配边界，不强依赖外部服务。
+      backend: local
 spring:
   application:
     name: minimax-chat-example
@@ -26,12 +28,12 @@ spring:
         # 默认关闭真实 MCP Client，保证 minimax-chat 不依赖外部 MCP Server 也能启动。
         # 要测试真实 MCP 时改为 true，并启动对应的 MCP Server。
         enabled: false
-        name: minimax-learning-mcp-client
+        name: minimax-customer-service-mcp-client
         version: 1.0.0
         request-timeout: 30s
         type: ASYNC
         sse:
           connections:
-            learning:
-              # 对应 minimax-learning-mcp-server，启动后地址为 http://localhost:19000。
+            customer:
+              # 对应未来真实 customer-mcp-server；未启动时 CustomerMcpService 会回退本地 Mock 数据。
               url: http://localhost:19000

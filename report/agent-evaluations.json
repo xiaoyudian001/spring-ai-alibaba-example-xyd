@@ -292,4 +292,46 @@
     "passed" : true,
     "detail" : "本轮不是项目知识类问题。"
   } ]
+}, {
+  "id" : "eval-2f1f1b5a-ec5a-408b-91ae-15207e98d465",
+  "reportId" : "run-dbf588d7-ee6e-4ae0-bb8d-739f4849601b",
+  "createdAt" : "2026-05-19T05:09:47.592233200Z",
+  "userId" : "default-user",
+  "chainMode" : "CUSTOMER_SERVICE_GRAPH",
+  "intent" : "GENERAL_CHAT",
+  "score" : 3,
+  "maxScore" : 3,
+  "level" : "PASS",
+  "passed" : true,
+  "checks" : [ {
+    "name" : "意图识别",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Planner 返回了有效意图：GENERAL_CHAT"
+  }, {
+    "name" : "回答非空",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "回答摘要非空。"
+  }, {
+    "name" : "Memory 更新",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Memory 在本轮调用后发生变化。"
+  }, {
+    "name" : "时间工具",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮不是时间问题。"
+  }, {
+    "name" : "MCP 写入意图",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮没有明确保存或更新资源诉求。"
+  }, {
+    "name" : "项目知识检索",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮不是项目知识类问题。"
+  } ]
 } ]

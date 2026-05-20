@@ -106,6 +106,60 @@ public class MockCustomerDataService {
 	}
 
 	/**
+	 * 查询商品议价策略，用于判断能否接受用户提出的优惠或包邮诉求。
+	 * @param productId 商品 ID
+	 * @return 商品议价策略文本
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	public String getPricePolicy(String productId) {
+		ProductInfo product = this.products.get(normalize(productId, "p-1001"));
+		if (product == null) {
+			return "未找到商品议价策略：" + productId + "。";
+		}
+		int flexibleAmount = Math.max(0, product.price() - product.floorPrice());
+		return "商品ID：" + product.productId() + "；当前售价：" + product.price() + " 元；底价："
+				+ product.floorPrice() + " 元；最大可让利：" + flexibleAmount
+				+ " 元；策略：高于底价可温和让步，低于底价应礼貌拒绝，不默认包邮。";
+	}
+
+	/**
+	 * 查询订单退款资格，用于售后退款、退货政策和客服解释。
+	 * @param orderId 订单 ID
+	 * @return 退款资格说明
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	public String getRefundEligibility(String orderId) {
+		OrderInfo order = this.orders.get(normalize(orderId, "o-202605150001"));
+		if (order == null) {
+			return "未找到订单退款资格：" + orderId + "。";
+		}
+		if ("待发货".equals(order.status())) {
+			return "订单ID：" + order.orderId() + "；退款资格：待发货订单可引导用户申请退款；处理建议：说明预计处理时效并创建售后记录。";
+		}
+		if ("已发货".equals(order.status())) {
+			return "订单ID：" + order.orderId() + "；退款资格：已发货订单需结合签收状态、商品问题和退货政策判断；处理建议：先查询物流并说明收到货后按平台流程申请。";
+		}
+		return "订单ID：" + order.orderId() + "；退款资格：需结合订单状态和平台政策进一步判断。";
+	}
+
+	/**
+	 * 查询售后处理状态，用于用户追问退款、投诉或工单进度。
+	 * @param orderId 订单 ID
+	 * @return 售后状态说明
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	public String getAfterSaleStatus(String orderId) {
+		OrderInfo order = this.orders.get(normalize(orderId, "o-202605150001"));
+		if (order == null) {
+			return "未找到售后状态：" + orderId + "。";
+		}
+		return "订单ID：" + order.orderId() + "；售后状态：暂无进行中的售后单；建议：如用户明确申请售后，可创建客服工单并记录诉求。";
+	}
+
+	/**
 	 * 创建客服工单的 Mock 结果，后续可替换为真实工单系统或 MCP Tool。
 	 * @param conversationId 会话 ID
 	 * @param summary 工单摘要

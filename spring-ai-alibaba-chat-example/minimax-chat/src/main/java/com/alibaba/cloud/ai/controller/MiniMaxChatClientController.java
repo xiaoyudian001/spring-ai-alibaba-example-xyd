@@ -17,36 +17,34 @@
 package com.alibaba.cloud.ai.controller;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.customer.ChannelType;
 import com.alibaba.cloud.ai.customer.CustomerConversationMessage;
+import com.alibaba.cloud.ai.customer.CustomerKnowledgeDocument;
+import com.alibaba.cloud.ai.customer.CustomerKnowledgeUpsertRequest;
+import com.alibaba.cloud.ai.customer.CustomerMemory;
+import com.alibaba.cloud.ai.customer.CustomerMemoryService;
 import com.alibaba.cloud.ai.customer.CustomerMcpService;
 import com.alibaba.cloud.ai.customer.CustomerMcpService.CustomerMcpStatus;
+import com.alibaba.cloud.ai.customer.CustomerPolicyRagService;
+import com.alibaba.cloud.ai.customer.CustomerPolicySearchResult;
 import com.alibaba.cloud.ai.customer.CustomerServiceAgentService;
 import com.alibaba.cloud.ai.customer.CustomerServiceGraphResult;
 import com.alibaba.cloud.ai.customer.CustomerServiceGraphService;
+import com.alibaba.cloud.ai.customer.CustomerServiceMultiAgentResult;
+import com.alibaba.cloud.ai.customer.CustomerServiceMultiAgentService;
 import com.alibaba.cloud.ai.customer.CustomerServiceResult;
 import com.alibaba.cloud.ai.evaluation.AgentEvaluationResult;
 import com.alibaba.cloud.ai.evaluation.AgentEvaluationService;
 import com.alibaba.cloud.ai.judge.AgentJudgeResult;
 import com.alibaba.cloud.ai.judge.AgentJudgeService;
-import com.alibaba.cloud.ai.mcp.LearningMcpService;
-import com.alibaba.cloud.ai.mcp.LearningMcpService.LearningMcpStatus;
-import com.alibaba.cloud.ai.mcp.LearningMcpService.McpWriteResult;
-import com.alibaba.cloud.ai.mcp.PendingMcpWrite;
-import com.alibaba.cloud.ai.memory.LearningMemory;
-import com.alibaba.cloud.ai.memory.LearningMemoryService;
-import com.alibaba.cloud.ai.official.OfficialLearningAgentResult;
-import com.alibaba.cloud.ai.official.OfficialLearningAgentService;
-import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphResult;
-import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphService;
 import com.alibaba.cloud.ai.report.AgentRunReport;
 import com.alibaba.cloud.ai.report.AgentRunReportService;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -65,23 +63,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/minimax/chat-client")
 public class MiniMaxChatClientController {
 
-	private static final String DEFAULT_PROMPT = "你好，介绍下你自己吧。";
-
-	private final ChatClient chatClient;
-
-	private final LearningMemoryService learningMemoryService;
-
-	private final LearningMcpService learningMcpService;
-
-	private final OfficialLearningAgentService officialLearningAgentService;
-
-	private final OfficialLearningGraphService officialLearningGraphService;
-
 	private final CustomerServiceAgentService customerServiceAgentService;
 
 	private final CustomerServiceGraphService customerServiceGraphService;
 
+	private final CustomerServiceMultiAgentService customerServiceMultiAgentService;
+
+	private final CustomerMemoryService customerMemoryService;
+
 	private final CustomerMcpService customerMcpService;
+
+	private final CustomerPolicyRagService customerPolicyRagService;
 
 	private final AgentRunReportService agentRunReportService;
 
@@ -89,49 +81,22 @@ public class MiniMaxChatClientController {
 
 	private final AgentJudgeService agentJudgeService;
 
-	public MiniMaxChatClientController(ChatModel chatModel, LearningMemoryService learningMemoryService,
-			LearningMcpService learningMcpService,
-			OfficialLearningAgentService officialLearningAgentService,
-			OfficialLearningGraphService officialLearningGraphService, CustomerServiceAgentService customerServiceAgentService,
-			CustomerServiceGraphService customerServiceGraphService, CustomerMcpService customerMcpService, AgentRunReportService agentRunReportService,
+	public MiniMaxChatClientController(CustomerServiceAgentService customerServiceAgentService,
+			CustomerServiceGraphService customerServiceGraphService,
+			CustomerServiceMultiAgentService customerServiceMultiAgentService,
+			CustomerMemoryService customerMemoryService, CustomerMcpService customerMcpService,
+			CustomerPolicyRagService customerPolicyRagService,
+			AgentRunReportService agentRunReportService,
 			AgentEvaluationService agentEvaluationService, AgentJudgeService agentJudgeService) {
-		this.learningMemoryService = learningMemoryService;
-		this.learningMcpService = learningMcpService;
-		this.officialLearningAgentService = officialLearningAgentService;
-		this.officialLearningGraphService = officialLearningGraphService;
 		this.customerServiceAgentService = customerServiceAgentService;
 		this.customerServiceGraphService = customerServiceGraphService;
+		this.customerServiceMultiAgentService = customerServiceMultiAgentService;
+		this.customerMemoryService = customerMemoryService;
 		this.customerMcpService = customerMcpService;
+		this.customerPolicyRagService = customerPolicyRagService;
 		this.agentRunReportService = agentRunReportService;
 		this.agentEvaluationService = agentEvaluationService;
 		this.agentJudgeService = agentJudgeService;
-		this.chatClient = ChatClient.builder(chatModel)
-				.defaultAdvisors(new SimpleLoggerAdvisor())
-				.defaultOptions(defaultOptions())
-				.build();
-	}
-
-	@GetMapping("/simple/chat")
-	public String simpleChat(@RequestParam(value = "message", defaultValue = DEFAULT_PROMPT) String message) {
-		return this.chatClient.prompt(message).call().content();
-	}
-
-	@PostMapping(value = "/official-agent/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
-	public OfficialLearningAgentResult officialAgentChat(@RequestBody ChatRequest request) {
-		String userId = extractUserId(request);
-		String message = extractMessage(request);
-		OfficialLearningAgentResult result = this.officialLearningAgentService.chat(userId, message);
-		saveEvaluation(this.agentRunReportService.saveOfficialAgent(userId, message, historySize(request), result));
-		return result;
-	}
-
-	@PostMapping(value = "/official-graph/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
-	public OfficialLearningGraphResult officialGraphChat(@RequestBody ChatRequest request) {
-		String userId = extractUserId(request);
-		String message = extractMessage(request);
-		OfficialLearningGraphResult result = this.officialLearningGraphService.chat(userId, message);
-		saveEvaluation(this.agentRunReportService.saveOfficialGraph(userId, message, historySize(request), result));
-		return result;
 	}
 
 	/**
@@ -170,6 +135,24 @@ public class MiniMaxChatClientController {
 	}
 
 	/**
+	 * 执行智能客服官方 Multi-Agent 对话，使用 SequentialAgent 串行协作多个专业客服子 Agent。
+	 * @param request 前端聊天请求
+	 * @return 智能客服官方 Multi-Agent 响应结果
+	 * @author xyd
+	 * @date 2026-05-19 00:20:26
+	 */
+	@PostMapping(value = "/customer-service/multi-agent/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public CustomerServiceMultiAgentResult customerServiceMultiAgentChat(@RequestBody ChatRequest request) {
+		String userId = extractUserId(request);
+		String message = extractMessage(request);
+		CustomerServiceMultiAgentResult result = this.customerServiceMultiAgentService.chat(userId,
+				extractChannel(request), message, toCustomerHistory(request));
+		saveEvaluation(this.agentRunReportService.saveCustomerServiceMultiAgent(userId, message, historySize(request),
+				result));
+		return result;
+	}
+
+	/**
 	 * 查询智能客服 MCP 接入状态，便于确认当前是调用真实 MCP 还是 Mock 兜底。
 	 * @return 智能客服 MCP 状态
 	 * @author xyd
@@ -180,34 +163,93 @@ public class MiniMaxChatClientController {
 		return this.customerMcpService.status();
 	}
 
-	@GetMapping("/memory")
-	public LearningMemory getMemory(@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
-		return this.learningMemoryService.read(userId);
+	/**
+	 * 查询智能客服知识库主题覆盖情况。
+	 * @return 知识库主题集合
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	@GetMapping("/customer-service/rag/topics")
+	public Set<String> customerRagTopics() {
+		return this.customerPolicyRagService.topics();
 	}
 
-	@DeleteMapping("/memory")
-	public LearningMemory clearMemory(@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
-		return this.learningMemoryService.clear(userId);
+	/**
+	 * 查询智能客服 RAG 知识库全部文档，用于页面知识管理和召回调试。
+	 * @return 客服知识文档列表
+	 * @author xyd
+	 * @date 2026-05-19 23:48:12
+	 */
+	@GetMapping("/customer-service/rag/documents")
+	public List<CustomerKnowledgeDocument> customerRagDocuments() {
+		return this.customerPolicyRagService.documents();
 	}
 
-	@GetMapping("/mcp/status")
-	public LearningMcpStatus mcpStatus() {
-		return this.learningMcpService.status();
+	/**
+	 * 新增或更新智能客服 RAG 自定义知识，并写入 JSON 文件。
+	 * @param request 知识新增或更新请求
+	 * @return 保存后的客服知识文档
+	 * @author xyd
+	 * @date 2026-05-19 23:48:12
+	 */
+	@PostMapping(value = "/customer-service/rag/documents", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public CustomerKnowledgeDocument upsertCustomerRagDocument(@RequestBody CustomerKnowledgeUpsertRequest request) {
+		return this.customerPolicyRagService.upsertCustomDocument(request);
 	}
 
-	@GetMapping("/mcp/write/pending")
-	public PendingMcpWrite pendingMcpWrite(@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
-		return this.learningMcpService.pendingWrite(userId);
+	/**
+	 * 删除智能客服 RAG 自定义知识；内置知识不会被删除。
+	 * @param id 文档唯一标识
+	 * @return 删除结果
+	 * @author xyd
+	 * @date 2026-05-19 23:48:12
+	 */
+	@DeleteMapping("/customer-service/rag/documents")
+	public CustomerKnowledgeDeleteResponse deleteCustomerRagDocument(@RequestParam("id") String id) {
+		return new CustomerKnowledgeDeleteResponse(id, this.customerPolicyRagService.deleteCustomDocument(id));
 	}
 
-	@PostMapping(value = "/mcp/write/confirm", consumes = MediaType.APPLICATION_JSON_VALUE)
-	public McpWriteResult confirmMcpWrite(@RequestBody ConfirmMcpWriteRequest request) {
-		return this.learningMcpService.confirmPendingWrite(extractConfirmUserId(request));
+	/**
+	 * 评估智能客服 RAG 召回率，便于对比本地检索和真实向量库检索效果。
+	 * @param query 检索问题
+	 * @param expectedTopics 期望主题，逗号分隔
+	 * @param limit 返回结果数量
+	 * @return 客服 RAG 召回评估结果
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	@GetMapping("/customer-service/rag/evaluate")
+	public CustomerPolicySearchResult customerRagEvaluate(
+			@RequestParam(value = "query", defaultValue = "超过 7 天还能退吗？") String query,
+			@RequestParam(value = "expectedTopics", defaultValue = "refund") String expectedTopics,
+			@RequestParam(value = "limit", defaultValue = "5") Integer limit) {
+		return this.customerPolicyRagService.searchWithMetrics(query, limit, splitTopics(expectedTopics));
 	}
 
-	@DeleteMapping("/mcp/write/pending")
-	public McpWriteResult cancelMcpWrite(@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
-		return this.learningMcpService.cancelPendingWrite(userId);
+	/**
+	 * 查看指定用户的智能客服长期记忆，用于页面直接验证客服 Memory 是否按用户隔离。
+	 * @param userId 用户唯一标识
+	 * @return 智能客服长期记忆
+	 * @author xyd
+	 * @date 2026-05-19 23:48:12
+	 */
+	@GetMapping("/customer-service/memory")
+	public CustomerMemory getCustomerMemory(
+			@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
+		return this.customerMemoryService.read(userId);
+	}
+
+	/**
+	 * 清空指定用户的智能客服长期记忆，并写回客服 Memory JSON 文件。
+	 * @param userId 用户唯一标识
+	 * @return 重置后的智能客服长期记忆
+	 * @author xyd
+	 * @date 2026-05-19 23:48:12
+	 */
+	@DeleteMapping("/customer-service/memory")
+	public CustomerMemory clearCustomerMemory(
+			@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
+		return this.customerMemoryService.clear(userId);
 	}
 
 	@GetMapping("/report/runs")
@@ -254,7 +296,7 @@ public class MiniMaxChatClientController {
 
 	private String extractMessage(ChatRequest request) {
 		if (request == null || request.message() == null || request.message().isBlank()) {
-			return DEFAULT_PROMPT;
+			return "你好，请问有什么可以帮你？";
 		}
 		return request.message();
 	}
@@ -293,11 +335,21 @@ public class MiniMaxChatClientController {
 		}
 	}
 
-	private OpenAiChatOptions defaultOptions() {
-		return OpenAiChatOptions.builder()
-				.model("MiniMax-M2.7")
-				.temperature(0.7)
-				.build();
+	/**
+	 * 拆分前端传入的 RAG 期望主题，支持中英文逗号和空白分隔。
+	 * @param expectedTopics 期望主题文本
+	 * @return 期望主题集合
+	 * @author xyd
+	 * @date 2026-05-19 23:48:12
+	 */
+	private Set<String> splitTopics(String expectedTopics) {
+		if (expectedTopics == null || expectedTopics.isBlank()) {
+			return Set.of();
+		}
+		return Arrays.stream(expectedTopics.split("[,，\\s]+"))
+				.map(String::trim)
+				.filter(text -> !text.isBlank())
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 	private void saveEvaluation(AgentRunReport report) {
@@ -310,17 +362,18 @@ public class MiniMaxChatClientController {
 	public record ChatMessage(String role, String content) {
 	}
 
-	private String extractConfirmUserId(ConfirmMcpWriteRequest request) {
-		if (request == null || request.userId() == null || request.userId().isBlank()) {
-			return "default-user";
-		}
-		return request.userId().trim();
-	}
-
-	public record ConfirmMcpWriteRequest(String userId) {
-	}
-
 	public record ClearReportResponse(int deleted) {
+	}
+
+	/**
+	 * 智能客服知识删除结果，用于页面判断自定义知识是否删除成功。
+	 *
+	 * @param id 文档唯一标识
+	 * @param deleted 是否删除成功
+	 * @author xyd
+	 * @date 2026-05-19 23:48:12
+	 */
+	public record CustomerKnowledgeDeleteResponse(String id, boolean deleted) {
 	}
 
 }

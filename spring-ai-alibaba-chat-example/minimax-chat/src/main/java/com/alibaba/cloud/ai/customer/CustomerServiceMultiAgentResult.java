@@ -14,22 +14,30 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.officialgraph;
+package com.alibaba.cloud.ai.customer;
 
 import java.util.List;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.mcp.McpDebugInfo;
-import com.alibaba.cloud.ai.memory.LearningMemory;
-import com.alibaba.cloud.ai.planner.LearningIntent;
 import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
 
-public record OfficialLearningGraphResult(String content, LearningIntent intent, LearningMemory memoryBefore,
-		LearningMemory memoryAfter, List<OfficialGraphStep> graphSteps,
+/**
+ * 智能客服官方 SequentialAgent 响应结果，用于展示真实 Multi-Agent 子 Agent 输出和调试信息。
+ *
+ * @param content 最终客服回复
+ * @param intent 客服业务意图
+ * @param memoryBefore 调用前客服记忆
+ * @param memoryAfter 调用后客服记忆
+ * @param agentSteps 官方 Multi-Agent 子 Agent 执行步骤
+ * @param toolCalls 本轮工具调用明细
+ * @param mcpDebugInfo MCP 调试信息
+ * @param rawState 官方 SequentialAgent 原始状态
+ * @author xyd
+ * @date 2026-05-19 00:20:26
+ */
+public record CustomerServiceMultiAgentResult(String content, CustomerServiceIntent intent,
+		CustomerMemory memoryBefore, CustomerMemory memoryAfter, List<CustomerServiceStep> agentSteps,
 		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls, McpDebugInfo mcpDebugInfo,
-		Map<String, Object> rawState, String graphDefinition) {
-
-	public record OfficialGraphStep(String node, String detail) {
-	}
-
+		Map<String, Object> rawState) {
 }

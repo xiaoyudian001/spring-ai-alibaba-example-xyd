@@ -100,6 +100,42 @@ public class CustomerMcpService {
 	}
 
 	/**
+	 * 查询商品议价策略，优先调用真实 MCP 价格策略工具，失败时回退到 Mock 商品底价策略。
+	 * @param productId 商品 ID
+	 * @return 商品议价策略文本
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	public String getPricePolicy(String productId) {
+		return invokeOrFallback("getPricePolicy", Map.of("productId", safeText(productId)),
+				() -> this.mockCustomerDataService.getPricePolicy(productId));
+	}
+
+	/**
+	 * 查询订单退款资格，优先调用真实 MCP 售后工具，失败时回退到 Mock 退款资格判断。
+	 * @param orderId 订单 ID
+	 * @return 退款资格说明
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	public String getRefundEligibility(String orderId) {
+		return invokeOrFallback("getRefundEligibility", Map.of("orderId", safeText(orderId)),
+				() -> this.mockCustomerDataService.getRefundEligibility(orderId));
+	}
+
+	/**
+	 * 查询售后处理状态，优先调用真实 MCP 售后工具，失败时回退到 Mock 售后状态。
+	 * @param orderId 订单 ID
+	 * @return 售后处理状态
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	public String getAfterSaleStatus(String orderId) {
+		return invokeOrFallback("getAfterSaleStatus", Map.of("orderId", safeText(orderId)),
+				() -> this.mockCustomerDataService.getAfterSaleStatus(orderId));
+	}
+
+	/**
 	 * 创建客服工单，优先调用真实 MCP 工单工具，失败时回退到 Mock 工单结果。
 	 * @param conversationId 会话 ID
 	 * @param summary 工单摘要
@@ -238,13 +274,17 @@ public class CustomerMcpService {
 	private List<String> aliases(String logicalToolName) {
 		String name = normalize(logicalToolName);
 		if (name.contains("product")) {
-			return List.of("getproductinfo", "getproduct", "product", "商品");
+			return List.of("getproductinfo", "getpricepolicy", "getproduct", "product", "price", "商品", "价格");
 		}
 		if (name.contains("logistics")) {
 			return List.of("getlogisticsinfo", "getlogistics", "logistics", "shipping", "物流");
 		}
 		if (name.contains("order")) {
-			return List.of("getorderinfo", "getorder", "order", "订单");
+			return List.of("getorderinfo", "getrefundeligibility", "getaftersalestatus", "getorder", "order",
+					"refund", "aftersale", "订单", "退款", "售后");
+		}
+		if (name.contains("refund") || name.contains("aftersale")) {
+			return List.of("getrefundeligibility", "getaftersalestatus", "refund", "aftersale", "退款", "售后");
 		}
 		if (name.contains("ticket")) {
 			return List.of("createcustomerticket", "createticket", "ticket", "工单");
@@ -306,7 +346,7 @@ public class CustomerMcpService {
 	private void recordDebug(String mode, boolean realMcpAvailable, String selectedToolName,
 			List<String> availableToolNames, String fallbackReason, String query) {
 		this.debugInfoHolder.set(new McpDebugInfo(mode, realMcpAvailable, selectedToolName, availableToolNames,
-				fallbackReason, query, null, false, "disabled", null));
+				fallbackReason, query, null));
 	}
 
 	/**

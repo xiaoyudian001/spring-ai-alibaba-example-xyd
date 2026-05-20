@@ -78,9 +78,9 @@ public class AgentEvaluationService {
 		checks.add(intentCheck(report));
 		checks.add(answerCheck(report));
 		checks.add(memoryCheck(report));
-		checks.add(timeToolCheck(report));
-		checks.add(saveResourceCheck(report));
-		checks.add(projectKnowledgeCheck(report));
+		checks.add(customerFactToolCheck(report));
+		checks.add(customerPolicyKnowledgeCheck(report));
+		checks.add(customerRiskCheck(report));
 		int maxScore = (int) checks.stream().filter(EvaluationCheck::applicable).count();
 		int score = (int) checks.stream().filter(EvaluationCheck::applicable).filter(EvaluationCheck::passed).count();
 		String level = level(score, maxScore);
@@ -102,37 +102,36 @@ public class AgentEvaluationService {
 	private EvaluationCheck memoryCheck(AgentRunReport report) {
 		boolean passed = report.memoryAfter() != null && !sameJson(report.memoryBefore(), report.memoryAfter());
 		return new EvaluationCheck("Memory 更新", true, passed,
-				passed ? "Memory 在本轮调用后发生变化。" : "Memory 未变化，可能是问题未触发学习状态更新。");
+				passed ? "Memory 在本轮调用后发生变化。" : "Memory 未变化，可能是问题未触发客服状态更新。");
 	}
 
-	private EvaluationCheck timeToolCheck(AgentRunReport report) {
-		boolean applicable = "TIME_QUERY".equals(report.intent()) || containsAny(report.message(), "几点", "时间", "北京时间",
-				"当前时间", "现在");
-		boolean passed = !applicable || hasTool(report, "getCurrentTime");
-		return new EvaluationCheck("时间工具", applicable, passed,
-				!applicable ? "本轮不是时间问题。"
-						: passed ? "时间问题已调用 getCurrentTime。" : "时间问题没有调用 getCurrentTime。");
+	private EvaluationCheck customerFactToolCheck(AgentRunReport report) {
+		boolean applicable = containsAny(report.message(), "p-", "o-", "商品", "订单", "物流", "快递", "便宜", "优惠",
+				"退款", "售后", "进度");
+		boolean passed = !applicable || hasAnyTool(report, "getProductInfo", "getOrderInfo", "getLogisticsInfo",
+				"getPricePolicy", "getRefundEligibility", "getAfterSaleStatus");
+		return new EvaluationCheck("客服事实工具", applicable, passed,
+				!applicable ? "本轮没有明显实时事实查询诉求。"
+						: passed ? "客服事实类问题调用了商品、订单、物流、价格或售后工具。" : "客服事实类问题未看到必要工具调用。");
 	}
 
-	private EvaluationCheck saveResourceCheck(AgentRunReport report) {
-		boolean applicable = containsAny(report.message(), "保存", "记录", "沉淀", "新增资源", "学习资源", "写入 mcp", "写入mcp",
-				"更新资源", "修改资源");
-		boolean passed = !applicable || report.pendingMcpWrite() || startsWith(report.mcpMode(), "MCP_WRITE")
-				|| "REAL_MCP".equals(report.mcpMode()) || hasTool(report, "createMcpLearningResource")
-				|| hasTool(report, "updateMcpLearningResource");
-		return new EvaluationCheck("MCP 写入意图", applicable, passed,
-				!applicable ? "本轮没有明确保存或更新资源诉求。"
-						: passed ? "保存诉求已产生 MCP 写入或待确认写入。" : "保存诉求没有触发 MCP 写入工具。");
+	private EvaluationCheck customerPolicyKnowledgeCheck(AgentRunReport report) {
+		boolean applicable = containsAny(report.message(), "政策", "规则", "话术", "怎么回", "投诉", "安抚", "质量",
+				"瑕疵", "改地址", "发票", "召回率", "知识库");
+		boolean passed = !applicable || hasAnyTool(report, "searchCustomerPolicy", "evaluateCustomerPolicyRecall",
+				"listCustomerSkills", "readCustomerSkill");
+		return new EvaluationCheck("客服知识检索", applicable, passed,
+				!applicable ? "本轮没有明显政策、话术或知识库诉求。"
+						: passed ? "客服知识类问题使用了 RAG 或 Skill。" : "客服知识类问题未看到 RAG/Skill 调用。");
 	}
 
-	private EvaluationCheck projectKnowledgeCheck(AgentRunReport report) {
-		boolean applicable = containsAny(report.message(), "当前项目", "项目", "源码", "readme", "调用链", "实现", "代码",
-				"minimax-chat", "mcp", "agent", "graph", "rag", "tool", "skill");
-		boolean passed = !applicable || hasTool(report, "searchLearningDocs") || hasTool(report, "searchMcpLearningResources")
-				|| "REAL_MCP".equals(report.mcpMode()) || "MOCK_MCP".equals(report.mcpMode());
-		return new EvaluationCheck("项目知识检索", applicable, passed,
-				!applicable ? "本轮不是项目知识类问题。"
-						: passed ? "项目知识类问题使用了 RAG 或 MCP 检索。" : "项目知识类问题未看到 RAG/MCP 检索。");
+	private EvaluationCheck customerRiskCheck(AgentRunReport report) {
+		boolean applicable = containsAny(report.message(), "投诉", "赔偿", "直接退款", "转人工", "人工", "举报", "差评");
+		boolean passed = !applicable || hasAnyTool(report, "createCustomerTicket", "requestHumanHandoff")
+				|| containsAny(report.answerContent(), "人工", "工单", "升级", "记录", "不能直接", "需确认");
+		return new EvaluationCheck("客服风险处理", applicable, passed,
+				!applicable ? "本轮不是高风险客服场景。"
+						: passed ? "高风险客服场景包含工单、人工接管或谨慎处理说明。" : "高风险客服场景缺少工单、人工接管或风控说明。");
 	}
 
 	private synchronized AgentEvaluationResult append(AgentEvaluationResult evaluation) {
@@ -177,6 +176,15 @@ public class AgentEvaluationService {
 		return report.toolCalls() != null && report.toolCalls().stream().anyMatch(call -> toolName.equals(toolName(call)));
 	}
 
+	private boolean hasAnyTool(AgentRunReport report, String... toolNames) {
+		for (String toolName : toolNames) {
+			if (hasTool(report, toolName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private String toolName(Object call) {
 		JsonNode node = this.objectMapper.valueToTree(call);
 		return node.hasNonNull("name") ? node.get("name").asText() : "";
@@ -194,10 +202,6 @@ public class AgentEvaluationService {
 			}
 		}
 		return false;
-	}
-
-	private boolean startsWith(String text, String prefix) {
-		return text != null && text.startsWith(prefix);
 	}
 
 	private String level(int score, int maxScore) {

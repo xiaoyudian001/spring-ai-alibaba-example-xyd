@@ -1,0 +1,9 @@
+minimax:
+  customer:
+    rag:
+      # true：如果项目中额外引入 PGVector / Milvus 等 Spring AI VectorStore Starter，
+      # 并成功创建 VectorStore Bean，则 CustomerPolicyRagService 会把客服知识写入真实向量库并走相似度检索。
+      # 如果没有 VectorStore Bean，会自动回退到本地高召回关键词检索，保证示例仍可启动和测试。
+      vector-enabled: true
+      backend: vector-store
+

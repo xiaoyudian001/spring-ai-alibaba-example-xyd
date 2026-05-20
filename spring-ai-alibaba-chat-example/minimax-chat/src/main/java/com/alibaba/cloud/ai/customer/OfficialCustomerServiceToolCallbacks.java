@@ -53,8 +53,9 @@ public class OfficialCustomerServiceToolCallbacks {
 	 * @date 2026-05-18 11:34:38
 	 */
 	public ToolCallback[] all() {
-		return new ToolCallback[] { productInfo(), orderInfo(), logisticsInfo(), customerPolicy(), customerSkills(),
-				customerSkillRead(), customerTicket(), humanHandoff() };
+		return new ToolCallback[] { productInfo(), orderInfo(), logisticsInfo(), pricePolicy(), refundEligibility(),
+				afterSaleStatus(), customerPolicy(), customerPolicyRecall(), customerSkills(), customerSkillRead(),
+				customerTicket(), humanHandoff() };
 	}
 
 	/**
@@ -103,6 +104,51 @@ public class OfficialCustomerServiceToolCallbacks {
 	}
 
 	/**
+	 * 构建商品议价策略查询工具。
+	 * @return 商品议价策略查询工具
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	private ToolCallback pricePolicy() {
+		Function<ProductInfoRequest, String> function = request -> this.customerServiceTools
+				.getPricePolicy(request.productId());
+		return FunctionToolCallback.builder("getPricePolicy", function)
+				.description("查询商品议价策略。当用户要求便宜、优惠、包邮、小刀或砍价时使用。")
+				.inputType(ProductInfoRequest.class)
+				.build();
+	}
+
+	/**
+	 * 构建订单退款资格查询工具。
+	 * @return 订单退款资格查询工具
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	private ToolCallback refundEligibility() {
+		Function<OrderInfoRequest, String> function = request -> this.customerServiceTools
+				.getRefundEligibility(request.orderId());
+		return FunctionToolCallback.builder("getRefundEligibility", function)
+				.description("查询订单退款资格。当用户申请退款、退货、取消订单或询问售后条件时使用。")
+				.inputType(OrderInfoRequest.class)
+				.build();
+	}
+
+	/**
+	 * 构建售后处理状态查询工具。
+	 * @return 售后处理状态查询工具
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	private ToolCallback afterSaleStatus() {
+		Function<OrderInfoRequest, String> function = request -> this.customerServiceTools
+				.getAfterSaleStatus(request.orderId());
+		return FunctionToolCallback.builder("getAfterSaleStatus", function)
+				.description("查询售后处理状态。当用户追问退款进度、投诉处理或售后工单状态时使用。")
+				.inputType(OrderInfoRequest.class)
+				.build();
+	}
+
+	/**
 	 * 构建客服政策检索工具。
 	 * @return 客服政策检索工具
 	 * @author xyd
@@ -114,6 +160,21 @@ public class OfficialCustomerServiceToolCallbacks {
 		return FunctionToolCallback.builder("searchCustomerPolicy", function)
 				.description("检索客服知识库。当用户询问退款政策、发货规则、闲鱼回复规范、微信客服规范或投诉处理时使用。")
 				.inputType(CustomerPolicyRequest.class)
+				.build();
+	}
+
+	/**
+	 * 构建客服 RAG 召回率评估工具。
+	 * @return 客服 RAG 召回率评估工具
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	private ToolCallback customerPolicyRecall() {
+		Function<CustomerPolicyRecallRequest, String> function = request -> this.customerServiceTools
+				.evaluateCustomerPolicyRecall(request.query(), request.expectedTopics(), request.limit());
+		return FunctionToolCallback.builder("evaluateCustomerPolicyRecall", function)
+				.description("检索客服知识并输出召回率。当需要评估 RAG 命中主题、召回率或真实向量库状态时使用。")
+				.inputType(CustomerPolicyRecallRequest.class)
 				.build();
 	}
 
@@ -178,24 +239,53 @@ public class OfficialCustomerServiceToolCallbacks {
 	}
 
 	@JsonClassDescription("查询商品信息的请求参数")
+	/**
+	 * 查询商品信息工具的结构化入参。
+	 *
+	 * @param productId 商品 ID
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
 	public record ProductInfoRequest(
 			@JsonProperty(value = "productId", required = true)
 			@JsonPropertyDescription("商品 ID，例如 p-1001。") String productId) {
 	}
 
 	@JsonClassDescription("查询订单信息的请求参数")
+	/**
+	 * 查询订单信息和退款资格工具的结构化入参。
+	 *
+	 * @param orderId 订单 ID
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
 	public record OrderInfoRequest(
 			@JsonProperty(value = "orderId", required = true)
 			@JsonPropertyDescription("订单 ID，例如 o-202605150001。") String orderId) {
 	}
 
 	@JsonClassDescription("查询物流信息的请求参数")
+	/**
+	 * 查询物流信息工具的结构化入参。
+	 *
+	 * @param orderId 订单 ID
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
 	public record LogisticsInfoRequest(
 			@JsonProperty(value = "orderId", required = true)
 			@JsonPropertyDescription("订单 ID，例如 o-202605150001。") String orderId) {
 	}
 
 	@JsonClassDescription("检索客服知识库的请求参数")
+	/**
+	 * 检索客服知识库工具的结构化入参。
+	 *
+	 * @param query 检索问题或关键词
+	 * @param limit 返回结果数量
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
 	public record CustomerPolicyRequest(
 			@JsonProperty(value = "query", required = true)
 			@JsonPropertyDescription("检索问题或关键词，例如 退款政策、闲鱼回复、微信客服、投诉处理。") String query,
@@ -203,17 +293,57 @@ public class OfficialCustomerServiceToolCallbacks {
 			@JsonPropertyDescription("返回结果数量，建议 1 到 5。") Integer limit) {
 	}
 
+	@JsonClassDescription("评估客服 RAG 召回率的请求参数")
+	/**
+	 * 评估客服 RAG 召回率工具的结构化入参。
+	 *
+	 * @param query 检索问题或关键词
+	 * @param expectedTopics 期望命中的主题
+	 * @param limit 返回结果数量
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
+	public record CustomerPolicyRecallRequest(
+			@JsonProperty(value = "query", required = true)
+			@JsonPropertyDescription("检索问题或关键词，例如 超过 7 天能退吗、物流怎么还没到。") String query,
+			@JsonProperty(value = "expectedTopics")
+			@JsonPropertyDescription("期望命中的主题，逗号分隔，例如 refund,shipping,price,xianyu,wechat。") String expectedTopics,
+			@JsonProperty(value = "limit")
+			@JsonPropertyDescription("返回结果数量，建议 1 到 8。") Integer limit) {
+	}
+
 	@JsonClassDescription("列出智能客服技能的请求参数")
+	/**
+	 * 列出智能客服技能工具的结构化入参。
+	 *
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
 	public record ListCustomerSkillsRequest() {
 	}
 
 	@JsonClassDescription("读取智能客服技能的请求参数")
+	/**
+	 * 读取智能客服技能工具的结构化入参。
+	 *
+	 * @param skillName 技能名称
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
 	public record ReadCustomerSkillRequest(
 			@JsonProperty(value = "skillName", required = true)
 			@JsonPropertyDescription("技能名称，例如 xianyu-reply、wechat-service、refund-handling。") String skillName) {
 	}
 
 	@JsonClassDescription("创建客服工单的请求参数")
+	/**
+	 * 创建客服工单工具的结构化入参。
+	 *
+	 * @param conversationId 会话 ID
+	 * @param summary 工单摘要
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
 	public record CreateCustomerTicketRequest(
 			@JsonProperty(value = "conversationId", required = true)
 			@JsonPropertyDescription("会话 ID，没有时可使用当前用户 ID。") String conversationId,
@@ -222,6 +352,14 @@ public class OfficialCustomerServiceToolCallbacks {
 	}
 
 	@JsonClassDescription("请求人工接管的请求参数")
+	/**
+	 * 请求人工接管工具的结构化入参。
+	 *
+	 * @param conversationId 会话 ID
+	 * @param reason 人工接管原因
+	 * @author xyd
+	 * @date 2026-05-19 13:31:27
+	 */
 	public record HumanHandoffRequest(
 			@JsonProperty(value = "conversationId", required = true)
 			@JsonPropertyDescription("会话 ID，没有时可使用当前用户 ID。") String conversationId,

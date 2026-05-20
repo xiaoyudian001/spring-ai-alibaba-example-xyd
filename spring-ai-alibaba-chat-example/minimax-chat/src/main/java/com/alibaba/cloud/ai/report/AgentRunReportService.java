@@ -26,10 +26,9 @@ import java.util.List;
 import java.util.UUID;
 
 import com.alibaba.cloud.ai.customer.CustomerServiceGraphResult;
+import com.alibaba.cloud.ai.customer.CustomerServiceMultiAgentResult;
 import com.alibaba.cloud.ai.customer.CustomerServiceResult;
 import com.alibaba.cloud.ai.mcp.McpDebugInfo;
-import com.alibaba.cloud.ai.official.OfficialLearningAgentResult;
-import com.alibaba.cloud.ai.officialgraph.OfficialLearningGraphResult;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -57,24 +56,6 @@ public class AgentRunReportService {
 		this.objectMapper = objectMapper;
 		this.reportFile = Path.of(reportFile);
 		this.maxReports = Math.max(20, maxReports);
-	}
-
-	public AgentRunReport saveOfficialAgent(String userId, String message, int historySize,
-			OfficialLearningAgentResult result) {
-		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "OFFICIAL_REACT_AGENT",
-				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
-				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
-				safeSize(result.toolCalls()), safeSize(result.agentSteps()), 0, result.memoryBefore(),
-				result.memoryAfter(), result.agentSteps(), List.of(), result.toolCalls(), result.mcpDebugInfo()));
-	}
-
-	public AgentRunReport saveOfficialGraph(String userId, String message, int historySize,
-			OfficialLearningGraphResult result) {
-		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "OFFICIAL_STATE_GRAPH",
-				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
-				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
-				safeSize(result.toolCalls()), 0, safeSize(result.graphSteps()), result.memoryBefore(),
-				result.memoryAfter(), List.of(), result.graphSteps(), result.toolCalls(), result.mcpDebugInfo()));
 	}
 
 	/**
@@ -115,6 +96,26 @@ public class AgentRunReportService {
 				safeSize(result.toolCalls()), safeSize(result.agentSteps()), safeSize(result.graphSteps()),
 				result.memoryBefore(), result.memoryAfter(), result.agentSteps(), result.graphSteps(),
 				result.toolCalls(), result.mcpDebugInfo()));
+	}
+
+	/**
+	 * 保存智能客服官方 Multi-Agent 执行报告，用于观察 SequentialAgent 子 Agent 协作效果。
+	 * @param userId 用户唯一标识
+	 * @param message 用户原始输入
+	 * @param historySize 历史消息数量
+	 * @param result 智能客服官方 Multi-Agent 响应结果
+	 * @return 已持久化的执行报告
+	 * @author xyd
+	 * @date 2026-05-19 00:20:26
+	 */
+	public AgentRunReport saveCustomerServiceMultiAgent(String userId, String message, int historySize,
+			CustomerServiceMultiAgentResult result) {
+		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId),
+				"CUSTOMER_SERVICE_MULTI_AGENT", normalizeText(message), historySize, intentName(result.intent()),
+				summarize(result.content()), fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()),
+				hasPendingWrite(result.mcpDebugInfo()), safeSize(result.toolCalls()), safeSize(result.agentSteps()),
+				0, result.memoryBefore(), result.memoryAfter(), result.agentSteps(), List.of(), result.toolCalls(),
+				result.mcpDebugInfo()));
 	}
 
 	public synchronized List<AgentRunReport> latest(int limit) {
@@ -200,7 +201,7 @@ public class AgentRunReportService {
 	}
 
 	private boolean hasPendingWrite(McpDebugInfo mcpDebugInfo) {
-		return mcpDebugInfo != null && mcpDebugInfo.pendingWrite() != null;
+		return false;
 	}
 
 	private int safeSize(List<?> items) {

@@ -260,6 +260,182 @@
 			font-size: 13px;
 		}
 
+		.rag-lab {
+			width: min(1040px, calc(100% - 32px));
+			margin: -4px auto 18px;
+			padding: 14px 16px;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: rgba(255, 255, 255, 0.9);
+			box-shadow: var(--shadow);
+		}
+
+		.knowledge-lab {
+			width: min(1040px, calc(100% - 32px));
+			margin: -4px auto 18px;
+			padding: 14px 16px;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: rgba(255, 255, 255, 0.9);
+			box-shadow: var(--shadow);
+		}
+
+		.rag-lab-header {
+			display: flex;
+			align-items: flex-start;
+			justify-content: space-between;
+			gap: 12px;
+			margin-bottom: 12px;
+		}
+
+		.rag-lab-title {
+			font-weight: 800;
+			color: #0f172a;
+		}
+
+		.rag-lab-subtitle {
+			margin-top: 3px;
+			color: var(--muted);
+			font-size: 12px;
+		}
+
+		.rag-lab-grid {
+			display: grid;
+			grid-template-columns: 1.4fr 1fr 120px;
+			gap: 10px;
+			align-items: end;
+		}
+
+		.rag-lab-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin-top: 10px;
+		}
+
+		.rag-result {
+			margin-top: 12px;
+			display: grid;
+			gap: 10px;
+		}
+
+		.rag-result-summary {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			gap: 8px;
+		}
+
+		.rag-metric {
+			padding: 10px 12px;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: var(--surface-soft);
+		}
+
+		.rag-metric-label {
+			color: var(--muted);
+			font-size: 12px;
+		}
+
+		.rag-metric-value {
+			margin-top: 5px;
+			color: #0f172a;
+			font-size: 18px;
+			font-weight: 850;
+			line-height: 1.15;
+			overflow-wrap: anywhere;
+		}
+
+		.rag-topic-list {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 6px;
+		}
+
+		.rag-topic {
+			display: inline-flex;
+			align-items: center;
+			min-height: 24px;
+			padding: 3px 8px;
+			border: 1px solid rgba(37, 99, 235, 0.18);
+			border-radius: 999px;
+			background: #eff6ff;
+			color: #1d4ed8;
+			font-size: 12px;
+			font-weight: 700;
+		}
+
+		.rag-documents {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 8px;
+		}
+
+		.rag-document {
+			padding: 10px 12px;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: #fff;
+			color: #344054;
+			font-size: 13px;
+			line-height: 1.55;
+		}
+
+		.rag-document-title {
+			margin-bottom: 5px;
+			color: #0f172a;
+			font-weight: 800;
+		}
+
+		.rag-document-topic {
+			display: inline-flex;
+			margin-bottom: 6px;
+			padding: 2px 6px;
+			border-radius: 999px;
+			background: #f0fdf4;
+			color: #027a48;
+			font-size: 11px;
+			font-weight: 800;
+		}
+
+		.knowledge-form {
+			display: grid;
+			grid-template-columns: 1fr 1fr 1fr;
+			gap: 10px;
+			align-items: end;
+		}
+
+		.knowledge-form .wide-field {
+			grid-column: 1 / -1;
+		}
+
+		.knowledge-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin-top: 10px;
+		}
+
+		.knowledge-doc-list {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 8px;
+			margin-top: 12px;
+		}
+
+		.knowledge-doc-actions {
+			display: flex;
+			gap: 8px;
+			margin-top: 8px;
+			flex-wrap: wrap;
+		}
+
+		.knowledge-doc-actions button {
+			height: 32px;
+			border-radius: 6px;
+			font-size: 12px;
+		}
+
 		.messages {
 			height: min(54vh, 680px);
 			min-height: 380px;
@@ -456,19 +632,6 @@
 			margin-top: 2px;
 		}
 
-		.pending-write-actions {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 8px;
-			margin-top: 8px;
-		}
-
-		.pending-write-actions button {
-			height: 34px;
-			border-radius: 6px;
-			font-size: 12px;
-		}
-
 		.debug-panel pre {
 			margin: 6px 0 0;
 			padding: 8px;
@@ -487,10 +650,10 @@
 
 		.composer-inner {
 			display: grid;
-			grid-template-columns: minmax(160px, 220px) 1fr;
+			grid-template-columns: minmax(150px, 200px) minmax(180px, 240px) 1fr;
 			grid-template-areas:
-				"user message"
-				"tools actions";
+				"user channel message"
+				"tools tools actions";
 			gap: 12px;
 			align-items: stretch;
 			padding: 16px;
@@ -506,6 +669,7 @@
 		}
 
 		.user-field { grid-area: user; }
+		.channel-field { grid-area: channel; }
 		.message-field { grid-area: message; }
 
 		.field-label {
@@ -519,7 +683,7 @@
 			font-size: 12px;
 		}
 
-		input[type="text"], textarea {
+		input[type="text"], input[type="number"], textarea, select {
 			width: 100%;
 			padding: 12px 13px;
 			border: 1px solid var(--line);
@@ -530,7 +694,7 @@
 			outline: none;
 		}
 
-		input[type="text"] {
+		input[type="text"], input[type="number"], select {
 			height: 52px;
 		}
 
@@ -540,7 +704,7 @@
 			resize: vertical;
 		}
 
-		textarea:focus, button:focus-visible, input:focus-visible {
+		textarea:focus, button:focus-visible, input:focus-visible, select:focus-visible {
 			border-color: var(--primary);
 			box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
 		}
@@ -656,7 +820,7 @@
 		}
 
 		@media (max-width: 820px) {
-			header, main, .composer, .evaluation-dashboard { width: min(100% - 24px, 1040px); }
+			header, main, .composer, .evaluation-dashboard, .rag-lab, .knowledge-lab { width: min(100% - 24px, 1040px); }
 			header { padding-top: 18px; }
 			.header-row { align-items: flex-start; flex-direction: column; }
 			.messages { min-height: 360px; height: 58vh; padding: 14px; }
@@ -664,10 +828,18 @@
 			.dashboard-header { align-items: flex-start; flex-direction: column; }
 			.evaluation-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 			.evaluation-list { grid-template-columns: 1fr; }
+			.rag-lab-header { flex-direction: column; }
+			.rag-lab-grid { grid-template-columns: 1fr; }
+			.rag-result-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+			.rag-documents { grid-template-columns: 1fr; }
+			.knowledge-form { grid-template-columns: 1fr; }
+			.knowledge-form .wide-field { grid-column: auto; }
+			.knowledge-doc-list { grid-template-columns: 1fr; }
 			.composer-inner {
 				grid-template-columns: 1fr;
 				grid-template-areas:
 					"user"
+					"channel"
 					"message"
 					"tools"
 					"actions";
@@ -686,24 +858,22 @@
 		<div class="header-row">
 			<div>
 				<h1>小雨点 Chat-Bot</h1>
-				<div class="subtitle">基于 MiniMax-M2.7 的 Spring AI Alibaba 学习型 Agent 示例</div>
+				<div class="subtitle">基于 MiniMax-M2.7 与 Spring AI Alibaba Agent Framework 的智能客服 v1.0</div>
 				<div class="capabilities" aria-label="当前能力">
 					<span class="capability">多轮上下文</span>
 					<span class="capability">Tool Calling</span>
 					<span class="capability">Skill</span>
-					<span class="capability">Planner</span>
-					<span class="capability">Agent</span>
-					<span class="capability">Workflow</span>
-					<span class="capability">Multi-Agent</span>
-					<span class="capability">多用户 Memory</span>
-					<span class="capability">Simple RAG</span>
-					<span class="capability">Graph</span>
-					<span class="capability">MCP Client</span>
-					<span class="capability">MCP 写入</span>
+					<span class="capability">客服意图识别</span>
+					<span class="capability">ReactAgent</span>
+					<span class="capability">StateGraph</span>
+					<span class="capability">SequentialAgent</span>
+					<span class="capability">客服 Memory</span>
+					<span class="capability">客服 RAG</span>
+					<span class="capability">客服 RAG 召回率</span>
+					<span class="capability">MCP 门面</span>
 					<span class="capability">执行报告</span>
 					<span class="capability">规则评估</span>
 					<span class="capability">AI 评审</span>
-					<span class="capability">流式调试</span>
 				</div>
 			</div>
 			<div class="status" aria-label="当前模型">
@@ -748,6 +918,80 @@
 		</div>
 	</section>
 
+	<section class="rag-lab" aria-label="客服 RAG 召回率测试台">
+		<div class="rag-lab-header">
+			<div>
+				<div class="rag-lab-title">客服 RAG 召回率测试台</div>
+				<div class="rag-lab-subtitle">直接验证客服知识库是否命中预期主题；默认本地关键词检索，开启 VectorStore 后可对比真实向量库效果</div>
+			</div>
+			<button id="loadRagTopicsButton" class="secondary dashboard-refresh" type="button">加载主题</button>
+		</div>
+		<div class="rag-lab-grid">
+			<label class="field">
+				<span class="field-label">检索问题</span>
+				<input id="ragQueryInput" type="text" value="订单迟迟不到我想退款并投诉客服" aria-label="RAG 检索问题">
+			</label>
+			<label class="field">
+				<span class="field-label">期望主题</span>
+				<input id="ragTopicsInput" type="text" value="refund,shipping,complaint" aria-label="RAG 期望主题">
+			</label>
+			<label class="field">
+				<span class="field-label">返回数量</span>
+				<input id="ragLimitInput" type="number" value="6" min="1" max="8" aria-label="RAG 返回数量">
+			</label>
+		</div>
+		<div class="rag-lab-actions">
+			<button id="evaluateRagButton" class="primary" type="button">评估召回</button>
+			<button id="fillRefundShippingCaseButton" class="secondary" type="button">退款+物流+投诉</button>
+			<button id="fillXianyuPriceCaseButton" class="secondary" type="button">闲鱼议价</button>
+			<button id="fillWechatQualityCaseButton" class="secondary" type="button">微信售后</button>
+		</div>
+		<div id="ragResult" class="rag-result">
+			<div class="evaluation-empty">点击“评估召回”后，这里会显示 RAG 模式、真实向量库状态、命中主题、召回率和命中文档。</div>
+		</div>
+	</section>
+
+	<section class="knowledge-lab" aria-label="客服 RAG 知识库管理台">
+		<div class="rag-lab-header">
+			<div>
+				<div class="rag-lab-title">客服 RAG 知识库管理台</div>
+				<div class="rag-lab-subtitle">新增自定义客服知识会写入 customer-knowledge.json，随后可直接参与本地 RAG 召回；内置知识只能查看不能删除</div>
+			</div>
+			<button id="loadKnowledgeButton" class="secondary dashboard-refresh" type="button">加载知识</button>
+		</div>
+		<div class="knowledge-form">
+			<label class="field">
+				<span class="field-label">文档 ID</span>
+				<input id="knowledgeIdInput" type="text" value="custom-vip-refund" aria-label="知识文档 ID">
+			</label>
+			<label class="field">
+				<span class="field-label">标题</span>
+				<input id="knowledgeTitleInput" type="text" value="VIP 客户退款安抚规则" aria-label="知识标题">
+			</label>
+			<label class="field">
+				<span class="field-label">主题</span>
+				<input id="knowledgeTopicInput" type="text" value="refund" aria-label="知识主题">
+			</label>
+			<label class="field wide-field">
+				<span class="field-label">内容</span>
+				<textarea id="knowledgeContentInput" aria-label="知识内容">VIP 客户申请退款时，先查询订单和退款资格；符合规则时说明处理时效，不符合规则时给出替代方案并创建跟进工单。</textarea>
+			</label>
+			<label class="field wide-field">
+				<span class="field-label">关键词</span>
+				<input id="knowledgeKeywordsInput" type="text" value="VIP,退款,安抚,工单,售后" aria-label="知识关键词">
+			</label>
+		</div>
+		<div class="knowledge-actions">
+			<button id="saveKnowledgeButton" class="primary" type="button">保存知识</button>
+			<button id="fillVipRefundKnowledgeButton" class="secondary" type="button">VIP 退款模板</button>
+			<button id="fillAddressKnowledgeButton" class="secondary" type="button">改地址模板</button>
+			<button id="fillQualityKnowledgeButton" class="secondary" type="button">质量争议模板</button>
+		</div>
+		<div id="knowledgeList" class="knowledge-doc-list">
+			<div class="evaluation-empty">点击“加载知识”后，这里会显示内置知识和自定义知识。自定义知识可以删除。</div>
+		</div>
+	</section>
+
 	<form id="composer" class="composer">
 		<div class="composer-inner">
 			<label class="field user-field">
@@ -755,7 +999,7 @@
 				<input id="userIdInput" type="text" value="default-user" aria-label="用户 ID" placeholder="例如 user-a">
 				<span class="field-hint">用于隔离长期 Memory</span>
 			</label>
-			<label class="field user-field">
+			<label class="field channel-field">
 				<span class="field-label">客服渠道</span>
 				<select id="channelInput" aria-label="客服渠道">
 					<option value="WEB">网页客服</option>
@@ -768,7 +1012,7 @@
 			</label>
 			<label class="field message-field">
 				<span class="field-label">消息</span>
-				<textarea id="messageInput" placeholder="输入问题，按 Ctrl + Enter 发送">现在北京时间几点？然后给我一个今天 30 分钟的 Agent 学习计划。</textarea>
+				<textarea id="messageInput" placeholder="输入问题，按 Ctrl + Enter 发送">这个 p-1001 商品还在吗？能简单介绍一下吗？</textarea>
 			</label>
 			<div class="composer-tools">
 				<div class="mode-radio agent-mode-radio" role="radiogroup" aria-label="Agent 链路模式">
@@ -781,12 +1025,8 @@
 						<span>客服 Graph</span>
 					</label>
 					<label>
-						<input type="radio" name="agentModeSelect" value="official-agent">
-						<span>官方 Agent</span>
-					</label>
-					<label>
-						<input type="radio" name="agentModeSelect" value="official-graph">
-						<span>官方 Graph</span>
+						<input type="radio" name="agentModeSelect" value="customer-service-multi-agent">
+						<span>客服多智能体</span>
 					</label>
 				</div>
 				<div class="mode-radio" role="radiogroup" aria-label="响应模式">
@@ -831,6 +1071,26 @@
 	const viewEvaluationButton = document.getElementById("viewEvaluationButton");
 	const judgeButton = document.getElementById("judgeButton");
 	const refreshEvaluationButton = document.getElementById("refreshEvaluationButton");
+	const loadRagTopicsButton = document.getElementById("loadRagTopicsButton");
+	const evaluateRagButton = document.getElementById("evaluateRagButton");
+	const fillRefundShippingCaseButton = document.getElementById("fillRefundShippingCaseButton");
+	const fillXianyuPriceCaseButton = document.getElementById("fillXianyuPriceCaseButton");
+	const fillWechatQualityCaseButton = document.getElementById("fillWechatQualityCaseButton");
+	const loadKnowledgeButton = document.getElementById("loadKnowledgeButton");
+	const saveKnowledgeButton = document.getElementById("saveKnowledgeButton");
+	const fillVipRefundKnowledgeButton = document.getElementById("fillVipRefundKnowledgeButton");
+	const fillAddressKnowledgeButton = document.getElementById("fillAddressKnowledgeButton");
+	const fillQualityKnowledgeButton = document.getElementById("fillQualityKnowledgeButton");
+	const ragQueryInput = document.getElementById("ragQueryInput");
+	const ragTopicsInput = document.getElementById("ragTopicsInput");
+	const ragLimitInput = document.getElementById("ragLimitInput");
+	const ragResult = document.getElementById("ragResult");
+	const knowledgeIdInput = document.getElementById("knowledgeIdInput");
+	const knowledgeTitleInput = document.getElementById("knowledgeTitleInput");
+	const knowledgeTopicInput = document.getElementById("knowledgeTopicInput");
+	const knowledgeContentInput = document.getElementById("knowledgeContentInput");
+	const knowledgeKeywordsInput = document.getElementById("knowledgeKeywordsInput");
+	const knowledgeList = document.getElementById("knowledgeList");
 	const averageScoreStat = document.getElementById("averageScoreStat");
 	const passCountStat = document.getElementById("passCountStat");
 	const warnFailCountStat = document.getElementById("warnFailCountStat");
@@ -1017,46 +1277,38 @@
 
 	function memoryText(memory) {
 		if (!memory) return "暂无记忆。";
+		if (memory.channel) {
+			const products = Array.isArray(memory.recentProductIds) && memory.recentProductIds.length
+				? memory.recentProductIds.join("、") : "暂无";
+			const orders = Array.isArray(memory.recentOrderIds) && memory.recentOrderIds.length
+				? memory.recentOrderIds.join("、") : "暂无";
+			const risks = Array.isArray(memory.riskFlags) && memory.riskFlags.length
+				? memory.riskFlags.join("、") : "暂无";
+			return `用户：${memory.userId || currentUserId()}\n渠道：${memory.channel || "WEB"}\n最近商品：${products}\n最近订单：${orders}\n语气：${memory.preferredTone || "简洁友好"}\n风险：${risks}\n轮次：${memory.conversationCount ?? 0}\n上次意图：${memory.lastIntent || "GENERAL_CHAT"}\n上次问题：${memory.lastQuestion || "暂无"}`;
+		}
 		const topics = Array.isArray(memory.topics) && memory.topics.length ? memory.topics.join("、") : "暂无";
 		return `用户：${memory.userId || currentUserId()}\n阶段：${memory.level || "初学者"}\n关注：${topics}\n轮次：${memory.conversationCount ?? 0}\n上次意图：${memory.lastIntent || "GENERAL_CHAT"}\n上次问题：${memory.lastQuestion || "暂无"}`;
 	}
 
 	function formatMcpDebug(mcpDebugInfo, toolCalls) {
-		const mcpCall = (toolCalls || []).find(call => ["searchMcpLearningResources",
-			"createMcpLearningResource", "updateMcpLearningResource"].includes(call.name));
+		const mcpCall = (toolCalls || []).find(call => ["getProductInfo", "getOrderInfo", "getLogisticsInfo",
+			"getPricePolicy", "getRefundEligibility", "getAfterSaleStatus", "createCustomerTicket",
+			"requestHumanHandoff"].includes(call.name));
 		const args = mcpCall?.arguments || {};
 		const info = mcpDebugInfo || {};
 		const mode = info.mode || args.source || "NOT_USED";
 		if (mode === "NOT_USED" && !mcpCall) return "";
 		const tools = Array.isArray(info.availableToolNames) && info.availableToolNames.length
 			? info.availableToolNames.join("、") : "暂无";
-		const pendingWrite = info.pendingWrite;
-		const pendingHtml = pendingWrite ? `
-			<div class="memory-card">
-				<div class="memory-card-title">待确认 MCP 写入</div>
-				<div>用户：${escapeHtml(pendingWrite.userId || currentUserId())}</div>
-				<div>操作：${escapeHtml(pendingWrite.operation || "")}</div>
-				<div>资源 ID：${escapeHtml(pendingWrite.resourceId || "")}</div>
-				<div>主题：${escapeHtml(pendingWrite.topic || "")}</div>
-				<div>标题：${escapeHtml(pendingWrite.title || "")}</div>
-				<div class="pending-write-actions">
-					<button class="primary" type="button" data-action="confirm-mcp-write" data-user-id="${escapeHtml(pendingWrite.userId || currentUserId())}">确认写入</button>
-					<button class="secondary" type="button" data-action="cancel-mcp-write" data-user-id="${escapeHtml(pendingWrite.userId || currentUserId())}">取消草稿</button>
-				</div>
-			</div>
-		` : "";
 		return `
 			<div class="memory-card">
 				<div class="memory-card-title">MCP 调试信息</div>
 				<div>模式：${escapeHtml(mode)}</div>
 				<div>真实 MCP 可用：${escapeHtml(info.realMcpAvailable ?? args.realMcpAvailable ?? false)}</div>
 				<div>选中 Tool：${escapeHtml(info.selectedToolName || args.selectedToolName || "暂无")}</div>
-				<div>写入开关：${escapeHtml(info.writeEnabled ?? args.writeEnabled ?? false)}</div>
-				<div>写入模式：${escapeHtml(info.writeMode || args.writeMode || "disabled")}</div>
 				<div>可用 Tools：${escapeHtml(tools)}</div>
 				<div>Fallback 原因：${escapeHtml(info.fallbackReason || "无")}</div>
 			</div>
-			${pendingHtml}
 		`;
 	}
 
@@ -1172,8 +1424,7 @@
 		return {
 			"customer-service": "智能客服官方 ReactAgent",
 			"customer-service-graph": "智能客服官方 StateGraph",
-			"official-agent": "官方 ReactAgent",
-			"official-graph": "官方 StateGraph"
+			"customer-service-multi-agent": "智能客服官方 SequentialAgent"
 		}[currentAgentMode()] || "智能客服官方 ReactAgent";
 	}
 
@@ -1181,8 +1432,7 @@
 		return {
 			"customer-service": "/minimax/chat-client/customer-service/chat",
 			"customer-service-graph": "/minimax/chat-client/customer-service/graph/chat",
-			"official-agent": "/minimax/chat-client/official-agent/chat",
-			"official-graph": "/minimax/chat-client/official-graph/chat"
+			"customer-service-multi-agent": "/minimax/chat-client/customer-service/multi-agent/chat"
 		}[currentAgentMode()] || "/minimax/chat-client/customer-service/chat";
 	}
 
@@ -1214,13 +1464,15 @@
 	}
 
 	async function fetchMemory() {
-		const response = await fetch(`/minimax/chat-client/memory?userId=${encodeURIComponent(currentUserId())}`);
+		const endpoint = "/minimax/chat-client/customer-service/memory";
+		const response = await fetch(`${endpoint}?userId=${encodeURIComponent(currentUserId())}`);
 		if (!response.ok) throw new Error(`HTTP ${response.status}`);
 		return response.json();
 	}
 
 	async function deleteMemory() {
-		const response = await fetch(`/minimax/chat-client/memory?userId=${encodeURIComponent(currentUserId())}`, {
+		const endpoint = "/minimax/chat-client/customer-service/memory";
+		const response = await fetch(`${endpoint}?userId=${encodeURIComponent(currentUserId())}`, {
 			method: "DELETE"
 		});
 		if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -1235,6 +1487,61 @@
 
 	async function fetchAgentEvaluations() {
 		const response = await fetch("/minimax/chat-client/evaluation/runs?limit=5");
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		return response.json();
+	}
+
+	async function fetchCustomerRagTopics() {
+		const response = await fetch("/minimax/chat-client/customer-service/rag/topics");
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		return response.json();
+	}
+
+	async function evaluateCustomerRag() {
+		const query = ragQueryInput.value.trim() || "超过 7 天还能退吗？";
+		const expectedTopics = ragTopicsInput.value.trim() || "refund";
+		const limit = Number(ragLimitInput.value || 5);
+		const params = new URLSearchParams({
+			query,
+			expectedTopics,
+			limit: String(Math.min(Math.max(limit, 1), 8))
+		});
+		const response = await fetch(`/minimax/chat-client/customer-service/rag/evaluate?${params.toString()}`);
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		return response.json();
+	}
+
+	async function fetchCustomerKnowledgeDocuments() {
+		const response = await fetch("/minimax/chat-client/customer-service/rag/documents");
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		return response.json();
+	}
+
+	async function saveCustomerKnowledgeDocument() {
+		const keywords = knowledgeKeywordsInput.value
+			.split(/[,，\s]+/)
+			.map(item => item.trim())
+			.filter(Boolean);
+		const payload = {
+			id: knowledgeIdInput.value.trim(),
+			title: knowledgeTitleInput.value.trim(),
+			topic: knowledgeTopicInput.value.trim(),
+			content: knowledgeContentInput.value.trim(),
+			keywords
+		};
+		const response = await fetch("/minimax/chat-client/customer-service/rag/documents", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(payload)
+		});
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		return response.json();
+	}
+
+	async function deleteCustomerKnowledgeDocument(id) {
+		const response = await fetch(`/minimax/chat-client/customer-service/rag/documents?id=${encodeURIComponent(id)}`, {
+			method: "DELETE"
+		});
 		if (!response.ok) throw new Error(`HTTP ${response.status}`);
 		return response.json();
 	}
@@ -1258,12 +1565,11 @@
 			return "当前还没有 Agent 执行报告。先发送一轮对话，再回来查看。";
 		}
 		return reports.map((report, index) => {
-			const pending = report.pendingMcpWrite ? "是" : "否";
 			return `### ${index + 1}. ${report.chainMode || "UNKNOWN"}\n`
 				+ `- 时间：${report.createdAt || ""}\n`
 				+ `- 用户：${report.userId || currentUserId()}\n`
 				+ `- 意图：${report.intent || "UNKNOWN"}\n`
-				+ `- MCP：${report.mcpMode || "NOT_USED"}，待确认写入：${pending}\n`
+				+ `- MCP：${report.mcpMode || "NOT_USED"}\n`
 				+ `- Tool 调用：${report.toolCallCount ?? 0} 次，Agent 步骤：${report.agentStepCount ?? 0} 步，Graph 节点：${report.graphStepCount ?? 0} 个\n`
 				+ `- 问题：${report.message || ""}\n`
 				+ `- 摘要：${report.answerSummary || ""}`;
@@ -1316,6 +1622,111 @@
 				+ `- 风险：${judge.riskNotes || "暂无"}\n`
 				+ `- 建议：${judge.improvementAdvice || "暂无"}`;
 		}).join("\n\n");
+	}
+
+	function renderTopicPills(topics) {
+		const items = Array.isArray(topics) ? topics : Array.from(topics || []);
+		if (!items.length) return `<span class="rag-topic">暂无</span>`;
+		return items.map(topic => `<span class="rag-topic">${escapeHtml(topic)}</span>`).join("");
+	}
+
+	function renderRagTopics(topics) {
+		ragResult.innerHTML = `
+			<div class="rag-document">
+				<div class="rag-document-title">当前客服知识主题</div>
+				<div class="rag-topic-list">${renderTopicPills(topics)}</div>
+			</div>
+		`;
+	}
+
+	function renderRagEvaluation(result) {
+		const recall = Math.round(Number(result.recallRate || 0) * 100);
+		const documents = Array.isArray(result.documents) ? result.documents : [];
+		const documentHtml = documents.length ? documents.map(document => `
+			<div class="rag-document">
+				<div class="rag-document-title">${escapeHtml(document.title || document.id || "知识文档")}</div>
+				<div class="rag-document-topic">${escapeHtml(document.topic || "unknown")}</div>
+				<div>${escapeHtml(document.content || "")}</div>
+			</div>
+		`).join("") : `<div class="evaluation-empty">未命中知识文档，请补充关键词或客服知识。</div>`;
+		ragResult.innerHTML = `
+			<div class="rag-result-summary">
+				<div class="rag-metric">
+					<div class="rag-metric-label">RAG 模式</div>
+					<div class="rag-metric-value">${escapeHtml(result.mode || "UNKNOWN")}</div>
+				</div>
+				<div class="rag-metric">
+					<div class="rag-metric-label">真实向量库</div>
+					<div class="rag-metric-value">${escapeHtml(result.realVectorStoreAvailable ? "可用" : "未启用")}</div>
+				</div>
+				<div class="rag-metric">
+					<div class="rag-metric-label">召回率</div>
+					<div class="rag-metric-value">${recall}%</div>
+				</div>
+				<div class="rag-metric">
+					<div class="rag-metric-label">命中文档</div>
+					<div class="rag-metric-value">${documents.length}</div>
+				</div>
+			</div>
+			<div class="memory-grid">
+				<div class="memory-card">
+					<div class="memory-card-title">期望主题</div>
+					<div class="rag-topic-list">${renderTopicPills(result.expectedTopics)}</div>
+				</div>
+				<div class="memory-card">
+					<div class="memory-card-title">命中主题</div>
+					<div class="rag-topic-list">${renderTopicPills(result.hitTopics)}</div>
+				</div>
+			</div>
+			<div class="rag-documents">${documentHtml}</div>
+		`;
+	}
+
+	function setRagCase(query, topics, limit = 5) {
+		ragQueryInput.value = query;
+		ragTopicsInput.value = topics;
+		ragLimitInput.value = String(limit);
+	}
+
+	function setKnowledgeCase(id, title, topic, content, keywords) {
+		knowledgeIdInput.value = id;
+		knowledgeTitleInput.value = title;
+		knowledgeTopicInput.value = topic;
+		knowledgeContentInput.value = content;
+		knowledgeKeywordsInput.value = keywords;
+	}
+
+	function renderKnowledgeDocuments(documents) {
+		const items = Array.isArray(documents) ? documents : [];
+		if (!items.length) {
+			knowledgeList.innerHTML = `<div class="evaluation-empty">暂无客服知识。</div>`;
+			return;
+		}
+		knowledgeList.innerHTML = items.map(document => {
+			const custom = String(document.id || "").startsWith("custom-");
+			const keywords = Array.isArray(document.keywords) ? document.keywords.join("、") : "";
+			return `
+				<div class="rag-document">
+					<div class="rag-document-title">${escapeHtml(document.title || document.id || "客服知识")}</div>
+					<div class="rag-document-topic">${escapeHtml(document.topic || "custom")}</div>
+					<div>${escapeHtml(document.content || "")}</div>
+					<div class="field-hint">ID：${escapeHtml(document.id || "")}</div>
+					<div class="field-hint">关键词：${escapeHtml(keywords || "暂无")}</div>
+					<div class="knowledge-doc-actions">
+						<button class="secondary" type="button" data-action="use-knowledge" data-id="${escapeHtml(document.id || "")}">填入表单</button>
+						${custom ? `<button class="secondary" type="button" data-action="delete-knowledge" data-id="${escapeHtml(document.id || "")}">删除</button>` : ""}
+					</div>
+				</div>
+			`;
+		}).join("");
+	}
+
+	function fillKnowledgeForm(document) {
+		knowledgeIdInput.value = document.id || "";
+		knowledgeTitleInput.value = document.title || "";
+		knowledgeTopicInput.value = document.topic || "";
+		knowledgeContentInput.value = document.content || "";
+		knowledgeKeywordsInput.value = Array.isArray(document.keywords) ? document.keywords.join(",") : "";
 	}
 
 	function levelClass(level) {
@@ -1394,56 +1805,6 @@
 		}
 	}
 
-	async function confirmMcpWrite(userId) {
-		const response = await fetch("/minimax/chat-client/mcp/write/confirm", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ userId: userId || currentUserId() })
-		});
-		if (!response.ok) throw new Error(`HTTP ${response.status}`);
-		return response.json();
-	}
-
-	async function cancelMcpWrite(userId) {
-		const response = await fetch(`/minimax/chat-client/mcp/write/pending?userId=${encodeURIComponent(userId || currentUserId())}`, {
-			method: "DELETE"
-		});
-		if (!response.ok) throw new Error(`HTTP ${response.status}`);
-		return response.json();
-	}
-
-	async function fetchPendingMcpWrite(userId) {
-		const response = await fetch(`/minimax/chat-client/mcp/write/pending?userId=${encodeURIComponent(userId || currentUserId())}`);
-		if (!response.ok) return null;
-		const text = await response.text();
-		return text ? JSON.parse(text) : null;
-	}
-
-	async function mergePendingMcpWrite(mcpDebugInfo) {
-		const info = { ...(mcpDebugInfo || {}) };
-		if (!info.pendingWrite) {
-			try {
-				info.pendingWrite = await fetchPendingMcpWrite(currentUserId());
-			}
-			catch (ignored) {
-				info.pendingWrite = null;
-			}
-		}
-		if (info.pendingWrite && (!info.mode || info.mode === "NOT_USED")) {
-			info.mode = "MCP_WRITE_PENDING";
-			info.writeEnabled = info.writeEnabled ?? true;
-			info.writeMode = info.writeMode || "dry-run";
-		}
-		return info;
-	}
-
-	async function renderDebugWithPending(messageNode, intent, toolCalls, graphSteps, agentSteps, memoryBefore,
-			memoryAfter, chainMode, graphDefinition, mcpDebugInfo) {
-		const mergedMcpDebugInfo = await mergePendingMcpWrite(mcpDebugInfo);
-		renderDebug(messageNode, intent, toolCalls, graphSteps, agentSteps, memoryBefore, memoryAfter, chainMode,
-			graphDefinition, mergedMcpDebugInfo);
-	}
-
 	composer.addEventListener("submit", async (event) => {
 		event.preventDefault();
 		const message = input.value.trim();
@@ -1456,7 +1817,7 @@
 			const data = await sendConversation(message);
 			const answer = cleanAssistantText(data.content || "");
 			setAssistantContent(assistant, answer);
-			await renderDebugWithPending(assistantNode, data.intent, data.toolCalls || [],
+			renderDebug(assistantNode, data.intent, data.toolCalls || [],
 				data.workflowSteps || data.graphSteps || [],
 				data.multiAgentSteps || data.agentSteps || [], data.memoryBefore, data.memoryAfter, currentAgentModeLabel(),
 				data.graphDefinition, data.mcpDebugInfo);
@@ -1472,25 +1833,6 @@
 		finally {
 			setBusy(false);
 			input.focus();
-		}
-	});
-
-	messages.addEventListener("click", async (event) => {
-		const button = event.target.closest("button[data-action='confirm-mcp-write'], button[data-action='cancel-mcp-write']");
-		if (!button) return;
-		button.disabled = true;
-		const userId = button.dataset.userId || currentUserId();
-		try {
-			const result = button.dataset.action === "confirm-mcp-write"
-				? await confirmMcpWrite(userId)
-				: await cancelMcpWrite(userId);
-			appendMessage("assistant", result.content || "MCP 写入操作已完成。");
-		}
-		catch (error) {
-			appendMessage("error", `MCP 写入确认失败：${error.message}`);
-		}
-		finally {
-			button.disabled = false;
 		}
 	});
 
@@ -1515,7 +1857,7 @@
 	viewMemoryButton.addEventListener("click", async () => {
 		try {
 			const memory = await fetchMemory();
-			appendMessage("assistant", `当前长期 Memory：\n${memoryText(memory)}`);
+			appendMessage("assistant", `当前智能客服长期 Memory：\n${memoryText(memory)}`);
 		}
 		catch (error) {
 			appendMessage("error", `查看记忆失败：${error.message}`);
@@ -1567,11 +1909,130 @@
 		await refreshEvaluationDashboard(true);
 	});
 
+	loadRagTopicsButton.addEventListener("click", async () => {
+		loadRagTopicsButton.disabled = true;
+		loadRagTopicsButton.textContent = "加载中";
+		try {
+			const topics = await fetchCustomerRagTopics();
+			renderRagTopics(topics);
+		}
+		catch (error) {
+			ragResult.innerHTML = `<div class="evaluation-empty">加载客服 RAG 主题失败：${escapeHtml(error.message)}</div>`;
+		}
+		finally {
+			loadRagTopicsButton.disabled = false;
+			loadRagTopicsButton.textContent = "加载主题";
+		}
+	});
+
+	evaluateRagButton.addEventListener("click", async () => {
+		evaluateRagButton.disabled = true;
+		evaluateRagButton.textContent = "评估中";
+		try {
+			const result = await evaluateCustomerRag();
+			renderRagEvaluation(result);
+		}
+		catch (error) {
+			ragResult.innerHTML = `<div class="evaluation-empty">RAG 召回率评估失败：${escapeHtml(error.message)}</div>`;
+		}
+		finally {
+			evaluateRagButton.disabled = false;
+			evaluateRagButton.textContent = "评估召回";
+		}
+	});
+
+	fillRefundShippingCaseButton.addEventListener("click", () => {
+		setRagCase("订单迟迟不到我想退款并投诉客服", "refund,shipping,complaint", 6);
+	});
+
+	fillXianyuPriceCaseButton.addEventListener("click", () => {
+		setRagCase("闲鱼买家让我便宜50还说马上拍我应该怎么回", "xianyu,price", 5);
+	});
+
+	fillWechatQualityCaseButton.addEventListener("click", () => {
+		setRagCase("微信公众号客户说收到商品有瑕疵要求售后怎么处理", "wechat,quality", 5);
+	});
+
+	loadKnowledgeButton.addEventListener("click", async () => {
+		loadKnowledgeButton.disabled = true;
+		loadKnowledgeButton.textContent = "加载中";
+		try {
+			const documents = await fetchCustomerKnowledgeDocuments();
+			renderKnowledgeDocuments(documents);
+		}
+		catch (error) {
+			knowledgeList.innerHTML = `<div class="evaluation-empty">加载客服知识失败：${escapeHtml(error.message)}</div>`;
+		}
+		finally {
+			loadKnowledgeButton.disabled = false;
+			loadKnowledgeButton.textContent = "加载知识";
+		}
+	});
+
+	saveKnowledgeButton.addEventListener("click", async () => {
+		saveKnowledgeButton.disabled = true;
+		saveKnowledgeButton.textContent = "保存中";
+		try {
+			const document = await saveCustomerKnowledgeDocument();
+			appendMessage("assistant", `已保存客服知识：${document.id} / ${document.title}`);
+			const documents = await fetchCustomerKnowledgeDocuments();
+			renderKnowledgeDocuments(documents);
+			setRagCase(document.content || document.title || "", document.topic || "custom", 6);
+		}
+		catch (error) {
+			appendMessage("error", `保存客服知识失败：${error.message}`);
+		}
+		finally {
+			saveKnowledgeButton.disabled = false;
+			saveKnowledgeButton.textContent = "保存知识";
+		}
+	});
+
+	fillVipRefundKnowledgeButton.addEventListener("click", () => {
+		setKnowledgeCase("custom-vip-refund", "VIP 客户退款安抚规则", "refund",
+			"VIP 客户申请退款时，先查询订单和退款资格；符合规则时说明处理时效，不符合规则时给出替代方案并创建跟进工单。",
+			"VIP,退款,安抚,工单,售后");
+	});
+
+	fillAddressKnowledgeButton.addEventListener("click", () => {
+		setKnowledgeCase("custom-address-change", "地址修改跟进规则", "address",
+			"用户要求修改收货地址时，必须先查询订单状态；未发货可记录新地址并创建工单，已发货要说明只能尝试联系快递改派。",
+			"改地址,收货地址,快递,改派,工单");
+	});
+
+	fillQualityKnowledgeButton.addEventListener("click", () => {
+		setKnowledgeCase("custom-quality-dispute", "质量争议举证规则", "quality",
+			"用户反馈商品有瑕疵时，先安抚并要求提供开箱照片或视频；再结合商品说明、签收时间和订单状态判断售后路径。",
+			"质量,瑕疵,开箱,照片,视频,售后");
+	});
+
+	knowledgeList.addEventListener("click", async (event) => {
+		const button = event.target.closest("button[data-action='use-knowledge'], button[data-action='delete-knowledge']");
+		if (!button) return;
+		const id = button.dataset.id || "";
+		try {
+			const documents = await fetchCustomerKnowledgeDocuments();
+			const document = documents.find(item => item.id === id);
+			if (button.dataset.action === "use-knowledge" && document) {
+				fillKnowledgeForm(document);
+				return;
+			}
+			if (button.dataset.action === "delete-knowledge") {
+				const result = await deleteCustomerKnowledgeDocument(id);
+				appendMessage("assistant", result.deleted ? `已删除自定义客服知识：${id}` : `未删除：${id}。内置知识不可删除或文档不存在。`);
+				renderKnowledgeDocuments(await fetchCustomerKnowledgeDocuments());
+			}
+		}
+		catch (error) {
+			appendMessage("error", `客服知识操作失败：${error.message}`);
+		}
+	});
+
 	clearMemoryButton.addEventListener("click", async () => {
 		try {
 			const memory = await deleteMemory();
 			currentHistory().length = 0;
-			appendMessage("assistant", `已清空 ${currentUserId()} 的长期 Memory，并同步清空该用户短期上下文。\n${memoryText(memory)}`);
+			appendMessage("assistant", `已清空 ${currentUserId()} 的智能客服长期 Memory，并同步清空该用户短期上下文。\n${memoryText(memory)}`);
 		}
 		catch (error) {
 			appendMessage("error", `清空记忆失败：${error.message}`);
@@ -1584,6 +2045,8 @@
 	});
 
 	refreshEvaluationDashboard();
+	fetchCustomerRagTopics().then(renderRagTopics).catch(() => {});
+	fetchCustomerKnowledgeDocuments().then(renderKnowledgeDocuments).catch(() => {});
 	appendMessage("assistant", "你好，输入一个问题开始测试。同步模式会显示 Planner 识别意图和本轮 Tool 调用；流式模式请查看后端日志。");
 </script>
 </body>

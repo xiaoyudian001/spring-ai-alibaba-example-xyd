@@ -942,4 +942,101 @@
     "result" : "议价技能：先看商品底价；可接受范围内给出温和让步；低于底价时礼貌拒绝并说明原因。"
   } ],
   "mcpDebugInfo" : null
+}, {
+  "id" : "run-dbf588d7-ee6e-4ae0-bb8d-739f4849601b",
+  "createdAt" : "2026-05-19T05:09:47.569191700Z",
+  "userId" : "default-user",
+  "chainMode" : "CUSTOMER_SERVICE_GRAPH",
+  "message" : "我的订单 o-202605150001 怎么还没到？帮我查一下物流。",
+  "historySize" : 0,
+  "intent" : "GENERAL_CHAT",
+  "answerSummary" : " 您的订单已经发出啦～ \uD83D\uDCE6 快递：顺丰速运 单号：SF123456789CN 最新动态：包裹已到达上海转运中心（5月15日 13:40） 目前状态：运输中 顺丰时效通常1-3天，预计很快就能收到啦～如果等了几天还没到可以再找我帮您跟进哦 \uD83D\uDE0A",
+  "answerContent" : "您的订单已经发出啦～ \uD83D\uDCE6\n\n快递：顺丰速运  \n单号：SF123456789CN  \n最新动态：包裹已到达上海转运中心（5月15日 13:40）  \n目前状态：运输中\n\n顺丰时效通常1-3天，预计很快就能收到啦～如果等了几天还没到可以再找我帮您跟进哦 \uD83D\uDE0A",
+  "mcpMode" : "CUSTOMER_MOCK_FALLBACK",
+  "pendingMcpWrite" : false,
+  "toolCallCount" : 2,
+  "agentStepCount" : 4,
+  "graphStepCount" : 7,
+  "memoryBefore" : {
+    "userId" : "default-user",
+    "channel" : "XIANYU",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "PRICE_NEGOTIATION",
+    "riskFlags" : [ ],
+    "conversationCount" : 1,
+    "lastQuestion" : "这个 p-1001 商品还在吗？能便宜 50 吗？"
+  },
+  "memoryAfter" : {
+    "userId" : "default-user",
+    "channel" : "WEB",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "LOGISTICS_QUERY",
+    "riskFlags" : [ ],
+    "conversationCount" : 2,
+    "lastQuestion" : "我的订单 o-202605150001 怎么还没到？帮我查一下物流。"
+  },
+  "agentSteps" : [ {
+    "name" : "ReceptionAgent",
+    "detail" : "识别客服意图：LOGISTICS_QUERY。"
+  }, {
+    "name" : "SkillAgent",
+    "detail" : "选择客服 Skill：xianyu-reply。"
+  }, {
+    "name" : "OfficialReactAgent",
+    "detail" : "由 Spring AI Alibaba ReactAgent 执行工具选择和回复生成。"
+  }, {
+    "name" : "RiskReviewerAgent",
+    "detail" : "Graph 风控节点负责约束高风险动作。"
+  } ],
+  "graphSteps" : [ {
+    "name" : "memory_read",
+    "detail" : "读取客服长期记忆：渠道：XIANYU；最近商品：p-1001；最近订单：暂无；语气：简洁友好；风险标记：暂无；轮次：1；上次意图：PRICE_NEGOTIATION"
+  }, {
+    "name" : "intent_plan",
+    "detail" : "识别客服意图为 LOGISTICS_QUERY。"
+  }, {
+    "name" : "skill_select",
+    "detail" : "根据渠道 WEB 和意图 LOGISTICS_QUERY 选择 Skill：xianyu-reply。"
+  }, {
+    "name" : "react_agent",
+    "detail" : "调用官方客服 ReactAgent，模型触发工具 2 次。"
+  }, {
+    "name" : "risk_review",
+    "detail" : "本轮未命中高风险动作，保持事实查询和礼貌回复。"
+  }, {
+    "name" : "memory_write",
+    "detail" : "根据本轮客服消息更新长期记忆：渠道：WEB；最近商品：p-1001；最近订单：o-202605150001；语气：简洁友好；风险标记：暂无；轮次：2；上次意图：LOGISTICS_QUERY"
+  }, {
+    "name" : "response",
+    "detail" : "汇总客服回复、Graph 节点、Agent 步骤、Tool 调用、MCP 和 Memory 信息。"
+  } ],
+  "toolCalls" : [ {
+    "name" : "getOrderInfo",
+    "arguments" : {
+      "orderId" : "o-202605150001"
+    },
+    "result" : "订单ID：o-202605150001；商品ID：p-1001；用户：default-user；状态：已发货；实付：199 元；支付时间：2026-05-14 21:30:00；发货时间：2026-05-15 10:20:00"
+  }, {
+    "name" : "getLogisticsInfo",
+    "arguments" : {
+      "orderId" : "o-202605150001"
+    },
+    "result" : "订单ID：o-202605150001；快递：顺丰速运；单号：SF123456789CN；状态：运输中；最新动态：2026-05-15 13:40:00 包裹已到达上海转运中心。"
+  } ],
+  "mcpDebugInfo" : {
+    "mode" : "CUSTOMER_MOCK_FALLBACK",
+    "realMcpAvailable" : false,
+    "selectedToolName" : "",
+    "availableToolNames" : [ "listLearningTopics", "updateLearningResource", "createLearningResource", "getLearningResource", "searchLearningResources" ],
+    "fallbackReason" : "未发现匹配的智能客服 MCP 工具",
+    "query" : "getLogisticsInfo",
+    "limit" : null,
+    "writeEnabled" : false,
+    "writeMode" : "disabled",
+    "pendingWrite" : null
+  }
 } ]

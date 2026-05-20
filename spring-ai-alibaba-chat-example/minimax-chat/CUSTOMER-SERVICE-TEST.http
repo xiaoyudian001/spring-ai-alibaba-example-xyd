@@ -12,6 +12,51 @@ Content-Type: application/json
 ### 智能客服 - MCP 状态
 GET http://localhost:8080/minimax/chat-client/customer-service/mcp/status
 
+### 智能客服 - 查看客服 Memory
+GET http://localhost:8080/minimax/chat-client/customer-service/memory?userId=xianyu-user
+
+### 智能客服 - 清空客服 Memory
+DELETE http://localhost:8080/minimax/chat-client/customer-service/memory?userId=xianyu-user
+
+### 智能客服 - RAG 主题覆盖
+GET http://localhost:8080/minimax/chat-client/customer-service/rag/topics
+
+### 智能客服 - RAG 知识文档列表
+GET http://localhost:8080/minimax/chat-client/customer-service/rag/documents
+
+### 智能客服 - 新增自定义 RAG 知识
+POST http://localhost:8080/minimax/chat-client/customer-service/rag/documents
+Content-Type: application/json
+
+{
+  "id": "custom-vip-refund",
+  "title": "VIP 客户退款安抚规则",
+  "topic": "refund",
+  "content": "VIP 客户申请退款时，先查询订单和退款资格；符合规则时说明处理时效，不符合规则时给出替代方案并创建跟进工单。",
+  "keywords": ["VIP", "退款", "安抚", "工单", "售后"]
+}
+
+### 智能客服 - 删除自定义 RAG 知识
+DELETE http://localhost:8080/minimax/chat-client/customer-service/rag/documents?id=custom-vip-refund
+
+### 智能客服 - RAG 召回率评估：退款
+GET http://localhost:8080/minimax/chat-client/customer-service/rag/evaluate?query=超过7天还能退吗&expectedTopics=refund&limit=5
+
+### 智能客服 - RAG 召回率评估：物流
+GET http://localhost:8080/minimax/chat-client/customer-service/rag/evaluate?query=订单怎么还没到物流停了怎么办&expectedTopics=shipping&limit=5
+
+### 智能客服 - RAG 召回率评估：复合场景
+# 目标：验证一个问题同时命中退款、物流、投诉等多个客服知识主题，并观察 recallRate。
+GET http://localhost:8080/minimax/chat-client/customer-service/rag/evaluate?query=订单迟迟不到我想退款并投诉客服&expectedTopics=refund,shipping,complaint&limit=6
+
+### 智能客服 - RAG 召回率评估：闲鱼议价
+# 目标：验证闲鱼场景下能召回议价和平台话术知识。
+GET http://localhost:8080/minimax/chat-client/customer-service/rag/evaluate?query=闲鱼买家让我便宜50还说马上拍我应该怎么回&expectedTopics=xianyu,price&limit=5
+
+### 智能客服 - RAG 召回率评估：微信售后
+# 目标：验证微信客服场景下能召回售后、质量争议和话术知识。
+GET http://localhost:8080/minimax/chat-client/customer-service/rag/evaluate?query=微信公众号客户说收到商品有瑕疵要求售后怎么处理&expectedTopics=wechat,quality&limit=5
+
 ### 智能客服 Graph - 闲鱼商品咨询
 POST http://localhost:8080/minimax/chat-client/customer-service/graph/chat
 Content-Type: application/json
@@ -23,6 +68,17 @@ Content-Type: application/json
   "history": []
 }
 
+### 智能客服 Multi-Agent - 物流查询
+POST http://localhost:8080/minimax/chat-client/customer-service/multi-agent/chat
+Content-Type: application/json
+
+{
+  "userId": "multi-agent-user",
+  "channel": "WECHAT_OFFICIAL_ACCOUNT",
+  "message": "我的订单 o-202605150001 怎么还没到？帮我查一下物流并给我一段客服回复。",
+  "history": []
+}
+
 ### 智能客服 - 闲鱼议价
 POST http://localhost:8080/minimax/chat-client/customer-service/chat
 Content-Type: application/json
@@ -31,6 +87,29 @@ Content-Type: application/json
   "userId": "xianyu-user",
   "channel": "XIANYU",
   "message": "p-1001 能便宜 50 吗？",
+  "history": []
+}
+
+### 智能客服 - 议价策略工具
+POST http://localhost:8080/minimax/chat-client/customer-service/chat
+Content-Type: application/json
+
+{
+  "userId": "price-user",
+  "channel": "XIANYU",
+  "message": "p-1001 能不能便宜 50？请先查底价策略再回复。",
+  "history": []
+}
+
+### 智能客服 Graph - 议价策略工具
+# 目标：验证 Graph 模式下 Fact/ReactAgent 能调用 getPricePolicy，并在 graphSteps 中保留链路。
+POST http://localhost:8080/minimax/chat-client/customer-service/graph/chat
+Content-Type: application/json
+
+{
+  "userId": "price-graph-user",
+  "channel": "XIANYU",
+  "message": "p-1001 买家要我便宜 50，请先查底价策略，再给一段闲鱼回复。",
   "history": []
 }
 
@@ -56,12 +135,58 @@ Content-Type: application/json
   "history": []
 }
 
+### 智能客服 - 退款资格工具
+# 目标：验证退款请求会优先查询订单与退款资格，而不是只凭 RAG 政策直接承诺退款。
+POST http://localhost:8080/minimax/chat-client/customer-service/chat
+Content-Type: application/json
+
+{
+  "userId": "refund-eligibility-user",
+  "channel": "WEB",
+  "message": "订单 o-202605150001 是否符合退款条件？请查退款资格后再回复。",
+  "history": []
+}
+
+### 智能客服 - 售后进度
+POST http://localhost:8080/minimax/chat-client/customer-service/chat
+Content-Type: application/json
+
+{
+  "userId": "after-sale-user",
+  "channel": "WECHAT_OFFICIAL_ACCOUNT",
+  "message": "订单 o-202605150001 的售后处理到哪了？",
+  "history": []
+}
+
+### 智能客服 Multi-Agent - 售后进度
+# 目标：验证 SequentialAgent 中 FactAgent 能获取售后事实，PolicyAgent 负责补充政策，ReplyAgent 生成用户回复。
+POST http://localhost:8080/minimax/chat-client/customer-service/multi-agent/chat
+Content-Type: application/json
+
+{
+  "userId": "multi-agent-after-sale-user",
+  "channel": "WECHAT_OFFICIAL_ACCOUNT",
+  "message": "订单 o-202605150001 的售后到哪一步了？请查状态并给我一段微信客服回复。",
+  "history": []
+}
+
 ### 智能客服 Graph - 退款请求风控
 POST http://localhost:8080/minimax/chat-client/customer-service/graph/chat
 Content-Type: application/json
 
 {
   "userId": "refund-graph-user",
+  "channel": "WEB",
+  "message": "订单 o-202605150001 我想退款，能直接帮我退吗？",
+  "history": []
+}
+
+### 智能客服 Multi-Agent - 退款请求风控
+POST http://localhost:8080/minimax/chat-client/customer-service/multi-agent/chat
+Content-Type: application/json
+
+{
+  "userId": "multi-agent-refund-user",
   "channel": "WEB",
   "message": "订单 o-202605150001 我想退款，能直接帮我退吗？",
   "history": []

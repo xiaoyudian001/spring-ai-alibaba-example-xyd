@@ -334,4 +334,130 @@
     "passed" : true,
     "detail" : "本轮不是项目知识类问题。"
   } ]
+}, {
+  "id" : "eval-30e6868e-9f5a-4dc7-97de-4e24ffcd918a",
+  "reportId" : "run-c1a91958-be06-487e-ba48-74a4a4bf0e79",
+  "createdAt" : "2026-05-21T15:31:24.484247800Z",
+  "userId" : "default-user",
+  "chainMode" : "CUSTOMER_SERVICE_DIRECT_LLM",
+  "intent" : "GENERAL_CHAT",
+  "score" : 2,
+  "maxScore" : 3,
+  "level" : "WARN",
+  "passed" : false,
+  "checks" : [ {
+    "name" : "意图识别",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Planner 返回了有效意图：GENERAL_CHAT"
+  }, {
+    "name" : "回答非空",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "回答摘要非空。"
+  }, {
+    "name" : "Memory 更新",
+    "applicable" : true,
+    "passed" : false,
+    "detail" : "Memory 未变化，可能是问题未触发客服状态更新。"
+  }, {
+    "name" : "客服事实工具",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮没有明显实时事实查询诉求。"
+  }, {
+    "name" : "客服知识检索",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮没有明显政策、话术或知识库诉求。"
+  }, {
+    "name" : "客服风险处理",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮不是高风险客服场景。"
+  } ]
+}, {
+  "id" : "eval-ff1c3194-440c-481c-a70d-0121e05fd4eb",
+  "reportId" : "run-e12e51e9-8952-4c3d-a97e-04d2e7f3eaa7",
+  "createdAt" : "2026-05-21T15:35:55.993490900Z",
+  "userId" : "default-user",
+  "chainMode" : "CUSTOMER_SERVICE_ASSISTANT_AGENT",
+  "intent" : "PRODUCT_INQUIRY",
+  "score" : 4,
+  "maxScore" : 4,
+  "level" : "PASS",
+  "passed" : true,
+  "checks" : [ {
+    "name" : "意图识别",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Planner 返回了有效意图：PRODUCT_INQUIRY"
+  }, {
+    "name" : "回答非空",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "回答摘要非空。"
+  }, {
+    "name" : "Memory 更新",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Memory 在本轮调用后发生变化。"
+  }, {
+    "name" : "客服事实工具",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "客服事实类问题调用了商品、订单、物流、价格或售后工具。"
+  }, {
+    "name" : "客服知识检索",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮没有明显政策、话术或知识库诉求。"
+  }, {
+    "name" : "客服风险处理",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮不是高风险客服场景。"
+  } ]
+}, {
+  "id" : "eval-db3b1aad-dc72-45d4-9a20-fb0238342a25",
+  "reportId" : "run-22bc10fb-ae53-4db3-8c34-ba496f0639ae",
+  "createdAt" : "2026-05-21T15:42:21.539330700Z",
+  "userId" : "default-user",
+  "chainMode" : "CUSTOMER_SERVICE_ASSISTANT_AGENT",
+  "intent" : "LOGISTICS_QUERY",
+  "score" : 4,
+  "maxScore" : 4,
+  "level" : "PASS",
+  "passed" : true,
+  "checks" : [ {
+    "name" : "意图识别",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Planner 返回了有效意图：LOGISTICS_QUERY"
+  }, {
+    "name" : "回答非空",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "回答摘要非空。"
+  }, {
+    "name" : "Memory 更新",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "Memory 在本轮调用后发生变化。"
+  }, {
+    "name" : "客服事实工具",
+    "applicable" : true,
+    "passed" : true,
+    "detail" : "客服事实类问题调用了商品、订单、物流、价格或售后工具。"
+  }, {
+    "name" : "客服知识检索",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮没有明显政策、话术或知识库诉求。"
+  }, {
+    "name" : "客服风险处理",
+    "applicable" : false,
+    "passed" : true,
+    "detail" : "本轮不是高风险客服场景。"
+  } ]
 } ]

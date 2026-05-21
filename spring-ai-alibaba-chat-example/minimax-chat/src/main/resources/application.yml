@@ -1,8 +1,20 @@
 server:
   port: 8080
 minimax:
+  dashboard:
+    auth:
+      # 本地学习默认关闭；上线前设置 MINIMAX_DASHBOARD_AUTH_ENABLED=true 并配置 MINIMAX_DASHBOARD_TOKEN。
+      enabled: ${MINIMAX_DASHBOARD_AUTH_ENABLED:false}
+      token: ${MINIMAX_DASHBOARD_TOKEN:}
   customer:
+    context:
+      # 默认关闭 Redis 短期上下文；开启 redis profile 后会把多轮对话上下文写入 Redis。
+      redis-enabled: false
+      redis-prefix: minimax:customer:conversation
+      max-messages: 20
+      redis-ttl-seconds: 43200
     memory:
+      # Memory 已迁移到 MySQL 数据库表 customer_memory；旧 file 配置仅保留给历史数据排查。
       file: spring-ai-alibaba-chat-example/minimax-chat/memory/customer-memory.json
     rag:
       # false：使用本地高召回关键词知识库；true：如果存在 Spring AI VectorStore Bean，则写入并使用真实向量库。
@@ -13,6 +25,11 @@ minimax:
 spring:
   application:
     name: minimax-chat-example
+  datasource:
+    url: jdbc:mysql://localhost:3306/minimax_customer_service?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
   ai:
     model:
       chat: openai

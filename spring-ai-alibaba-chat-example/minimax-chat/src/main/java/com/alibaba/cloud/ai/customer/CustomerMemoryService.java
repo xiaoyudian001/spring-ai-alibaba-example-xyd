@@ -16,72 +16,95 @@
 
 package com.alibaba.cloud.ai.customer;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Value;
+import jakarta.annotation.PostConstruct;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 /**
- * 客服长期记忆服务，按用户 ID 持久化渠道、最近商品、最近订单、意图和风险标记。
+ * 客服长期记忆服务，使用数据库表持久化用户画像、最近商品、最近订单、意图和风险标记。
  *
  * @author xyd
- * @date 2026-05-15 14:57:11
+ * @date 2026-05-20 00:00:00
  */
 @Service
 public class CustomerMemoryService {
 
+	private final JdbcTemplate jdbcTemplate;
+
 	private final ObjectMapper objectMapper;
 
-	private final Path memoryFile;
-
 	/**
-	 * 创建客服长期记忆服务，并指定 JSON 持久化文件位置。
+	 * 创建基于数据库的客服 Memory 服务。
+	 * @param jdbcTemplate 数据库访问模板
 	 * @param objectMapper JSON 序列化工具
-	 * @param memoryFile 客服记忆文件路径
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-20 00:00:00
 	 */
-	public CustomerMemoryService(ObjectMapper objectMapper,
-			@Value("${minimax.customer.memory.file:memory/customer-memory.json}") String memoryFile) {
+	public CustomerMemoryService(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
+		this.jdbcTemplate = jdbcTemplate;
 		this.objectMapper = objectMapper;
-		this.memoryFile = Path.of(memoryFile);
 	}
 
 	/**
-	 * 读取指定用户的客服长期记忆，不存在时返回默认记忆。
+	 * 初始化客服 Memory 表，确保应用启动后不再依赖 JSON 文件保存长期记忆。
+	 *
+	 * @author xyd
+	 * @date 2026-05-20 00:00:00
+	 */
+	@PostConstruct
+	public void initializeSchema() {
+		this.jdbcTemplate.execute("""
+				CREATE TABLE IF NOT EXISTS customer_memory (
+					user_id VARCHAR(128) PRIMARY KEY,
+					payload TEXT NOT NULL,
+					updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+				)
+				""");
+	}
+
+	/**
+	 * 读取指定用户的客服长期记忆；不存在时返回默认记忆，但不会立即写库。
 	 * @param userId 用户唯一标识
 	 * @return 客服长期记忆
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-20 00:00:00
 	 */
 	public synchronized CustomerMemory read(String userId) {
-		Map<String, CustomerMemory> memories = readAll();
-		return memories.computeIfAbsent(normalizeUserId(userId), this::newMemory);
+		String safeUserId = normalizeUserId(userId);
+		List<String> rows = this.jdbcTemplate.queryForList(
+				"SELECT payload FROM customer_memory WHERE user_id = ?", String.class, safeUserId);
+		if (rows.isEmpty()) {
+			return newMemory(safeUserId);
+		}
+		try {
+			CustomerMemory memory = this.objectMapper.readValue(rows.get(0), CustomerMemory.class);
+			memory.setUserId(safeUserId);
+			ensureCollections(memory);
+			return memory;
+		}
+		catch (JsonProcessingException ex) {
+			return newMemory(safeUserId);
+		}
 	}
 
 	/**
-	 * 根据本轮客服消息更新用户长期记忆，并写回 JSON 文件。
+	 * 根据本轮客服对话更新用户长期记忆，并写入数据库。
 	 * @param userId 用户唯一标识
 	 * @param channel 当前客服渠道
 	 * @param message 用户原始输入
 	 * @param intent 本轮客服意图
 	 * @return 更新后的客服长期记忆
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-20 00:00:00
 	 */
 	public synchronized CustomerMemory update(String userId, ChannelType channel, String message,
 			CustomerServiceIntent intent) {
-		Map<String, CustomerMemory> memories = readAll();
-		String safeUserId = normalizeUserId(userId);
-		CustomerMemory memory = memories.computeIfAbsent(safeUserId, this::newMemory);
+		CustomerMemory memory = read(userId);
 		memory.setChannel(channel == null ? ChannelType.WEB : channel);
 		memory.setLastIntent(intent == null ? CustomerServiceIntent.GENERAL_CHAT : intent);
 		memory.setLastQuestion(message == null ? "" : message);
@@ -93,62 +116,69 @@ public class CustomerMemoryService {
 		if (intent == CustomerServiceIntent.REFUND_REQUEST) {
 			addUnique(memory.getRiskFlags(), "refund_request");
 		}
-		memories.put(safeUserId, memory);
-		writeAll(memories);
+		save(memory);
 		return memory;
 	}
 
 	/**
-	 * 清空指定用户的客服长期记忆，并写回 JSON 文件。
+	 * 直接保存页面编辑后的客服 Memory，用于工作台可视化修正用户画像。
+	 * @param userId 用户唯一标识
+	 * @param memory 页面提交的客服长期记忆
+	 * @return 保存后的客服长期记忆
+	 * @author xyd
+	 * @date 2026-05-20 00:00:00
+	 */
+	public synchronized CustomerMemory save(String userId, CustomerMemory memory) {
+		CustomerMemory safeMemory = memory == null ? newMemory(userId) : memory;
+		safeMemory.setUserId(normalizeUserId(userId));
+		ensureCollections(safeMemory);
+		save(safeMemory);
+		return safeMemory;
+	}
+
+	/**
+	 * 清空指定用户的客服长期记忆，并把重置后的默认记忆写入数据库。
 	 * @param userId 用户唯一标识
 	 * @return 重置后的客服长期记忆
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-20 00:00:00
 	 */
 	public synchronized CustomerMemory clear(String userId) {
-		Map<String, CustomerMemory> memories = readAll();
 		CustomerMemory memory = newMemory(normalizeUserId(userId));
-		memories.put(memory.getUserId(), memory);
-		writeAll(memories);
+		save(memory);
 		return memory;
 	}
 
 	/**
-	 * 读取全部用户客服记忆，文件不存在或解析失败时返回空集合。
-	 * @return 全部用户客服记忆
+	 * 返回当前 Memory 后端类型，方便工作台确认是否仍依赖 JSON。
+	 * @return Memory 后端类型
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-20 00:00:00
 	 */
-	private Map<String, CustomerMemory> readAll() {
-		if (!Files.exists(this.memoryFile)) {
-			return new LinkedHashMap<>();
-		}
-		try {
-			return new LinkedHashMap<>(this.objectMapper.readValue(this.memoryFile.toFile(),
-					new TypeReference<Map<String, CustomerMemory>>() {
-					}));
-		}
-		catch (IOException ex) {
-			return new LinkedHashMap<>();
-		}
+	public String backend() {
+		return "MYSQL_DATABASE";
 	}
 
 	/**
-	 * 把全部用户客服记忆写回 JSON 文件。
-	 * @param memories 全部用户客服记忆
+	 * 把客服 Memory 序列化后写入数据库，使用 upsert 保持同一用户只有一条长期记忆。
+	 * @param memory 客服长期记忆
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-20 00:00:00
 	 */
-	private void writeAll(Map<String, CustomerMemory> memories) {
+	private void save(CustomerMemory memory) {
 		try {
-			Path parent = this.memoryFile.getParent();
-			if (parent != null) {
-				Files.createDirectories(parent);
+			String payload = this.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(memory);
+			int updated = this.jdbcTemplate.update(
+					"UPDATE customer_memory SET payload = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+					payload, memory.getUserId());
+			if (updated == 0) {
+				this.jdbcTemplate.update(
+						"INSERT INTO customer_memory (user_id, payload, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
+						memory.getUserId(), payload);
 			}
-			this.objectMapper.writerWithDefaultPrettyPrinter().writeValue(this.memoryFile.toFile(), memories);
 		}
-		catch (IOException ex) {
-			throw new IllegalStateException("Failed to write customer memory file: " + this.memoryFile, ex);
+		catch (JsonProcessingException ex) {
+			throw new IllegalStateException("Failed to serialize customer memory: " + memory.getUserId(), ex);
 		}
 	}
 
@@ -157,11 +187,12 @@ public class CustomerMemoryService {
 	 * @param userId 用户唯一标识
 	 * @return 默认客服记忆
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-20 00:00:00
 	 */
 	private CustomerMemory newMemory(String userId) {
 		CustomerMemory memory = new CustomerMemory();
 		memory.setUserId(normalizeUserId(userId));
+		ensureCollections(memory);
 		return memory;
 	}
 
@@ -170,11 +201,11 @@ public class CustomerMemoryService {
 	 * @param memory 客服长期记忆
 	 * @param message 用户原始输入
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-20 00:00:00
 	 */
 	private void rememberDetectedIds(CustomerMemory memory, String message) {
 		String text = message == null ? "" : message;
-		for (String token : text.split("[\\s，。,.；;：:]+")) {
+		for (String token : text.split("[\\s,，。；;！!？?]+")) {
 			if (token.startsWith("p-") || token.startsWith("P-")) {
 				addUnique(memory.getRecentProductIds(), token.toLowerCase());
 			}
@@ -187,11 +218,11 @@ public class CustomerMemoryService {
 	}
 
 	/**
-	 * 向列表中追加唯一值，避免重复记录同一商品、订单或风险标记。
+	 * 向列表头部追加唯一值，避免重复记录同一商品、订单或风险标记。
 	 * @param values 目标列表
 	 * @param value 待追加值
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-20 00:00:00
 	 */
 	private void addUnique(List<String> values, String value) {
 		if (value != null && !value.isBlank() && !values.contains(value)) {
@@ -205,7 +236,7 @@ public class CustomerMemoryService {
 	 * @param maxSize 最大长度
 	 * @return 截断后的列表
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-20 00:00:00
 	 */
 	private List<String> limit(List<String> values, int maxSize) {
 		if (values == null || values.size() <= maxSize) {
@@ -219,10 +250,34 @@ public class CustomerMemoryService {
 	 * @param userId 原始用户 ID
 	 * @return 规范化用户 ID
 	 * @author xyd
-	 * @date 2026-05-15 14:57:11
+	 * @date 2026-05-20 00:00:00
 	 */
 	private String normalizeUserId(String userId) {
 		return userId == null || userId.isBlank() ? "default-user" : userId.trim();
+	}
+
+	/**
+	 * 补齐反序列化后可能为空的集合字段，避免后续更新记忆时报空指针。
+	 * @param memory 客服长期记忆
+	 * @author xyd
+	 * @date 2026-05-20 00:00:00
+	 */
+	private void ensureCollections(CustomerMemory memory) {
+		if (memory.getRecentProductIds() == null) {
+			memory.setRecentProductIds(new ArrayList<>());
+		}
+		if (memory.getRecentOrderIds() == null) {
+			memory.setRecentOrderIds(new ArrayList<>());
+		}
+		if (memory.getRiskFlags() == null) {
+			memory.setRiskFlags(new ArrayList<>());
+		}
+		if (memory.getChannel() == null) {
+			memory.setChannel(ChannelType.WEB);
+		}
+		if (memory.getLastIntent() == null) {
+			memory.setLastIntent(CustomerServiceIntent.GENERAL_CHAT);
+		}
 	}
 
 }

@@ -70,6 +70,22 @@ public record CustomerServiceAssistantResult(String content, CustomerServiceInte
 	}
 
 	/**
+	 * 将轻量直连大模型结果转换为统一客服响应。
+	 * @param content 大模型直接生成的客服回复
+	 * @param memoryBefore 调用前客服长期记忆
+	 * @param memoryAfter 调用后客服长期记忆，简单对话通常不更新长期记忆
+	 * @param routeStep 后端自动路由说明
+	 * @return 统一客服响应
+	 * @author xyd
+	 * @date 2026-05-21 11:20:00
+	 */
+	public static CustomerServiceAssistantResult fromDirect(String content, CustomerMemory memoryBefore,
+			CustomerMemory memoryAfter, CustomerServiceStep routeStep) {
+		return new CustomerServiceAssistantResult(content, CustomerServiceIntent.GENERAL_CHAT, memoryBefore,
+				memoryAfter, List.of(routeStep), List.of(), List.of(), null, "CUSTOMER_SERVICE_DIRECT_LLM");
+	}
+
+	/**
 	 * 在已有步骤前追加后端自动路由步骤，便于调试页观察系统为何选择某条链路。
 	 * @param first 自动路由步骤
 	 * @param rest 原始步骤

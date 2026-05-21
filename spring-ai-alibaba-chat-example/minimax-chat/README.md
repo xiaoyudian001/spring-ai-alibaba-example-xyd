@@ -12,11 +12,24 @@
 - Tool Calling：商品、订单、物流、议价、退款、售后、工单、人工接管、知识库检索、Skill 读取。
 - MCP 门面：优先调用真实 MCP 工具，未发现时回退到本地 Mock 客服数据。
 - RAG：本地高召回客服知识库，并预留 Spring AI `VectorStore` 接入边界。
-- Memory：按 `userId` 持久化客服长期记忆到 `memory/customer-memory.json`。
+- Memory：按 `userId` 持久化客服长期记忆到 MySQL，Redis 可保存短期多轮上下文。
 - 报告与评估：保存 Agent 运行报告、规则评估结果、LLM-as-Judge 结果。
 - 日志：控制台输出关键流程日志，`log/customer-service-flow.log` 单独记录客服链路。
+- 轻量直连：寒暄、感谢、自我介绍等简单对话走 `CUSTOMER_SERVICE_DIRECT_LLM`，直接调用 MiniMax-M2.7，不触发 Tool、RAG、MCP 或 Agent。
 
 ## 核心调用链路
+
+### 统一客服入口自动路由
+
+```text
+前端问题
+ -> MiniMaxChatClientController
+ -> CustomerServiceAssistantService
+ -> CustomerServiceIntentPlanner 识别客服意图
+ -> GENERAL_CHAT 且无业务关键词：CustomerDirectChatService 直连 MiniMax-M2.7
+ -> 商品、订单、物流、退款、投诉、人工接管等业务问题：ReactAgent / SequentialAgent
+ -> 前端展示回答、链路模式、调试信息和执行报告
+```
 
 ### ReactAgent 模式
 
@@ -153,6 +166,12 @@ mvn -pl spring-ai-alibaba-chat-example/minimax-chat -am spring-boot:run "-Dsprin
 5. 点击页面顶部“运营调试工作台”，进入 `http://localhost:8080/dashboard.html`。
 6. 在工作台查看报告、评估、Judge、RAG 召回率和知识库维护能力。
 
+完整演示顺序参考：
+
+```text
+DEMO-SCRIPT.md
+```
+
 ## HTTP 测试
 
 推荐使用：
@@ -160,9 +179,11 @@ mvn -pl spring-ai-alibaba-chat-example/minimax-chat -am spring-boot:run "-Dsprin
 ```text
 minimax-chat.http
 CUSTOMER-SERVICE-TEST.http
+CUSTOMER-SERVICE-E2E.http
 ```
 
 `minimax-chat.http` 是 v1.0 发布冒烟用例，覆盖客服对话、Graph、Multi-Agent、Memory、MCP、RAG、报告、评估和 Judge。
+`CUSTOMER-SERVICE-E2E.http` 是端到端验收用例，按 Direct LLM、Agent、Tool、RAG、Memory、Redis、MySQL、审批、审计、报告和 Judge 的顺序验证完整业务闭环。
 
 ## v1.0 边界说明
 
@@ -170,3 +191,58 @@ CUSTOMER-SERVICE-TEST.http
 - RAG 当前默认使用本地知识库高召回检索，`application-vector.yml` 提供向量库 Profile 示例，后续可把 `CustomerPolicyRagService` 的存储层替换为真实 `VectorStore`。
 - `pendingMcpWrite` 仅作为历史报告兼容字段保留，v1.0 客服主线不再使用早期学习资源写入确认流程。
 - 早期学习助手相关类、HTTP 文件和 README 已移除，避免和智能客服主线混淆。
+
+## 上线前硬化能力
+
+- 工作台鉴权：通过 `MINIMAX_DASHBOARD_AUTH_ENABLED=true` 开启，通过 `MINIMAX_DASHBOARD_TOKEN` 设置访问令牌。访问 `dashboard.html?token=你的令牌` 后，前端会在工作台请求中自动附带 `X-Dashboard-Token`。
+- Memory 持久化：`CustomerMemoryService` 已从 JSON 文件切换到 MySQL 数据库表 `customer_memory`，默认连接本机 `minimax_customer_service` 数据库。
+- 高风险审核：人工接管等高风险动作统一进入 `customer_approval_task` 待审核任务表，模型不会直接执行退款、赔付、取消订单等动作。
+- 操作审计：RAG 知识写入/删除、Memory 编辑/清空、报告清空、审核状态变更会写入 `operation_audit_event`。
+- 数据工作台：工作台可查看 MySQL 核心表记录数、最近数据、Redis 短期上下文和统一存储健康状态。
+- 统一异常：后端 API 通过 `GlobalApiExceptionHandler` 返回统一 JSON 错误结构，前端聊天主流程会展示友好错误提示。
+- 自动化测试：已新增 Memory 数据库持久化测试和待审核任务流转测试。
+
+## 新增接口
+
+| 能力 | 接口 |
+| --- | --- |
+| Memory 后端状态 | `GET /minimax/chat-client/customer-service/memory/backend` |
+| 短期上下文状态 | `GET /minimax/chat-client/customer-service/context/status` |
+| 查看 Redis 短期上下文 | `GET /minimax/chat-client/customer-service/context?userId=default-user` |
+| 清空 Redis 短期上下文 | `DELETE /minimax/chat-client/customer-service/context?userId=default-user` |
+| 统一存储健康检查 | `GET /minimax/chat-client/customer-service/storage/status` |
+| MySQL 表概览 | `GET /minimax/chat-client/customer-service/storage/tables` |
+| 清理本地测试数据 | `DELETE /minimax/chat-client/customer-service/storage/test-data` |
+| RAG 运行状态 | `GET /minimax/chat-client/customer-service/rag/status` |
+| 编辑客服 Memory | `POST /minimax/chat-client/customer-service/memory?userId=default-user` |
+| 查询待审核任务 | `GET /minimax/chat-client/customer-service/approval/tasks?limit=20` |
+| 更新审核任务状态 | `POST /minimax/chat-client/customer-service/approval/tasks/status` |
+| 查询操作审计 | `GET /minimax/chat-client/audit/events?limit=30` |
+
+## MySQL 与 Redis 配置
+
+MySQL 已作为默认业务数据库，直接启动即可连接本机 MySQL：
+
+```powershell
+mvn spring-boot:run
+```
+
+MySQL 连接已固定在 `application.yml`：`jdbc:mysql://localhost:3306/minimax_customer_service`，账号密码默认为 `root/root`，并通过 `createDatabaseIfNotExist=true` 自动创建数据库。
+
+数据库建表脚本位于 `src/main/resources/schema-mysql.sql`，包含 `customer_memory`、`customer_approval_task`、`operation_audit_event` 三张核心业务表。
+
+接入真实 Redis 短期上下文：
+
+```powershell
+mvn spring-boot:run "-Dspring-boot.run.profiles=redis"
+```
+
+Redis 连接已固定在 `application-redis.yml`：`localhost:6379`，数据库为 `0`，默认无密码。
+
+同时接入 MySQL 和 Redis：
+
+```powershell
+mvn spring-boot:run "-Dspring-boot.run.profiles=redis"
+```
+
+MySQL 会承载 `customer_memory`、`customer_approval_task`、`operation_audit_event` 等长期数据表；Redis 会承载 `minimax:customer:conversation:{userId}` 短期多轮上下文，默认保留 20 条消息，TTL 为 12 小时。

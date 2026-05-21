@@ -9,17 +9,54 @@ Content-Type: application/json
   "history": []
 }
 
+### 智能客服助手 - 简单对话直连 LLM
+POST http://localhost:8080/minimax/chat-client/customer-service/assistant/chat
+Content-Type: application/json
+
+{
+  "userId": "direct-user",
+  "channel": "WEB",
+  "message": "你好，你是谁？",
+  "history": []
+}
+
+### 智能客服助手 - 业务问题自动走 Agent
+POST http://localhost:8080/minimax/chat-client/customer-service/assistant/chat
+Content-Type: application/json
+
+{
+  "userId": "agent-user",
+  "channel": "XIANYU",
+  "message": "这个 p-1001 商品还在吗？能介绍一下成色吗？",
+  "history": []
+}
+
 ### 智能客服 - MCP 状态
 GET http://localhost:8080/minimax/chat-client/customer-service/mcp/status
 
 ### 智能客服 - 查看客服 Memory
 GET http://localhost:8080/minimax/chat-client/customer-service/memory?userId=xianyu-user
 
+### 智能客服 - 查看 Redis 短期上下文
+GET http://localhost:8080/minimax/chat-client/customer-service/context?userId=xianyu-user
+
 ### 智能客服 - 清空客服 Memory
 DELETE http://localhost:8080/minimax/chat-client/customer-service/memory?userId=xianyu-user
 
 ### 智能客服 - RAG 主题覆盖
 GET http://localhost:8080/minimax/chat-client/customer-service/rag/topics
+
+### 智能客服 - RAG 运行状态
+GET http://localhost:8080/minimax/chat-client/customer-service/rag/status
+
+### 智能客服 - 统一存储健康检查
+GET http://localhost:8080/minimax/chat-client/customer-service/storage/status
+
+### 智能客服 - MySQL 表概览
+GET http://localhost:8080/minimax/chat-client/customer-service/storage/tables
+
+### 智能客服 - 清理本地测试数据
+DELETE http://localhost:8080/minimax/chat-client/customer-service/storage/test-data
 
 ### 智能客服 - RAG 知识文档列表
 GET http://localhost:8080/minimax/chat-client/customer-service/rag/documents
@@ -202,3 +239,11 @@ Content-Type: application/json
   "message": "你们服务太差了，我要投诉，给我转人工。",
   "history": []
 }
+### 智能客服 - Memory 后端状态
+GET http://localhost:8080/minimax/chat-client/customer-service/memory/backend
+
+### 智能客服 - Redis 短期上下文状态
+GET http://localhost:8080/minimax/chat-client/customer-service/context/status
+
+### 智能客服 - 清空 Redis 短期上下文
+DELETE http://localhost:8080/minimax/chat-client/customer-service/context?userId=xianyu-user

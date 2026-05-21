@@ -23,8 +23,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.alibaba.cloud.ai.audit.OperationAuditEvent;
+import com.alibaba.cloud.ai.audit.OperationAuditService;
+import com.alibaba.cloud.ai.customer.ApprovalTaskService;
+import com.alibaba.cloud.ai.customer.ApprovalTaskStatus;
 import com.alibaba.cloud.ai.customer.ChannelType;
 import com.alibaba.cloud.ai.customer.CustomerConversationMessage;
+import com.alibaba.cloud.ai.customer.CustomerConversationContextService;
+import com.alibaba.cloud.ai.customer.CustomerConversationContextService.CustomerConversationContextStatus;
+import com.alibaba.cloud.ai.customer.CustomerConversationContextService.CustomerConversationContextView;
 import com.alibaba.cloud.ai.customer.CustomerKnowledgeDocument;
 import com.alibaba.cloud.ai.customer.CustomerKnowledgeUpsertRequest;
 import com.alibaba.cloud.ai.customer.CustomerMemory;
@@ -32,6 +39,7 @@ import com.alibaba.cloud.ai.customer.CustomerMemoryService;
 import com.alibaba.cloud.ai.customer.CustomerMcpService;
 import com.alibaba.cloud.ai.customer.CustomerMcpService.CustomerMcpStatus;
 import com.alibaba.cloud.ai.customer.CustomerPolicyRagService;
+import com.alibaba.cloud.ai.customer.CustomerPolicyRagService.CustomerPolicyRagStatus;
 import com.alibaba.cloud.ai.customer.CustomerPolicySearchResult;
 import com.alibaba.cloud.ai.customer.CustomerServiceAssistantResult;
 import com.alibaba.cloud.ai.customer.CustomerServiceAssistantService;
@@ -41,6 +49,11 @@ import com.alibaba.cloud.ai.customer.CustomerServiceGraphService;
 import com.alibaba.cloud.ai.customer.CustomerServiceMultiAgentResult;
 import com.alibaba.cloud.ai.customer.CustomerServiceMultiAgentService;
 import com.alibaba.cloud.ai.customer.CustomerServiceResult;
+import com.alibaba.cloud.ai.customer.CustomerStorageAdminService;
+import com.alibaba.cloud.ai.customer.CustomerStorageAdminService.CustomerMysqlTableOverview;
+import com.alibaba.cloud.ai.customer.CustomerStorageAdminService.CustomerStorageCleanupResult;
+import com.alibaba.cloud.ai.customer.CustomerStorageAdminService.CustomerStorageStatus;
+import com.alibaba.cloud.ai.customer.PendingApprovalTask;
 import com.alibaba.cloud.ai.evaluation.AgentEvaluationResult;
 import com.alibaba.cloud.ai.evaluation.AgentEvaluationService;
 import com.alibaba.cloud.ai.judge.AgentJudgeResult;
@@ -75,9 +88,13 @@ public class MiniMaxChatClientController {
 
 	private final CustomerMemoryService customerMemoryService;
 
+	private final CustomerConversationContextService customerConversationContextService;
+
 	private final CustomerMcpService customerMcpService;
 
 	private final CustomerPolicyRagService customerPolicyRagService;
+
+	private final CustomerStorageAdminService customerStorageAdminService;
 
 	private final AgentRunReportService agentRunReportService;
 
@@ -85,24 +102,34 @@ public class MiniMaxChatClientController {
 
 	private final AgentJudgeService agentJudgeService;
 
+	private final ApprovalTaskService approvalTaskService;
+
+	private final OperationAuditService operationAuditService;
+
 	public MiniMaxChatClientController(CustomerServiceAgentService customerServiceAgentService,
 			CustomerServiceAssistantService customerServiceAssistantService,
 			CustomerServiceGraphService customerServiceGraphService,
 			CustomerServiceMultiAgentService customerServiceMultiAgentService,
-			CustomerMemoryService customerMemoryService, CustomerMcpService customerMcpService,
-			CustomerPolicyRagService customerPolicyRagService,
-			AgentRunReportService agentRunReportService,
-			AgentEvaluationService agentEvaluationService, AgentJudgeService agentJudgeService) {
+			CustomerMemoryService customerMemoryService,
+			CustomerConversationContextService customerConversationContextService,
+			CustomerMcpService customerMcpService, CustomerPolicyRagService customerPolicyRagService,
+			CustomerStorageAdminService customerStorageAdminService, AgentRunReportService agentRunReportService,
+			AgentEvaluationService agentEvaluationService, AgentJudgeService agentJudgeService,
+			ApprovalTaskService approvalTaskService, OperationAuditService operationAuditService) {
 		this.customerServiceAgentService = customerServiceAgentService;
 		this.customerServiceAssistantService = customerServiceAssistantService;
 		this.customerServiceGraphService = customerServiceGraphService;
 		this.customerServiceMultiAgentService = customerServiceMultiAgentService;
 		this.customerMemoryService = customerMemoryService;
+		this.customerConversationContextService = customerConversationContextService;
 		this.customerMcpService = customerMcpService;
 		this.customerPolicyRagService = customerPolicyRagService;
+		this.customerStorageAdminService = customerStorageAdminService;
 		this.agentRunReportService = agentRunReportService;
 		this.agentEvaluationService = agentEvaluationService;
 		this.agentJudgeService = agentJudgeService;
+		this.approvalTaskService = approvalTaskService;
+		this.operationAuditService = operationAuditService;
 	}
 
 	/**
@@ -116,9 +143,11 @@ public class MiniMaxChatClientController {
 	public CustomerServiceResult customerServiceChat(@RequestBody ChatRequest request) {
 		String userId = extractUserId(request);
 		String message = extractMessage(request);
+		List<CustomerConversationMessage> history = loadConversationHistory(userId, request);
 		CustomerServiceResult result = this.customerServiceAgentService.chat(userId, extractChannel(request), message,
-				toCustomerHistory(request));
-		saveEvaluation(this.agentRunReportService.saveCustomerService(userId, message, historySize(request), result));
+				history);
+		this.customerConversationContextService.appendTurn(userId, history, message, result.content());
+		saveEvaluation(this.agentRunReportService.saveCustomerService(userId, message, history.size(), result));
 		return result;
 	}
 
@@ -133,10 +162,11 @@ public class MiniMaxChatClientController {
 	public CustomerServiceAssistantResult customerServiceAssistantChat(@RequestBody ChatRequest request) {
 		String userId = extractUserId(request);
 		String message = extractMessage(request);
+		List<CustomerConversationMessage> history = loadConversationHistory(userId, request);
 		CustomerServiceAssistantResult result = this.customerServiceAssistantService.chat(userId,
-				extractChannel(request), message, toCustomerHistory(request));
-		saveEvaluation(this.agentRunReportService.saveCustomerServiceAssistant(userId, message, historySize(request),
-				result));
+				extractChannel(request), message, history);
+		this.customerConversationContextService.appendTurn(userId, history, message, result.content());
+		saveEvaluation(this.agentRunReportService.saveCustomerServiceAssistant(userId, message, history.size(), result));
 		return result;
 	}
 
@@ -151,10 +181,11 @@ public class MiniMaxChatClientController {
 	public CustomerServiceGraphResult customerServiceGraphChat(@RequestBody ChatRequest request) {
 		String userId = extractUserId(request);
 		String message = extractMessage(request);
+		List<CustomerConversationMessage> history = loadConversationHistory(userId, request);
 		CustomerServiceGraphResult result = this.customerServiceGraphService.chat(userId, extractChannel(request),
-				message, toCustomerHistory(request));
-		saveEvaluation(this.agentRunReportService.saveCustomerServiceGraph(userId, message, historySize(request),
-				result));
+				message, history);
+		this.customerConversationContextService.appendTurn(userId, history, message, result.content());
+		saveEvaluation(this.agentRunReportService.saveCustomerServiceGraph(userId, message, history.size(), result));
 		return result;
 	}
 
@@ -169,9 +200,11 @@ public class MiniMaxChatClientController {
 	public CustomerServiceMultiAgentResult customerServiceMultiAgentChat(@RequestBody ChatRequest request) {
 		String userId = extractUserId(request);
 		String message = extractMessage(request);
+		List<CustomerConversationMessage> history = loadConversationHistory(userId, request);
 		CustomerServiceMultiAgentResult result = this.customerServiceMultiAgentService.chat(userId,
-				extractChannel(request), message, toCustomerHistory(request));
-		saveEvaluation(this.agentRunReportService.saveCustomerServiceMultiAgent(userId, message, historySize(request),
+				extractChannel(request), message, history);
+		this.customerConversationContextService.appendTurn(userId, history, message, result.content());
+		saveEvaluation(this.agentRunReportService.saveCustomerServiceMultiAgent(userId, message, history.size(),
 				result));
 		return result;
 	}
@@ -199,6 +232,17 @@ public class MiniMaxChatClientController {
 	}
 
 	/**
+	 * 查询智能客服 RAG 运行状态，便于确认当前是否真正接入 VectorStore。
+	 * @return 客服 RAG 运行状态
+	 * @author xyd
+	 * @date 2026-05-21 00:00:00
+	 */
+	@GetMapping("/customer-service/rag/status")
+	public CustomerPolicyRagStatus customerRagStatus() {
+		return this.customerPolicyRagService.status();
+	}
+
+	/**
 	 * 查询智能客服 RAG 知识库全部文档，用于页面知识管理和召回调试。
 	 * @return 客服知识文档列表
 	 * @author xyd
@@ -218,7 +262,9 @@ public class MiniMaxChatClientController {
 	 */
 	@PostMapping(value = "/customer-service/rag/documents", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public CustomerKnowledgeDocument upsertCustomerRagDocument(@RequestBody CustomerKnowledgeUpsertRequest request) {
-		return this.customerPolicyRagService.upsertCustomDocument(request);
+		CustomerKnowledgeDocument document = this.customerPolicyRagService.upsertCustomDocument(request);
+		this.operationAuditService.record("dashboard", "UPSERT_RAG_DOCUMENT", document.id(), document.title(), true);
+		return document;
 	}
 
 	/**
@@ -230,7 +276,9 @@ public class MiniMaxChatClientController {
 	 */
 	@DeleteMapping("/customer-service/rag/documents")
 	public CustomerKnowledgeDeleteResponse deleteCustomerRagDocument(@RequestParam("id") String id) {
-		return new CustomerKnowledgeDeleteResponse(id, this.customerPolicyRagService.deleteCustomDocument(id));
+		boolean deleted = this.customerPolicyRagService.deleteCustomDocument(id);
+		this.operationAuditService.record("dashboard", "DELETE_RAG_DOCUMENT", id, "deleted=" + deleted, deleted);
+		return new CustomerKnowledgeDeleteResponse(id, deleted);
 	}
 
 	/**
@@ -264,6 +312,109 @@ public class MiniMaxChatClientController {
 	}
 
 	/**
+	 * 查询客服 Memory 持久化后端，用于工作台确认当前是否已从 JSON 迁移到数据库。
+	 * @return Memory 后端状态
+	 * @author xyd
+	 * @date 2026-05-20 00:00:00
+	 */
+	@GetMapping("/customer-service/memory/backend")
+	public MemoryBackendResponse customerMemoryBackend() {
+		return new MemoryBackendResponse(this.customerMemoryService.backend());
+	}
+
+	/**
+	 * 查询客服短期上下文后端状态，用于确认是否已启用 Redis 保存多轮对话上下文。
+	 * @return 短期上下文状态
+	 * @author xyd
+	 * @date 2026-05-20 15:10:00
+	 */
+	@GetMapping("/customer-service/context/status")
+	public CustomerConversationContextStatus customerConversationContextStatus() {
+		return this.customerConversationContextService.status();
+	}
+
+	/**
+	 * 查看指定用户的 Redis 短期上下文内容，便于区分短期上下文和 MySQL 长期 Memory。
+	 * @param userId 用户唯一标识
+	 * @return Redis 短期上下文详情
+	 * @author xyd
+	 * @date 2026-05-21 12:20:00
+	 */
+	@GetMapping("/customer-service/context")
+	public CustomerConversationContextView customerConversationContext(
+			@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
+		return this.customerConversationContextService.view(userId);
+	}
+
+	/**
+	 * 清空指定用户的 Redis 短期上下文，不影响长期 Memory。
+	 * @param userId 用户唯一标识
+	 * @return 清空结果
+	 * @author xyd
+	 * @date 2026-05-20 15:10:00
+	 */
+	@DeleteMapping("/customer-service/context")
+	public CustomerConversationContextClearResponse clearCustomerConversationContext(
+			@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
+		boolean deleted = this.customerConversationContextService.clear(userId);
+		this.operationAuditService.record(userId, "CLEAR_REDIS_CONTEXT", userId, "清空客服 Redis 短期上下文", true);
+		return new CustomerConversationContextClearResponse(userId, deleted);
+	}
+
+	/**
+	 * 查询智能客服存储健康状态，统一返回 MySQL、Redis、Memory、RAG 和 MCP 运行模式。
+	 * @return 存储健康状态
+	 * @author xyd
+	 * @date 2026-05-21 12:20:00
+	 */
+	@GetMapping("/customer-service/storage/status")
+	public CustomerStorageStatus customerStorageStatus() {
+		return this.customerStorageAdminService.status();
+	}
+
+	/**
+	 * 查询智能客服 MySQL 核心业务表概览，用于工作台确认数据是否真实写入。
+	 * @return MySQL 表概览列表
+	 * @author xyd
+	 * @date 2026-05-21 12:20:00
+	 */
+	@GetMapping("/customer-service/storage/tables")
+	public List<CustomerMysqlTableOverview> customerStorageTables() {
+		return this.customerStorageAdminService.tables();
+	}
+
+	/**
+	 * 清理本地联调产生的测试数据，仅删除测试用户和测试会话相关记录。
+	 * @return 清理结果
+	 * @author xyd
+	 * @date 2026-05-21 12:20:00
+	 */
+	@DeleteMapping("/customer-service/storage/test-data")
+	public CustomerStorageCleanupResult clearCustomerStorageTestData() {
+		CustomerStorageCleanupResult result = this.customerStorageAdminService.clearTestData();
+		this.operationAuditService.record("dashboard", "CLEAR_STORAGE_TEST_DATA", "mysql",
+				"清理测试数据：" + result.totalDeleted(), true);
+		return result;
+	}
+
+	/**
+	 * 保存工作台编辑后的客服 Memory。
+	 * @param userId 用户唯一标识
+	 * @param memory 客服长期记忆
+	 * @return 保存后的客服长期记忆
+	 * @author xyd
+	 * @date 2026-05-20 00:00:00
+	 */
+	@PostMapping(value = "/customer-service/memory", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public CustomerMemory saveCustomerMemory(
+			@RequestParam(value = "userId", defaultValue = "default-user") String userId,
+			@RequestBody CustomerMemory memory) {
+		CustomerMemory saved = this.customerMemoryService.save(userId, memory);
+		this.operationAuditService.record(userId, "SAVE_MEMORY", userId, "可视化编辑客服 Memory", true);
+		return saved;
+	}
+
+	/**
 	 * 清空指定用户的智能客服长期记忆，并写回客服 Memory JSON 文件。
 	 * @param userId 用户唯一标识
 	 * @return 重置后的智能客服长期记忆
@@ -273,7 +424,49 @@ public class MiniMaxChatClientController {
 	@DeleteMapping("/customer-service/memory")
 	public CustomerMemory clearCustomerMemory(
 			@RequestParam(value = "userId", defaultValue = "default-user") String userId) {
-		return this.customerMemoryService.clear(userId);
+		CustomerMemory memory = this.customerMemoryService.clear(userId);
+		this.customerConversationContextService.clear(userId);
+		this.operationAuditService.record(userId, "CLEAR_MEMORY", userId, "清空客服 Memory", true);
+		return memory;
+	}
+
+	/**
+	 * 查询最近的高风险待审核任务。
+	 * @param limit 最大返回数量
+	 * @return 待审核任务列表
+	 * @author xyd
+	 * @date 2026-05-20 00:00:00
+	 */
+	@GetMapping("/customer-service/approval/tasks")
+	public List<PendingApprovalTask> approvalTasks(@RequestParam(value = "limit", defaultValue = "20") int limit) {
+		return this.approvalTaskService.latest(limit);
+	}
+
+	/**
+	 * 更新高风险待审核任务状态。
+	 * @param request 审核状态更新请求
+	 * @return 更新后的审核任务
+	 * @author xyd
+	 * @date 2026-05-20 00:00:00
+	 */
+	@PostMapping(value = "/customer-service/approval/tasks/status", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public PendingApprovalTask updateApprovalTaskStatus(@RequestBody ApprovalTaskStatusRequest request) {
+		PendingApprovalTask task = this.approvalTaskService.updateStatus(request.id(),
+				ApprovalTaskStatus.valueOf(request.status()));
+		this.operationAuditService.record("dashboard", "UPDATE_APPROVAL_TASK", task.id(), task.status().name(), true);
+		return task;
+	}
+
+	/**
+	 * 查询最近的操作审计日志。
+	 * @param limit 最大返回数量
+	 * @return 审计日志列表
+	 * @author xyd
+	 * @date 2026-05-20 00:00:00
+	 */
+	@GetMapping("/audit/events")
+	public List<OperationAuditEvent> auditEvents(@RequestParam(value = "limit", defaultValue = "30") int limit) {
+		return this.operationAuditService.latest(limit);
 	}
 
 	@GetMapping("/report/runs")
@@ -283,7 +476,10 @@ public class MiniMaxChatClientController {
 
 	@DeleteMapping("/report/runs")
 	public ClearReportResponse clearAgentRunReports() {
-		return new ClearReportResponse(this.agentRunReportService.clear());
+		int deleted = this.agentRunReportService.clear();
+		this.operationAuditService.record("dashboard", "CLEAR_AGENT_REPORTS", "agent-runs", "deleted=" + deleted,
+				true);
+		return new ClearReportResponse(deleted);
 	}
 
 	@GetMapping("/evaluation/runs")
@@ -293,7 +489,10 @@ public class MiniMaxChatClientController {
 
 	@DeleteMapping("/evaluation/runs")
 	public ClearReportResponse clearAgentEvaluations() {
-		return new ClearReportResponse(this.agentEvaluationService.clear());
+		int deleted = this.agentEvaluationService.clear();
+		this.operationAuditService.record("dashboard", "CLEAR_AGENT_EVALUATIONS", "evaluation-runs",
+				"deleted=" + deleted, true);
+		return new ClearReportResponse(deleted);
 	}
 
 	@PostMapping("/judge/latest")
@@ -308,7 +507,10 @@ public class MiniMaxChatClientController {
 
 	@DeleteMapping("/judge/runs")
 	public ClearReportResponse clearAgentJudges() {
-		return new ClearReportResponse(this.agentJudgeService.clear());
+		int deleted = this.agentJudgeService.clear();
+		this.operationAuditService.record("dashboard", "CLEAR_AGENT_JUDGES", "judge-runs", "deleted=" + deleted,
+				true);
+		return new ClearReportResponse(deleted);
 	}
 
 	private String extractUserId(ChatRequest request) {
@@ -325,6 +527,18 @@ public class MiniMaxChatClientController {
 		return request.message();
 	}
 
+	/**
+	 * 加载本轮对话短期上下文，Redis 启用时优先从 Redis 读取，未启用时使用前端传入历史。
+	 * @param userId 用户唯一标识
+	 * @param request 前端聊天请求
+	 * @return 本轮模型调用使用的短期上下文
+	 * @author xyd
+	 * @date 2026-05-20 15:10:00
+	 */
+	private List<CustomerConversationMessage> loadConversationHistory(String userId, ChatRequest request) {
+		return this.customerConversationContextService.loadHistory(userId, toCustomerHistory(request));
+	}
+
 	private List<CustomerConversationMessage> toCustomerHistory(ChatRequest request) {
 		if (request == null || request.history() == null || request.history().isEmpty()) {
 			return List.of();
@@ -334,10 +548,6 @@ public class MiniMaxChatClientController {
 			messages.add(new CustomerConversationMessage(item.role(), item.content()));
 		}
 		return messages;
-	}
-
-	private int historySize(ChatRequest request) {
-		return request == null || request.history() == null ? 0 : request.history().size();
 	}
 
 	/**
@@ -398,6 +608,38 @@ public class MiniMaxChatClientController {
 	 * @date 2026-05-19 23:48:12
 	 */
 	public record CustomerKnowledgeDeleteResponse(String id, boolean deleted) {
+	}
+
+	/**
+	 * Memory 后端状态响应。
+	 *
+	 * @param backend Memory 持久化后端
+	 * @author xyd
+	 * @date 2026-05-20 00:00:00
+	 */
+	public record MemoryBackendResponse(String backend) {
+	}
+
+	/**
+	 * 短期上下文清空响应。
+	 *
+	 * @param userId 用户唯一标识
+	 * @param deleted Redis Key 是否被删除
+	 * @author xyd
+	 * @date 2026-05-20 15:10:00
+	 */
+	public record CustomerConversationContextClearResponse(String userId, boolean deleted) {
+	}
+
+	/**
+	 * 审核任务状态更新请求。
+	 *
+	 * @param id 审核任务唯一标识
+	 * @param status 目标状态，取值 APPROVED 或 REJECTED
+	 * @author xyd
+	 * @date 2026-05-20 00:00:00
+	 */
+	public record ApprovalTaskStatusRequest(String id, String status) {
 	}
 
 }

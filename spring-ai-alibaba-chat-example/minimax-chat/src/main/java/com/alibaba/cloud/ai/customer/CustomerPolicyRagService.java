@@ -154,6 +154,22 @@ public class CustomerPolicyRagService {
 	}
 
 	/**
+	 * 查询当前客服 RAG 运行状态，用于工作台确认本地关键词检索或真实 VectorStore 是否生效。
+	 * @return 客服 RAG 运行状态
+	 * @author xyd
+	 * @date 2026-05-21 00:00:00
+	 */
+	public CustomerPolicyRagStatus status() {
+		boolean realVectorStoreAvailable = this.vectorEnabled && this.vectorStoreProvider.stream().findFirst().isPresent();
+		String mode = realVectorStoreAvailable ? VECTOR_STORE_MODE : LOCAL_KEYWORD_MODE;
+		String message = realVectorStoreAvailable ? "已启用真实 VectorStore 检索"
+				: this.vectorEnabled ? "已开启向量检索开关，但未发现 VectorStore Bean，当前回退本地关键词检索"
+						: "当前使用本地高召回关键词检索";
+		return new CustomerPolicyRagStatus(this.vectorEnabled, realVectorStoreAvailable, mode,
+				this.knowledgeFile.toString(), this.documents.size(), topics().size(), message);
+	}
+
+	/**
 	 * 新增或更新一条自定义客服知识，并写回 JSON 文件；启用 VectorStore 时同步写入向量库。
 	 * @param request 知识新增或更新请求
 	 * @return 保存后的客服知识文档
@@ -545,6 +561,23 @@ public class CustomerPolicyRagService {
 			keywordSet.add(normalize(keyword));
 		}
 		return new CustomerKnowledgeDocument(id, title, normalize(topic), content, keywordSet);
+	}
+
+	/**
+	 * 客服 RAG 运行状态，用于前端展示真实向量库开关、可用性和知识库规模。
+	 *
+	 * @param vectorEnabled 是否开启真实向量库检索开关
+	 * @param realVectorStoreAvailable 是否存在真实 VectorStore Bean
+	 * @param mode 当前实际检索模式
+	 * @param knowledgeFile 本地知识库文件路径
+	 * @param documentCount 当前知识文档数量
+	 * @param topicCount 当前知识主题数量
+	 * @param message 状态说明
+	 * @author xyd
+	 * @date 2026-05-21 00:00:00
+	 */
+	public record CustomerPolicyRagStatus(boolean vectorEnabled, boolean realVectorStoreAvailable, String mode,
+			String knowledgeFile, int documentCount, int topicCount, String message) {
 	}
 
 }

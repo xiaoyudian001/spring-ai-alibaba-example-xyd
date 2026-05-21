@@ -1,0 +1,16 @@
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 0
+      timeout: 3s
+
+minimax:
+  customer:
+    context:
+      redis-enabled: true
+      redis-prefix: minimax:customer:conversation
+      max-messages: 20
+      redis-ttl-seconds: 43200

@@ -3,7 +3,8 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Chat-Bot 工作台</title>
+	<link rel="icon" href="data:,">
+	<title>Chat-Bot</title>
 	<style>
 		:root {
 			color-scheme: light;
@@ -159,6 +160,7 @@
 		.chat-page .rag-lab,
 		.chat-page .knowledge-lab,
 		.chat-page .dashboard-only,
+		.chat-page .capabilities,
 		.chat-page .user-field,
 		.chat-page .channel-field,
 		.chat-page .composer-tools,
@@ -192,8 +194,82 @@
 				"actions";
 		}
 
+		.chat-page .composer {
+			position: static;
+			padding-top: 0;
+			background: transparent;
+		}
+
 		.chat-page textarea {
 			min-height: 132px;
+		}
+
+		.chat-page header {
+			padding-bottom: 14px;
+		}
+
+		.chat-page h1 {
+			font-size: clamp(30px, 4.4vw, 48px);
+		}
+
+		.chat-page .subtitle {
+			max-width: 620px;
+			color: #526064;
+			font-size: 16px;
+			line-height: 1.7;
+		}
+
+		.chat-assist-strip {
+			width: min(var(--content-width), calc(100% - 32px));
+			margin: -2px auto 16px;
+			display: grid;
+			gap: 10px;
+		}
+
+		.service-presence {
+			display: inline-flex;
+			align-items: center;
+			gap: 10px;
+			color: #46545a;
+			font-size: 13px;
+			font-weight: 800;
+		}
+
+		.service-avatar {
+			width: 34px;
+			height: 34px;
+			border-radius: 999px;
+			display: inline-grid;
+			place-items: center;
+			background: #12634f;
+			color: #fff;
+			font-weight: 900;
+			box-shadow: 0 8px 18px rgba(18, 99, 79, 0.20);
+		}
+
+		.quick-prompts {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+		}
+
+		.quick-prompt {
+			height: 34px;
+			border: 1px solid #cbd8d6;
+			border-radius: 8px;
+			background: rgba(255, 255, 255, 0.88);
+			color: #2f3b3f;
+			padding: 0 12px;
+			font-size: 13px;
+			font-weight: 800;
+			box-shadow: var(--shadow-soft);
+			cursor: pointer;
+		}
+
+		.quick-prompt:hover {
+			border-color: rgba(18, 99, 79, 0.38);
+			background: #f4fbf6;
+			color: var(--primary);
 		}
 
 		main {
@@ -266,6 +342,73 @@
 			font-size: 22px;
 			font-weight: 850;
 			line-height: 1.1;
+		}
+
+		.runtime-status-grid {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			gap: 10px;
+		}
+
+		.runtime-card {
+			min-height: 118px;
+			padding: 12px;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: linear-gradient(180deg, #ffffff, #f6f8f8);
+			display: grid;
+			align-content: start;
+			gap: 8px;
+		}
+
+		.runtime-card-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+		}
+
+		.runtime-card-title {
+			font-size: 13px;
+			font-weight: 900;
+			color: #142120;
+		}
+
+		.runtime-badge {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			min-height: 24px;
+			padding: 0 8px;
+			border-radius: 999px;
+			border: 1px solid #d4dfdc;
+			background: #eef5f1;
+			color: #12634f;
+			font-size: 11px;
+			font-weight: 900;
+			white-space: nowrap;
+		}
+
+		.runtime-badge.warn {
+			background: #fff7df;
+			border-color: #edd399;
+			color: #8a5a11;
+		}
+
+		.runtime-badge.off {
+			background: #f3f4f4;
+			border-color: #d9dedf;
+			color: #68747d;
+		}
+
+		.runtime-card-body {
+			color: #334044;
+			font-size: 12px;
+			line-height: 1.65;
+		}
+
+		.runtime-card-body strong {
+			color: #142120;
 		}
 
 		.evaluation-list {
@@ -546,6 +689,12 @@
 			color: var(--muted);
 			font-size: 12px;
 			line-height: 1.2;
+			font-weight: 700;
+		}
+
+		.message-state {
+			margin-left: 8px;
+			color: #7a858a;
 			font-weight: 700;
 		}
 
@@ -935,6 +1084,7 @@
 			.message { width: 100%; }
 			.dashboard-header { align-items: flex-start; flex-direction: column; }
 			.evaluation-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+			.runtime-status-grid { grid-template-columns: 1fr; }
 			.evaluation-list { grid-template-columns: 1fr; }
 			.rag-lab-header { flex-direction: column; }
 			.rag-lab-grid { grid-template-columns: 1fr; }
@@ -973,13 +1123,14 @@
 		}
 	</style>
 </head>
-<body class="dashboard-page">
+<body class="chat-page">
 <div class="app">
 	<header>
 		<div class="header-row">
 			<div>
 				<h1>小雨点 Chat-Bot</h1>
-				<div class="subtitle">基于 MiniMax-M2.7 与 Spring AI Alibaba Agent Framework 的智能客服 v1.0</div>
+				<div class="subtitle chat-only">商品咨询、订单物流、退款售后都可以直接问，我会自动帮你查询和处理。</div>
+				<div class="subtitle dashboard-only">基于 MiniMax-M2.7 与 Spring AI Alibaba Agent Framework 的智能客服 v1.0 调试工作台</div>
 				<div class="capabilities" aria-label="当前能力">
 					<span class="capability">多轮上下文</span>
 					<span class="capability">Tool Calling</span>
@@ -1012,6 +1163,19 @@
 		<div id="messages" class="messages"></div>
 	</main>
 
+	<section class="chat-assist-strip chat-only" aria-label="客服快捷问题">
+		<div class="service-presence">
+			<span class="service-avatar">客</span>
+			<span>小雨点客服在线，已接入订单、商品、物流、售后策略和安全审核链路。</span>
+		</div>
+		<div class="quick-prompts">
+			<button class="quick-prompt" type="button" data-message="这个 p-1001 商品还在吗？能介绍一下成色和发货时间吗？">商品还在吗</button>
+			<button class="quick-prompt" type="button" data-message="我的 o-9001 订单物流一直没更新，帮我查一下。">查物流</button>
+			<button class="quick-prompt" type="button" data-message="我想申请退款，帮我看一下 o-9001 是否符合售后规则。">申请退款</button>
+			<button class="quick-prompt" type="button" data-message="买家要求人工处理并投诉，请帮我创建待审核任务。">人工处理</button>
+		</div>
+	</section>
+
 	<section class="evaluation-dashboard dashboard-only" aria-label="工作台快捷操作">
 		<div class="dashboard-header">
 			<div>
@@ -1026,6 +1190,39 @@
 			<button id="dashboardViewEvaluationButton" class="secondary" type="button">查看评估</button>
 			<button id="dashboardJudgeButton" class="secondary" type="button">AI 评审</button>
 			<button id="dashboardClearMemoryButton" class="secondary" type="button">清空记忆</button>
+		</div>
+	</section>
+
+	<section class="evaluation-dashboard dashboard-only" aria-label="运行环境状态">
+		<div class="dashboard-header">
+			<div>
+				<div class="dashboard-title">运行环境状态</div>
+				<div class="dashboard-subtitle">集中确认 Memory、Redis 短期上下文、RAG 和 MCP 当前实际运行模式。</div>
+			</div>
+			<button id="refreshRuntimeStatusButton" class="secondary dashboard-refresh" type="button">刷新状态</button>
+		</div>
+		<div id="runtimeStatusGrid" class="runtime-status-grid">
+			<div class="evaluation-empty">进入工作台后会自动加载运行环境状态。</div>
+		</div>
+	</section>
+
+	<section class="evaluation-dashboard dashboard-only" aria-label="MySQL 与 Redis 数据面板">
+		<div class="dashboard-header">
+			<div>
+				<div class="dashboard-title">MySQL 与 Redis 数据面板</div>
+				<div class="dashboard-subtitle">查看核心业务表写入情况、最近数据和当前用户 Redis 短期上下文。</div>
+			</div>
+			<div class="rag-lab-actions">
+				<button id="refreshStorageDataButton" class="secondary dashboard-refresh" type="button">刷新数据</button>
+				<button id="viewRedisContextButton" class="secondary dashboard-refresh" type="button">查看上下文</button>
+				<button id="clearStorageTestDataButton" class="secondary dashboard-refresh" type="button">清理测试数据</button>
+			</div>
+		</div>
+		<div id="storageDataGrid" class="runtime-status-grid">
+			<div class="evaluation-empty">进入工作台后会自动加载 MySQL 表状态。</div>
+		</div>
+		<div id="redisContextResult" class="rag-result">
+			<div class="evaluation-empty">点击“查看上下文”后，这里会显示当前用户 Redis 短期上下文消息和 TTL。</div>
 		</div>
 	</section>
 
@@ -1245,10 +1442,41 @@
 	const dashboardViewEvaluationButton = document.getElementById("dashboardViewEvaluationButton");
 	const dashboardJudgeButton = document.getElementById("dashboardJudgeButton");
 	const dashboardClearMemoryButton = document.getElementById("dashboardClearMemoryButton");
+	const refreshRuntimeStatusButton = document.getElementById("refreshRuntimeStatusButton");
+	const runtimeStatusGrid = document.getElementById("runtimeStatusGrid");
+	const refreshStorageDataButton = document.getElementById("refreshStorageDataButton");
+	const clearStorageTestDataButton = document.getElementById("clearStorageTestDataButton");
+	const viewRedisContextButton = document.getElementById("viewRedisContextButton");
+	const storageDataGrid = document.getElementById("storageDataGrid");
+	const redisContextResult = document.getElementById("redisContextResult");
 	const sendButton = document.getElementById("sendButton");
 	const clearButton = document.getElementById("clearButton");
+	const quickPromptButtons = Array.from(document.querySelectorAll(".quick-prompt"));
 	const histories = new Map();
 	const isDashboardPage = window.location.pathname.endsWith("/dashboard.html");
+
+	function dashboardToken() {
+		const params = new URLSearchParams(window.location.search);
+		const token = params.get("token") || localStorage.getItem("minimaxDashboardToken") || "";
+		if (params.get("token")) {
+			localStorage.setItem("minimaxDashboardToken", params.get("token"));
+		}
+		return token;
+	}
+
+	const nativeFetch = window.fetch.bind(window);
+	window.fetch = (resource, options = {}) => {
+		if (!isDashboardPage) {
+			return nativeFetch(resource, options);
+		}
+		const token = dashboardToken();
+		if (!token) {
+			return nativeFetch(resource, options);
+		}
+		const headers = new Headers(options.headers || {});
+		headers.set("X-Dashboard-Token", token);
+		return nativeFetch(resource, { ...options, headers });
+	};
 
 	document.body.classList.toggle("dashboard-page", isDashboardPage);
 	document.body.classList.toggle("chat-page", !isDashboardPage);
@@ -1382,7 +1610,7 @@
 		node.className = `message ${role}`;
 		const meta = document.createElement("div");
 		meta.className = "message-meta";
-		meta.textContent = roleName(role);
+		meta.innerHTML = `${escapeHtml(roleName(role))}<span class="message-state">${role === "user" ? "已发送" : "已完成"}</span>`;
 		const body = document.createElement("div");
 		body.className = "message-body";
 		if (role === "assistant") {
@@ -1441,6 +1669,130 @@
 		}
 		const topics = Array.isArray(memory.topics) && memory.topics.length ? memory.topics.join("、") : "暂无";
 		return `用户：${memory.userId || currentUserId()}\n阶段：${memory.level || "初学者"}\n关注：${topics}\n轮次：${memory.conversationCount ?? 0}\n上次意图：${memory.lastIntent || "GENERAL_CHAT"}\n上次问题：${memory.lastQuestion || "暂无"}`;
+	}
+
+	function runtimeBadge(text, tone = "") {
+		return `<span class="runtime-badge ${tone}">${escapeHtml(text)}</span>`;
+	}
+
+	function runtimeCard(title, badge, body) {
+		return `
+			<div class="runtime-card">
+				<div class="runtime-card-header">
+					<div class="runtime-card-title">${escapeHtml(title)}</div>
+					${badge}
+				</div>
+				<div class="runtime-card-body">${body}</div>
+			</div>
+		`;
+	}
+
+	function renderRuntimeStatus(status) {
+		if (!runtimeStatusGrid) return;
+		const memory = status.memory || {};
+		const context = status.context || {};
+		const rag = status.rag || {};
+		const mcp = status.mcp || {};
+		const contextTone = context.redisEnabled ? (context.redisAvailable ? "" : "warn") : "off";
+		const ragTone = rag.realVectorStoreAvailable ? "" : (rag.vectorEnabled ? "warn" : "off");
+		const mcpTone = mcp.realMcpAvailable ? "" : "off";
+		runtimeStatusGrid.innerHTML = [
+			runtimeCard("Memory", runtimeBadge(memory.backend || "UNKNOWN", memory.backend === "mysql" ? "" : "off"),
+				`<div>长期记忆后端：<strong>${escapeHtml(memory.backend || "UNKNOWN")}</strong></div><div>用途：按用户保存客服状态。</div>`),
+			runtimeCard("Redis 上下文",
+				runtimeBadge(context.redisEnabled ? (context.redisAvailable ? "可用" : "降级") : "未启用", contextTone),
+				`<div>模式：<strong>${escapeHtml(context.mode || "UNKNOWN")}</strong></div><div>Key 前缀：${escapeHtml(context.keyPrefix || "-")}</div><div>保留消息：${escapeHtml(context.maxMessages ?? "-")}，TTL：${escapeHtml(context.ttlSeconds ?? "-")} 秒</div>`),
+			runtimeCard("RAG",
+				runtimeBadge(rag.realVectorStoreAvailable ? "VectorStore" : "本地检索", ragTone),
+				`<div>模式：<strong>${escapeHtml(rag.mode || "UNKNOWN")}</strong></div><div>文档：${escapeHtml(rag.documentCount ?? 0)}，主题：${escapeHtml(rag.topicCount ?? 0)}</div><div>${escapeHtml(rag.message || "")}</div>`),
+			runtimeCard("MCP",
+				runtimeBadge(mcp.realMcpAvailable ? "真实工具" : "Mock 兜底", mcpTone),
+				`<div>模式：<strong>${escapeHtml(mcp.mode || "UNKNOWN")}</strong></div><div>工具数量：${escapeHtml(mcp.toolCount ?? 0)}</div><div>${escapeHtml((mcp.toolNames || []).slice(0, 3).join("、") || "暂无真实客服工具")}</div>`)
+		].join("");
+	}
+
+	async function refreshRuntimeStatus() {
+		if (!runtimeStatusGrid) return;
+		runtimeStatusGrid.innerHTML = `<div class="evaluation-empty">正在加载运行环境状态...</div>`;
+		try {
+			renderRuntimeStatus(await fetchRuntimeStatus());
+		}
+		catch (error) {
+			runtimeStatusGrid.innerHTML = `<div class="evaluation-empty">加载运行环境状态失败：${escapeHtml(error.message)}</div>`;
+		}
+	}
+
+	function summarizeStorageRow(row) {
+		const keys = Object.keys(row || {}).slice(0, 4);
+		if (!keys.length) return "暂无字段";
+		return keys.map(key => `${key}=${String(row[key] ?? "").slice(0, 40)}`).join("；");
+	}
+
+	function renderStorageTables(tables) {
+		if (!storageDataGrid) return;
+		if (!Array.isArray(tables) || !tables.length) {
+			storageDataGrid.innerHTML = `<div class="evaluation-empty">暂无 MySQL 表状态。</div>`;
+			return;
+		}
+		storageDataGrid.innerHTML = tables.map(table => {
+			const rows = Array.isArray(table.latestRows) ? table.latestRows : [];
+			const rowHtml = rows.length
+				? rows.map(row => `<div>${escapeHtml(summarizeStorageRow(row))}</div>`).join("")
+				: "<div>暂无数据</div>";
+			return runtimeCard(table.tableName || "unknown",
+				runtimeBadge(`${table.recordCount ?? 0} 条`, (table.recordCount ?? 0) > 0 ? "" : "off"),
+				`<div>最近更新：<strong>${escapeHtml(table.latestUpdatedAt || "暂无")}</strong></div>${rowHtml}`);
+		}).join("");
+	}
+
+	async function refreshStorageTables() {
+		if (!storageDataGrid) return;
+		storageDataGrid.innerHTML = `<div class="evaluation-empty">正在加载 MySQL 表状态...</div>`;
+		try {
+			renderStorageTables(await fetchStorageTables());
+		}
+		catch (error) {
+			storageDataGrid.innerHTML = `<div class="evaluation-empty">加载 MySQL 表状态失败：${escapeHtml(error.message)}</div>`;
+		}
+	}
+
+	function renderRedisContext(context) {
+		if (!redisContextResult) return;
+		const messages = Array.isArray(context.messages) ? context.messages : [];
+		const messageHtml = messages.length
+			? messages.slice(-8).map(item => `
+				<div class="rag-document">
+					<div class="rag-document-title">${escapeHtml(item.role || "message")}</div>
+					<div>${escapeHtml(item.content || "")}</div>
+				</div>
+			`).join("")
+			: `<div class="evaluation-empty">当前用户暂无 Redis 短期上下文。</div>`;
+		redisContextResult.innerHTML = `
+			<div class="rag-result-summary">
+				<div class="rag-metric">
+					<div class="rag-metric-label">用户</div>
+					<div class="rag-metric-value">${escapeHtml(context.userId || currentUserId())}</div>
+				</div>
+				<div class="rag-metric">
+					<div class="rag-metric-label">Redis</div>
+					<div class="rag-metric-value">${escapeHtml(context.redisAvailable ? "可用" : "不可用")}</div>
+				</div>
+				<div class="rag-metric">
+					<div class="rag-metric-label">消息数</div>
+					<div class="rag-metric-value">${escapeHtml(context.messageCount ?? 0)}</div>
+				</div>
+				<div class="rag-metric">
+					<div class="rag-metric-label">TTL</div>
+					<div class="rag-metric-value">${escapeHtml(context.ttlSeconds ?? -1)}s</div>
+				</div>
+			</div>
+			<div class="rag-document">
+				<div class="rag-document-title">Redis Key</div>
+				<div>${escapeHtml(context.redisKey || "-")}</div>
+				<div>${escapeHtml(context.message || "")}</div>
+			</div>
+			<div class="rag-documents">${messageHtml}</div>
+		`;
 	}
 
 	function formatMcpDebug(mcpDebugInfo, toolCalls) {
@@ -1621,15 +1973,49 @@
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(buildPayload(message))
 		});
-		if (!response.ok) throw new Error(`HTTP ${response.status}`);
-		return response.json();
+		return readJsonResponse(response);
+	}
+
+	async function readJsonResponse(response) {
+		if (response.ok) {
+			return response.json();
+		}
+		const error = await response.json().catch(() => ({}));
+		throw new Error(error.message || error.error || `HTTP ${response.status}`);
+	}
+
+	async function fetchRuntimeStatus() {
+		const [memory, context, rag, mcp] = await Promise.all([
+			fetch("/minimax/chat-client/customer-service/memory/backend").then(readJsonResponse),
+			fetch("/minimax/chat-client/customer-service/context/status").then(readJsonResponse),
+			fetch("/minimax/chat-client/customer-service/rag/status").then(readJsonResponse),
+			fetch("/minimax/chat-client/customer-service/mcp/status").then(readJsonResponse)
+		]);
+		return { memory, context, rag, mcp };
+	}
+
+	async function fetchStorageTables() {
+		const response = await fetch("/minimax/chat-client/customer-service/storage/tables");
+		return readJsonResponse(response);
+	}
+
+	async function clearStorageTestData() {
+		const response = await fetch("/minimax/chat-client/customer-service/storage/test-data", {
+			method: "DELETE"
+		});
+		return readJsonResponse(response);
+	}
+
+	async function fetchRedisContext() {
+		const endpoint = "/minimax/chat-client/customer-service/context";
+		const response = await fetch(`${endpoint}?userId=${encodeURIComponent(currentUserId())}`);
+		return readJsonResponse(response);
 	}
 
 	async function fetchMemory() {
 		const endpoint = "/minimax/chat-client/customer-service/memory";
 		const response = await fetch(`${endpoint}?userId=${encodeURIComponent(currentUserId())}`);
-		if (!response.ok) throw new Error(`HTTP ${response.status}`);
-		return response.json();
+		return readJsonResponse(response);
 	}
 
 	async function deleteMemory() {
@@ -1637,8 +2023,7 @@
 		const response = await fetch(`${endpoint}?userId=${encodeURIComponent(currentUserId())}`, {
 			method: "DELETE"
 		});
-		if (!response.ok) throw new Error(`HTTP ${response.status}`);
-		return response.json();
+		return readJsonResponse(response);
 	}
 
 	async function fetchAgentRunReports() {
@@ -2003,6 +2388,13 @@
 		if (event.key === "Enter" && event.ctrlKey) composer.requestSubmit();
 	});
 
+	for (const quickPromptButton of quickPromptButtons) {
+		quickPromptButton.addEventListener("click", () => {
+			input.value = quickPromptButton.dataset.message || quickPromptButton.textContent.trim();
+			input.focus();
+		});
+	}
+
 	for (const agentModeInput of agentModeInputs) {
 		agentModeInput.addEventListener("change", () => {
 			syncResponseModeAvailability();
@@ -2121,6 +2513,62 @@
 
 	refreshEvaluationButton.addEventListener("click", async () => {
 		await refreshEvaluationDashboard(true);
+	});
+
+	refreshRuntimeStatusButton?.addEventListener("click", async () => {
+		refreshRuntimeStatusButton.disabled = true;
+		refreshRuntimeStatusButton.textContent = "刷新中";
+		try {
+			await refreshRuntimeStatus();
+		}
+		finally {
+			refreshRuntimeStatusButton.disabled = false;
+			refreshRuntimeStatusButton.textContent = "刷新状态";
+		}
+	});
+
+	refreshStorageDataButton?.addEventListener("click", async () => {
+		refreshStorageDataButton.disabled = true;
+		refreshStorageDataButton.textContent = "刷新中";
+		try {
+			await refreshStorageTables();
+		}
+		finally {
+			refreshStorageDataButton.disabled = false;
+			refreshStorageDataButton.textContent = "刷新数据";
+		}
+	});
+
+	viewRedisContextButton?.addEventListener("click", async () => {
+		viewRedisContextButton.disabled = true;
+		viewRedisContextButton.textContent = "读取中";
+		try {
+			renderRedisContext(await fetchRedisContext());
+		}
+		catch (error) {
+			redisContextResult.innerHTML = `<div class="evaluation-empty">读取 Redis 上下文失败：${escapeHtml(error.message)}</div>`;
+		}
+		finally {
+			viewRedisContextButton.disabled = false;
+			viewRedisContextButton.textContent = "查看上下文";
+		}
+	});
+
+	clearStorageTestDataButton?.addEventListener("click", async () => {
+		clearStorageTestDataButton.disabled = true;
+		clearStorageTestDataButton.textContent = "清理中";
+		try {
+			const result = await clearStorageTestData();
+			appendMessage("assistant", `已清理本地测试数据：Memory ${result.memoryDeleted ?? 0} 条，审核任务 ${result.approvalDeleted ?? 0} 条，审计 ${result.auditDeleted ?? 0} 条，总计 ${result.totalDeleted ?? 0} 条。`);
+			await refreshStorageTables();
+		}
+		catch (error) {
+			appendMessage("error", `清理测试数据失败：${error.message}`);
+		}
+		finally {
+			clearStorageTestDataButton.disabled = false;
+			clearStorageTestDataButton.textContent = "清理测试数据";
+		}
 	});
 
 	loadRagTopicsButton.addEventListener("click", async () => {
@@ -2270,6 +2718,8 @@
 	});
 
 	if (isDashboardPage) {
+		refreshRuntimeStatus();
+		refreshStorageTables();
 		refreshEvaluationDashboard();
 		fetchCustomerRagTopics().then(renderRagTopics).catch(() => {});
 		fetchCustomerKnowledgeDocuments().then(renderKnowledgeDocuments).catch(() => {});

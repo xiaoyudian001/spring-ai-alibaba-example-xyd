@@ -62,7 +62,7 @@ public class CustomerServiceTraceLogger {
 	 * @date 2026-05-19 00:20:26
 	 */
 	public void step(String chainMode, String traceId, String stepName, String detail) {
-		logger.debug("[客服链路][{}][{}] STEP {} -> {}", chainMode, normalize(traceId), normalize(stepName),
+		logger.info("[客服链路][{}][{}] STEP {} -> {}", chainMode, normalize(traceId), normalize(stepName),
 				normalize(detail));
 	}
 
@@ -78,7 +78,7 @@ public class CustomerServiceTraceLogger {
 		int count = toolCalls == null ? 0 : toolCalls.size();
 		String names = toolCalls == null || toolCalls.isEmpty() ? "none"
 				: String.join(",", toolCalls.stream().map(ToolCallDebugRecorder.ToolCallDebug::name).toList());
-		logger.debug("[客服链路][{}][{}] TOOLS count={}, names={}", chainMode, normalize(traceId), count, names);
+		logger.info("[客服链路][{}][{}] TOOLS count={}, names={}", chainMode, normalize(traceId), count, names);
 	}
 
 	/**

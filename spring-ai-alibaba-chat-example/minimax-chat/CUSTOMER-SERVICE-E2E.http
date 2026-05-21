@@ -1,0 +1,97 @@
+@baseUrl = http://localhost:8080
+@demoUser = e2e-user
+@directUser = e2e-direct-user
+
+### 00 统一存储健康检查
+GET {{baseUrl}}/minimax/chat-client/customer-service/storage/status
+{
+  "mysqlAvailable": true,
+  "redisAvailable": true,
+  "memoryBackend": "MYSQL_DATABASE",
+  "contextMode": "REDIS",
+  "ragMode": "LOCAL_KEYWORD",
+  "mcpMode": "CUSTOMER_MOCK_FALLBACK",
+  "message": "MySQL 可用"
+}
+
+### 01 清理本地测试数据
+DELETE {{baseUrl}}/minimax/chat-client/customer-service/storage/test-data
+{
+  "memoryDeleted": 0,
+  "approvalDeleted": 0,
+  "auditDeleted": 0,
+  "totalDeleted": 0
+}
+### 02 简单对话：预期走 CUSTOMER_SERVICE_DIRECT_LLM
+POST {{baseUrl}}/minimax/chat-client/customer-service/assistant/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{directUser}}",
+  "channel": "WEB",
+  "message": "你好，你是谁？",
+  "history": []
+}
+
+### 03 商品咨询：预期走 Agent，并识别 PRODUCT_INQUIRY
+POST {{baseUrl}}/minimax/chat-client/customer-service/assistant/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{demoUser}}",
+  "channel": "XIANYU",
+  "message": "这个 p-1001 商品还在吗？能介绍一下成色吗？",
+  "history": []
+}
+
+### 04 物流查询：预期调用订单和物流相关工具
+POST {{baseUrl}}/minimax/chat-client/customer-service/assistant/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{demoUser}}",
+  "channel": "WECHAT_OFFICIAL_ACCOUNT",
+  "message": "我的订单 o-202605150001 怎么还没到？帮我查一下物流。",
+  "history": []
+}
+
+### 05 高风险退款：预期进入 Multi-Agent 或高风险审核建议
+POST {{baseUrl}}/minimax/chat-client/customer-service/assistant/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{demoUser}}",
+  "channel": "WEB",
+  "message": "订单 o-202605150001 我要退款，你直接帮我退掉。",
+  "history": []
+}
+
+### 06 RAG 召回率：预期命中 refund、shipping、complaint
+GET {{baseUrl}}/minimax/chat-client/customer-service/rag/evaluate?query=订单迟迟不到我想退款并投诉客服&expectedTopics=refund,shipping,complaint&limit=6
+
+### 07 查看 MySQL 长期 Memory
+GET {{baseUrl}}/minimax/chat-client/customer-service/memory?userId={{demoUser}}
+
+### 08 查看 Redis 短期上下文，需启用 redis profile
+GET {{baseUrl}}/minimax/chat-client/customer-service/context?userId={{demoUser}}
+
+### 09 查看 MySQL 表概览
+GET {{baseUrl}}/minimax/chat-client/customer-service/storage/tables
+
+### 10 查看待审核任务
+GET {{baseUrl}}/minimax/chat-client/customer-service/approval/tasks?limit=10
+
+### 11 查看操作审计
+GET {{baseUrl}}/minimax/chat-client/audit/events?limit=10
+
+### 12 查看执行报告，确认 chainMode、intent、toolCalls、memoryBefore/memoryAfter
+GET {{baseUrl}}/minimax/chat-client/report/runs?limit=10
+
+### 13 查看规则评估
+GET {{baseUrl}}/minimax/chat-client/evaluation/runs?limit=10
+
+### 14 AI Judge 评审最近一轮
+POST {{baseUrl}}/minimax/chat-client/judge/latest
+
+### 15 查看 AI Judge 结果
+GET {{baseUrl}}/minimax/chat-client/judge/runs?limit=5

@@ -46,6 +46,8 @@ public class CustomerMcpService {
 
 	private final MockCustomerDataService mockCustomerDataService;
 
+	private final ApprovalTaskService approvalTaskService;
+
 	private final ThreadLocal<McpDebugInfo> debugInfoHolder = ThreadLocal.withInitial(McpDebugInfo::none);
 
 	/**
@@ -57,10 +59,11 @@ public class CustomerMcpService {
 	 * @date 2026-05-17 10:43:52
 	 */
 	public CustomerMcpService(ObjectProvider<ToolCallbackProvider> toolCallbackProvider, ObjectMapper objectMapper,
-			MockCustomerDataService mockCustomerDataService) {
+			MockCustomerDataService mockCustomerDataService, ApprovalTaskService approvalTaskService) {
 		this.toolCallbackProvider = toolCallbackProvider;
 		this.objectMapper = objectMapper;
 		this.mockCustomerDataService = mockCustomerDataService;
+		this.approvalTaskService = approvalTaskService;
 	}
 
 	/**
@@ -158,10 +161,11 @@ public class CustomerMcpService {
 	 * @date 2026-05-17 10:43:52
 	 */
 	public String requestHumanHandoff(String conversationId, String reason) {
-		return invokeOrFallback("requestHumanHandoff",
-				Map.of("conversationId", safeText(conversationId), "reason", safeText(reason)),
-				() -> "已生成待人工确认任务：handoff-" + Math.abs((safeText(conversationId) + safeText(reason)).hashCode())
-						+ "；原因：" + reason + "。模型不得直接执行退款、赔付、取消订单等高风险动作。");
+		PendingApprovalTask task = this.approvalTaskService.create("HUMAN_HANDOFF", conversationId, reason);
+		recordDebug("PENDING_APPROVAL_TASK", false, "createPendingApprovalTask", availableToolNames(),
+				"高风险动作已进入待审核任务，不直接执行真实 MCP 动作", "requestHumanHandoff");
+		return "已创建待审核任务：" + task.id() + "；动作：人工接管；状态：" + task.status()
+				+ "。模型不得直接执行退款、赔付、取消订单等高风险动作。原因：" + reason;
 	}
 
 	/**

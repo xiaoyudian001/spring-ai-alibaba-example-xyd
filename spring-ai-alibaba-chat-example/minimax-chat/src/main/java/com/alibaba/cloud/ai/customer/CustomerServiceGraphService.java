@@ -120,7 +120,7 @@ public class CustomerServiceGraphService {
 		String traceId = this.traceLogger.start("CUSTOMER_SERVICE_STATE_GRAPH", normalizedUserId, channel, message);
 		try {
 			RunnableConfig config = RunnableConfig.builder()
-					.threadId(normalizedUserId + "-customer-service-graph")
+					.threadId(normalizedUserId + "-customer-service-graph-" + traceId)
 					.build();
 			Optional<OverAllState> result = this.compiledGraph.invoke(Map.of("traceId", traceId, "userId",
 					normalizedUserId, "channel", channel == null ? ChannelType.WEB : channel, "message",
@@ -259,7 +259,7 @@ public class CustomerServiceGraphService {
 			this.traceLogger.step("CUSTOMER_SERVICE_STATE_GRAPH", stringValue(state, "traceId", "-"),
 					"react_agent", "调用官方客服 ReactAgent");
 			RunnableConfig config = RunnableConfig.builder()
-					.threadId(userId + "-customer-service-react-agent")
+					.threadId(userId + "-customer-service-react-agent-" + stringValue(state, "traceId", "-"))
 					.build();
 			Optional<NodeOutput> output = this.customerServiceReactAgent.invokeAndGetOutput(
 					buildAgentPrompt(channel, message, history, intent, selectedSkill, memory), config);
@@ -362,9 +362,6 @@ public class CustomerServiceGraphService {
 	private String buildAgentPrompt(ChannelType channel, String message, List<CustomerConversationMessage> history,
 			CustomerServiceIntent intent, String selectedSkill, CustomerMemory memory) {
 		return """
-				用户问题：
-				%s
-
 				当前渠道：
 				%s
 
@@ -386,11 +383,15 @@ public class CustomerServiceGraphService {
 				最近对话历史：
 				%s
 
+				本轮用户问题：
+				%s
+
 				请使用 Spring AI Alibaba ReactAgent 的工具能力完成本轮客服处理。
+				必须优先回答“本轮用户问题”，最近对话历史只能作为上下文参考，不能把历史里的旧问题当成本轮问题。
 				需要商品、订单、物流、议价底价、退款资格或售后状态事实时调用工具；需要政策或话术时检索知识库或读取 Skill；
 				涉及退款、赔偿、取消订单、修改地址、承诺额外优惠、投诉升级等高风险动作时，必须请求人工接管。
-				""".formatted(message, channel, intent, this.intentPlanner.instructionFor(intent), selectedSkill,
-				this.skillService.listSkills(), memory.summary(), historySummary(history));
+				""".formatted(channel, intent, this.intentPlanner.instructionFor(intent), selectedSkill,
+				this.skillService.listSkills(), memory.summary(), historySummary(history), message);
 	}
 
 	private List<CustomerServiceStep> agentSteps(CustomerServiceIntent intent, String selectedSkill) {

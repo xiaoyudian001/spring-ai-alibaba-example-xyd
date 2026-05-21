@@ -106,7 +106,7 @@ public class CustomerServiceMultiAgentService {
 		this.traceLogger.step("CUSTOMER_SERVICE_MULTI_AGENT", traceId, "SKILL_SELECT", selectedSkill);
 		try {
 			RunnableConfig config = RunnableConfig.builder()
-					.threadId(normalizedUserId + "-customer-service-multi-agent")
+					.threadId(normalizedUserId + "-customer-service-multi-agent-" + traceId)
 					.build();
 			this.traceLogger.step("CUSTOMER_SERVICE_MULTI_AGENT", traceId, "SEQUENTIAL_AGENT",
 					"调用官方 SequentialAgent");
@@ -151,15 +151,18 @@ public class CustomerServiceMultiAgentService {
 			CustomerServiceIntent intent, String selectedSkill, CustomerMemory memory) {
 		return """
 				当前渠道：%s
-				用户问题：%s
 				识别意图：%s
 				推荐 Skill：%s
 				客服处理策略：%s
 				客服长期记忆：%s
 				最近对话历史：
 				%s
-				""".formatted(channel, normalizeMessage(message), intent, selectedSkill,
-				this.intentPlanner.instructionFor(intent), memory.summary(), historySummary(history));
+
+				本轮用户问题：%s
+
+				必须优先回答“本轮用户问题”，最近对话历史只能作为上下文参考，不能把历史里的旧问题当成本轮问题。
+				""".formatted(channel, intent, selectedSkill, this.intentPlanner.instructionFor(intent),
+				memory.summary(), historySummary(history), normalizeMessage(message));
 	}
 
 	/**

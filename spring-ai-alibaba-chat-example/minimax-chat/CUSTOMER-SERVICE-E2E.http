@@ -4,18 +4,11 @@
 
 ### 00 统一存储健康检查
 GET {{baseUrl}}/minimax/chat-client/customer-service/storage/status
-{
-  "mysqlAvailable": true,
-  "redisAvailable": true,
-  "memoryBackend": "MYSQL_DATABASE",
-  "contextMode": "REDIS",
-  "ragMode": "LOCAL_KEYWORD",
-  "mcpMode": "CUSTOMER_MOCK_FALLBACK",
-  "message": "MySQL 可用"
-}
+
 
 ### 01 清理本地测试数据
 DELETE {{baseUrl}}/minimax/chat-client/customer-service/storage/test-data
+
 {
   "memoryDeleted": 0,
   "approvalDeleted": 0,

@@ -161,7 +161,6 @@
 		.chat-page .knowledge-lab,
 		.chat-page .dashboard-only,
 		.chat-page .capabilities,
-		.chat-page .user-field,
 		.chat-page .composer-tools,
 		.chat-page .advanced-action {
 			display: none !important;
@@ -189,12 +188,13 @@
 		}
 
 		.chat-page .composer-inner {
-			grid-template-columns: minmax(190px, 240px) 1fr;
+			grid-template-columns: minmax(170px, 220px) minmax(190px, 240px) 1fr;
 			grid-template-areas:
-				"channel message"
-				"actions message";
+				"user channel message"
+				"actions actions message";
 		}
 
+		.chat-page .user-field,
 		.chat-page .channel-field {
 			display: grid !important;
 		}
@@ -789,7 +789,8 @@
 			display: inline-flex;
 			align-items: center;
 			gap: 8px;
-			padding: 0 10px;
+			max-width: 100%;
+			padding: 0 11px 0 8px;
 			border: 1px solid #c9d8d3;
 			border-radius: 999px;
 			background: #f8fbf7;
@@ -800,7 +801,7 @@
 		}
 
 		.debug-tip-button::before {
-			content: "i";
+			content: "?";
 			width: 18px;
 			height: 18px;
 			display: inline-grid;
@@ -812,9 +813,51 @@
 			font-weight: 900;
 		}
 
-		.debug-summary {
-			color: #5b686d;
+		.debug-tip-button::after {
+			content: "展开";
+			color: #617077;
+			font-size: 11px;
+			font-weight: 800;
+		}
+
+		.debug-panel.is-open .debug-tip-button {
+			border-color: rgba(18, 99, 79, 0.38);
+			background: #eef8f1;
+			box-shadow: 0 6px 16px rgba(18, 99, 79, 0.12);
+		}
+
+		.debug-panel.is-open .debug-tip-button::after {
+			content: "收起";
+			color: var(--primary);
+		}
+
+		.debug-tip-label {
+			color: #172321;
+			font-weight: 900;
+		}
+
+		.debug-tip-metrics {
+			display: inline-flex;
+			align-items: center;
+			gap: 5px;
+			min-width: 0;
+		}
+
+		.debug-pill {
+			display: inline-flex;
+			align-items: center;
+			max-width: 150px;
+			height: 22px;
+			padding: 0 7px;
+			border: 1px solid rgba(18, 99, 79, 0.13);
+			border-radius: 999px;
+			background: rgba(255, 255, 255, 0.78);
+			color: #526064;
+			font-size: 11px;
 			font-weight: 700;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
 		}
 
 		.debug-content {
@@ -1155,6 +1198,7 @@
 			.chat-page .composer-inner {
 				grid-template-columns: 1fr;
 				grid-template-areas:
+					"user"
 					"channel"
 					"message"
 					"actions";
@@ -1391,9 +1435,9 @@
 	<form id="composer" class="composer">
 		<div class="composer-inner">
 			<label class="field user-field">
-				<span class="field-label">用户 ID</span>
-				<input id="userIdInput" type="text" value="default-user" aria-label="用户 ID" placeholder="例如 user-a">
-				<span class="field-hint">用于隔离长期 Memory</span>
+				<span class="field-label">测试用户</span>
+				<input id="userIdInput" type="text" value="default-user" aria-label="用户 ID" placeholder="default-user / user-a">
+				<span class="field-hint">切换用户会隔离 Memory 和上下文</span>
 			</label>
 			<label class="field channel-field">
 				<span class="field-label">来源入口</span>
@@ -1884,13 +1928,18 @@
 		const agentStepCount = agentSteps && agentSteps.length ? agentSteps.length : 0;
 		const toolCallCount = toolCalls && toolCalls.length ? toolCalls.length : 0;
 		panel.innerHTML = `
-			<button class="debug-tip-button" type="button" title="查看本轮 Agent、Tool、Memory 和 MCP 调试信息">
-				本轮调试信息
-				<span class="debug-summary">${escapeHtml(intent || "UNKNOWN")} · Tool ${toolCallCount} · Step ${agentStepCount + graphCount}</span>
+			<button class="debug-tip-button" type="button" aria-expanded="false" title="查看本轮 Agent、Tool、Memory 和 MCP 调试信息">
+				<span class="debug-tip-label">Tips</span>
+				<span class="debug-tip-metrics">
+					<span class="debug-pill">${escapeHtml(intent || "UNKNOWN")}</span>
+					<span class="debug-pill">Tool ${toolCallCount}</span>
+					<span class="debug-pill">Step ${agentStepCount + graphCount}</span>
+				</span>
 			</button>
 		`;
 		const content = document.createElement("div");
 		content.className = "debug-content";
+		content.setAttribute("role", "region");
 		content.innerHTML = `
 			<div class="debug-title">本轮调试信息</div>
 			<div>链路模式：${escapeHtml(chainMode || currentAgentModeLabel())}</div>
@@ -1900,8 +1949,10 @@
 			<div>工具调用：${toolCallCount} 次</div>
 		`;
 		panel.appendChild(content);
-		panel.querySelector(".debug-tip-button").addEventListener("click", () => {
+		const tipButton = panel.querySelector(".debug-tip-button");
+		tipButton.addEventListener("click", () => {
 			panel.classList.toggle("is-open");
+			tipButton.setAttribute("aria-expanded", panel.classList.contains("is-open") ? "true" : "false");
 		});
 		const memory = document.createElement("div");
 		memory.className = "memory-grid";

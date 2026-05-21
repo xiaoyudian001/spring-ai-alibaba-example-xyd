@@ -106,7 +106,7 @@ public class CustomerServiceAgentService {
 		List<CustomerServiceStep> multiAgentSteps = multiAgentSteps(intent, selectedSkill);
 		try {
 			RunnableConfig config = RunnableConfig.builder()
-					.threadId(normalizeUserId(userId))
+					.threadId(normalizeUserId(userId) + "-" + traceId)
 					.build();
 			this.traceLogger.step("CUSTOMER_SERVICE_REACT_AGENT", traceId, "MODEL_CALL",
 					"调用 Spring AI Alibaba ReactAgent");
@@ -192,9 +192,6 @@ public class CustomerServiceAgentService {
 	private String buildPrompt(ChannelType channel, String message, List<CustomerConversationMessage> history,
 			CustomerServiceIntent intent, String selectedSkill, CustomerMemory memory) {
 		return """
-				用户问题：
-				%s
-
 				当前渠道：
 				%s
 
@@ -216,11 +213,15 @@ public class CustomerServiceAgentService {
 				最近对话历史：
 				%s
 
+				本轮用户问题：
+				%s
+
 				请使用 Spring AI Alibaba ReactAgent 的工具能力完成本轮客服处理。
+				必须优先回答“本轮用户问题”，最近对话历史只能作为上下文参考，不能把历史里的旧问题当成本轮问题。
 				需要商品、订单、物流、议价底价、退款资格或售后状态事实时调用工具；需要政策或话术时检索知识库或读取 Skill；
 				涉及高风险动作必须请求人工接管。
-				""".formatted(message, channel, intent, this.intentPlanner.instructionFor(intent), selectedSkill,
-				this.skillService.listSkills(), memory.summary(), historySummary(history));
+				""".formatted(channel, intent, this.intentPlanner.instructionFor(intent), selectedSkill,
+				this.skillService.listSkills(), memory.summary(), historySummary(history), message);
 	}
 
 	/**

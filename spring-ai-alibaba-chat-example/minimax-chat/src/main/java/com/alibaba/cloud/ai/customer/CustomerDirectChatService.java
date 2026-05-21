@@ -122,17 +122,18 @@ public class CustomerDirectChatService {
 	 */
 	private String userPrompt(String message, List<CustomerConversationMessage> history, CustomerMemory memory) {
 		return """
-				用户当前消息：
-				%s
-
 				最近对话：
 				%s
 
 				客服长期记忆摘要：
 				%s
 
+				用户当前消息：
+				%s
+
+				必须优先回答“用户当前消息”，最近对话只作为上下文参考，不能把历史里的旧问题当成本轮问题。
 				请直接回复用户，不要输出调试信息。
-				""".formatted(safeText(message), historySummary(history), memory == null ? "暂无" : memory.summary());
+				""".formatted(historySummary(history), memory == null ? "暂无" : memory.summary(), safeText(message));
 	}
 
 	/**

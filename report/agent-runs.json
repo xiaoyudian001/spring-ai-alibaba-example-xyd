@@ -1271,4 +1271,519 @@
     "query" : "getLogisticsInfo",
     "limit" : null
   }
+}, {
+  "id" : "run-e9fd2087-92fe-4848-a25a-490802206e40",
+  "createdAt" : "2026-05-21T18:07:16.225775800Z",
+  "userId" : "default-user",
+  "chainMode" : "CUSTOMER_SERVICE_DIRECT_LLM",
+  "message" : "你好，你是谁？",
+  "historySize" : 6,
+  "intent" : "GENERAL_CHAT",
+  "answerSummary" : " 在的！这款机械键盘还在，成色是九成新，轴体是青轴，日常使用没什么问题。 价格199元，支持小刀但不支持包邮～有什么其他想了解的吗？",
+  "answerContent" : "在的！这款机械键盘还在，成色是九成新，轴体是青轴，日常使用没什么问题。\n\n价格199元，支持小刀但不支持包邮～有什么其他想了解的吗？",
+  "mcpMode" : "NOT_USED",
+  "pendingMcpWrite" : false,
+  "toolCallCount" : 0,
+  "agentStepCount" : 0,
+  "graphStepCount" : 1,
+  "memoryBefore" : {
+    "userId" : "default-user",
+    "channel" : "WEB",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "LOGISTICS_QUERY",
+    "riskFlags" : [ ],
+    "conversationCount" : 2,
+    "lastQuestion" : "我的订单 o-202605150001 怎么还没到？帮我查一下物流"
+  },
+  "memoryAfter" : {
+    "userId" : "default-user",
+    "channel" : "WEB",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "LOGISTICS_QUERY",
+    "riskFlags" : [ ],
+    "conversationCount" : 2,
+    "lastQuestion" : "我的订单 o-202605150001 怎么还没到？帮我查一下物流"
+  },
+  "agentSteps" : [ ],
+  "graphSteps" : [ {
+    "name" : "DIRECT_LLM",
+    "detail" : "识别为简单对话，直接调用 MiniMax-M2.7 生成回复。"
+  } ],
+  "toolCalls" : [ ],
+  "mcpDebugInfo" : null
+}, {
+  "id" : "run-22c3e008-58db-418d-99ad-e995873f142d",
+  "createdAt" : "2026-05-21T18:08:45.465017600Z",
+  "userId" : "default-user",
+  "chainMode" : "CUSTOMER_SERVICE_DIRECT_LLM",
+  "message" : "你好，你是谁？",
+  "historySize" : 8,
+  "intent" : "GENERAL_CHAT",
+  "answerSummary" : " 你好！我是小雨点智能客服助手，很高兴为您服务～ 有什么可以帮您的吗？",
+  "answerContent" : "你好！我是小雨点智能客服助手，很高兴为您服务～\n\n有什么可以帮您的吗？",
+  "mcpMode" : "NOT_USED",
+  "pendingMcpWrite" : false,
+  "toolCallCount" : 0,
+  "agentStepCount" : 0,
+  "graphStepCount" : 1,
+  "memoryBefore" : {
+    "userId" : "default-user",
+    "channel" : "WEB",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "LOGISTICS_QUERY",
+    "riskFlags" : [ ],
+    "conversationCount" : 2,
+    "lastQuestion" : "我的订单 o-202605150001 怎么还没到？帮我查一下物流"
+  },
+  "memoryAfter" : {
+    "userId" : "default-user",
+    "channel" : "WEB",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "LOGISTICS_QUERY",
+    "riskFlags" : [ ],
+    "conversationCount" : 2,
+    "lastQuestion" : "我的订单 o-202605150001 怎么还没到？帮我查一下物流"
+  },
+  "agentSteps" : [ ],
+  "graphSteps" : [ {
+    "name" : "DIRECT_LLM",
+    "detail" : "识别为简单对话，直接调用 MiniMax-M2.7 生成回复。"
+  } ],
+  "toolCalls" : [ ],
+  "mcpDebugInfo" : null
+}, {
+  "id" : "run-4f15a08e-5ce1-4f6b-b54a-c3b7c93de7a6",
+  "createdAt" : "2026-05-21T18:09:04.617481600Z",
+  "userId" : "default-user",
+  "chainMode" : "CUSTOMER_SERVICE_ASSISTANT_AGENT",
+  "message" : "这个 p-1001 商品还在吗？能介绍一下成色吗？",
+  "historySize" : 10,
+  "intent" : "PRODUCT_INQUIRY",
+  "answerSummary" : " 你好！我是小雨点智能客服助手，很高兴为您服务～ 我可以帮您处理商品咨询、订单查询、物流追踪、退款退货等问题。请问有什么可以帮您的吗？",
+  "answerContent" : "你好！我是小雨点智能客服助手，很高兴为您服务～\n\n我可以帮您处理商品咨询、订单查询、物流追踪、退款退货等问题。请问有什么可以帮您的吗？",
+  "mcpMode" : "NOT_USED",
+  "pendingMcpWrite" : false,
+  "toolCallCount" : 0,
+  "agentStepCount" : 4,
+  "graphStepCount" : 6,
+  "memoryBefore" : {
+    "userId" : "default-user",
+    "channel" : "WEB",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "LOGISTICS_QUERY",
+    "riskFlags" : [ ],
+    "conversationCount" : 2,
+    "lastQuestion" : "我的订单 o-202605150001 怎么还没到？帮我查一下物流"
+  },
+  "memoryAfter" : {
+    "userId" : "default-user",
+    "channel" : "XIANYU",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "PRODUCT_INQUIRY",
+    "riskFlags" : [ ],
+    "conversationCount" : 3,
+    "lastQuestion" : "这个 p-1001 商品还在吗？能介绍一下成色吗？"
+  },
+  "agentSteps" : [ {
+    "name" : "ReceptionAgent",
+    "detail" : "接待用户并识别客服意图：PRODUCT_INQUIRY。"
+  }, {
+    "name" : "SkillAgent",
+    "detail" : "根据渠道和意图选择客服技能：xianyu-reply。"
+  }, {
+    "name" : "OfficialReactAgent",
+    "detail" : "由 Spring AI Alibaba ReactAgent 执行工具选择和回复生成。"
+  }, {
+    "name" : "RiskReviewerAgent",
+    "detail" : "通过提示词和 requestHumanHandoff 工具约束高风险动作。"
+  } ],
+  "graphSteps" : [ {
+    "name" : "AUTO_ROUTE",
+    "detail" : "识别到常规客服咨询，后端自动选择客服 ReactAgent 快速处理。"
+  }, {
+    "name" : "接收渠道消息",
+    "detail" : "渠道：XIANYU；消息：这个 p-1001 商品还在吗？能介绍一下成色吗？"
+  }, {
+    "name" : "识别客服意图",
+    "detail" : "Planner 识别为 PRODUCT_INQUIRY。"
+  }, {
+    "name" : "读取用户记忆",
+    "detail" : "渠道：WEB；最近商品：p-1001；最近订单：o-202605150001；语气：简洁友好；风险标记：暂无；轮次：2；上次意图：LOGISTICS_QUERY"
+  }, {
+    "name" : "选择客服技能",
+    "detail" : "命中 Skill：xianyu-reply。"
+  }, {
+    "name" : "官方 ReactAgent",
+    "detail" : "调用 Spring AI Alibaba ReactAgent，由 Agent Framework 自主决定 Tool、RAG、Skill 和人工接管调用。"
+  } ],
+  "toolCalls" : [ ],
+  "mcpDebugInfo" : {
+    "mode" : "NOT_USED",
+    "realMcpAvailable" : false,
+    "selectedToolName" : "",
+    "availableToolNames" : [ ],
+    "fallbackReason" : "",
+    "query" : "",
+    "limit" : null
+  }
+}, {
+  "id" : "run-8e8a1d2c-2a07-4c96-a401-dc7f0969d0cd",
+  "createdAt" : "2026-05-21T18:09:27.601120900Z",
+  "userId" : "default-user",
+  "chainMode" : "CUSTOMER_SERVICE_ASSISTANT_AGENT",
+  "message" : "这个 p-1001 商品还在吗？能介绍一下成色吗？",
+  "historySize" : 12,
+  "intent" : "PRODUCT_INQUIRY",
+  "answerSummary" : " 你好！我是小雨点智能客服助手，很高兴为您服务～ 我可以帮您处理商品咨询、订单查询、物流追踪、退款退货等问题。请问有什么可以帮您的吗？",
+  "answerContent" : "你好！我是小雨点智能客服助手，很高兴为您服务～\n\n我可以帮您处理商品咨询、订单查询、物流追踪、退款退货等问题。请问有什么可以帮您的吗？",
+  "mcpMode" : "NOT_USED",
+  "pendingMcpWrite" : false,
+  "toolCallCount" : 0,
+  "agentStepCount" : 4,
+  "graphStepCount" : 6,
+  "memoryBefore" : {
+    "userId" : "default-user",
+    "channel" : "XIANYU",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "PRODUCT_INQUIRY",
+    "riskFlags" : [ ],
+    "conversationCount" : 3,
+    "lastQuestion" : "这个 p-1001 商品还在吗？能介绍一下成色吗？"
+  },
+  "memoryAfter" : {
+    "userId" : "default-user",
+    "channel" : "XIANYU",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "PRODUCT_INQUIRY",
+    "riskFlags" : [ ],
+    "conversationCount" : 4,
+    "lastQuestion" : "这个 p-1001 商品还在吗？能介绍一下成色吗？"
+  },
+  "agentSteps" : [ {
+    "name" : "ReceptionAgent",
+    "detail" : "接待用户并识别客服意图：PRODUCT_INQUIRY。"
+  }, {
+    "name" : "SkillAgent",
+    "detail" : "根据渠道和意图选择客服技能：xianyu-reply。"
+  }, {
+    "name" : "OfficialReactAgent",
+    "detail" : "由 Spring AI Alibaba ReactAgent 执行工具选择和回复生成。"
+  }, {
+    "name" : "RiskReviewerAgent",
+    "detail" : "通过提示词和 requestHumanHandoff 工具约束高风险动作。"
+  } ],
+  "graphSteps" : [ {
+    "name" : "AUTO_ROUTE",
+    "detail" : "识别到常规客服咨询，后端自动选择客服 ReactAgent 快速处理。"
+  }, {
+    "name" : "接收渠道消息",
+    "detail" : "渠道：XIANYU；消息：这个 p-1001 商品还在吗？能介绍一下成色吗？"
+  }, {
+    "name" : "识别客服意图",
+    "detail" : "Planner 识别为 PRODUCT_INQUIRY。"
+  }, {
+    "name" : "读取用户记忆",
+    "detail" : "渠道：XIANYU；最近商品：p-1001；最近订单：o-202605150001；语气：简洁友好；风险标记：暂无；轮次：3；上次意图：PRODUCT_INQUIRY"
+  }, {
+    "name" : "选择客服技能",
+    "detail" : "命中 Skill：xianyu-reply。"
+  }, {
+    "name" : "官方 ReactAgent",
+    "detail" : "调用 Spring AI Alibaba ReactAgent，由 Agent Framework 自主决定 Tool、RAG、Skill 和人工接管调用。"
+  } ],
+  "toolCalls" : [ ],
+  "mcpDebugInfo" : {
+    "mode" : "NOT_USED",
+    "realMcpAvailable" : false,
+    "selectedToolName" : "",
+    "availableToolNames" : [ ],
+    "fallbackReason" : "",
+    "query" : "",
+    "limit" : null
+  }
+}, {
+  "id" : "run-52b171fe-e06f-485d-b753-4b0502cfd3de",
+  "createdAt" : "2026-05-21T18:10:13.958900900Z",
+  "userId" : "default-user",
+  "chainMode" : "CUSTOMER_SERVICE_ASSISTANT_AGENT",
+  "message" : "这个 p-1001 商品还在吗？能介绍一下成色吗？",
+  "historySize" : 14,
+  "intent" : "PRODUCT_INQUIRY",
+  "answerSummary" : " 你好！我是小雨点智能客服助手，很高兴为您服务～ 我可以帮您处理商品咨询、订单查询、物流追踪、退款退货等问题。请问有什么可以帮您的吗？",
+  "answerContent" : "你好！我是小雨点智能客服助手，很高兴为您服务～\n\n我可以帮您处理商品咨询、订单查询、物流追踪、退款退货等问题。请问有什么可以帮您的吗？",
+  "mcpMode" : "NOT_USED",
+  "pendingMcpWrite" : false,
+  "toolCallCount" : 0,
+  "agentStepCount" : 4,
+  "graphStepCount" : 6,
+  "memoryBefore" : {
+    "userId" : "default-user",
+    "channel" : "XIANYU",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "PRODUCT_INQUIRY",
+    "riskFlags" : [ ],
+    "conversationCount" : 4,
+    "lastQuestion" : "这个 p-1001 商品还在吗？能介绍一下成色吗？"
+  },
+  "memoryAfter" : {
+    "userId" : "default-user",
+    "channel" : "XIANYU",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "PRODUCT_INQUIRY",
+    "riskFlags" : [ ],
+    "conversationCount" : 5,
+    "lastQuestion" : "这个 p-1001 商品还在吗？能介绍一下成色吗？"
+  },
+  "agentSteps" : [ {
+    "name" : "ReceptionAgent",
+    "detail" : "接待用户并识别客服意图：PRODUCT_INQUIRY。"
+  }, {
+    "name" : "SkillAgent",
+    "detail" : "根据渠道和意图选择客服技能：xianyu-reply。"
+  }, {
+    "name" : "OfficialReactAgent",
+    "detail" : "由 Spring AI Alibaba ReactAgent 执行工具选择和回复生成。"
+  }, {
+    "name" : "RiskReviewerAgent",
+    "detail" : "通过提示词和 requestHumanHandoff 工具约束高风险动作。"
+  } ],
+  "graphSteps" : [ {
+    "name" : "AUTO_ROUTE",
+    "detail" : "识别到常规客服咨询，后端自动选择客服 ReactAgent 快速处理。"
+  }, {
+    "name" : "接收渠道消息",
+    "detail" : "渠道：XIANYU；消息：这个 p-1001 商品还在吗？能介绍一下成色吗？"
+  }, {
+    "name" : "识别客服意图",
+    "detail" : "Planner 识别为 PRODUCT_INQUIRY。"
+  }, {
+    "name" : "读取用户记忆",
+    "detail" : "渠道：XIANYU；最近商品：p-1001；最近订单：o-202605150001；语气：简洁友好；风险标记：暂无；轮次：4；上次意图：PRODUCT_INQUIRY"
+  }, {
+    "name" : "选择客服技能",
+    "detail" : "命中 Skill：xianyu-reply。"
+  }, {
+    "name" : "官方 ReactAgent",
+    "detail" : "调用 Spring AI Alibaba ReactAgent，由 Agent Framework 自主决定 Tool、RAG、Skill 和人工接管调用。"
+  } ],
+  "toolCalls" : [ ],
+  "mcpDebugInfo" : {
+    "mode" : "NOT_USED",
+    "realMcpAvailable" : false,
+    "selectedToolName" : "",
+    "availableToolNames" : [ ],
+    "fallbackReason" : "",
+    "query" : "",
+    "limit" : null
+  }
+}, {
+  "id" : "run-e4bacbd5-b218-4bfc-a601-73a26d2ed97f",
+  "createdAt" : "2026-05-21T18:15:15.760139300Z",
+  "userId" : "default-user",
+  "chainMode" : "CUSTOMER_SERVICE_ASSISTANT_AGENT",
+  "message" : "我的订单 o-202605150001 怎么还没到？帮我查一下物流。",
+  "historySize" : 16,
+  "intent" : "LOGISTICS_QUERY",
+  "answerSummary" : " 您好！感谢您的咨询，我来帮您查询一下订单物流信息。 您的订单详情如下： - **订单号**：o-202605150001 - **商品**：九成新机械键盘 - **实付金额**：199 元 - **支付时间**：2026-05-14 21:30:00 - **发货时间**：2026-05-15 10:20:00 - **订单状态**：已发货 快递信息如下： - **快递公司**：顺丰速运 - **运单号**：SF123456789CN...",
+  "answerContent" : "您好！感谢您的咨询，我来帮您查询一下订单物流信息。\n\n您的订单详情如下：\n\n- **订单号**：o-202605150001\n- **商品**：九成新机械键盘\n- **实付金额**：199 元\n- **支付时间**：2026-05-14 21:30:00\n- **发货时间**：2026-05-15 10:20:00\n- **订单状态**：已发货\n\n快递信息如下：\n\n- **快递公司**：顺丰速运\n- **运单号**：SF123456789CN\n- **物流状态**：运输中\n- **最新动态**：2026-05-15 13:40:00 包裹已到达上海转运中心\n\n包裹目前正在运输中，已到达上海转运中心，预计很快就能送达您手中。请您耐心等待～\n\n如有其他问题，欢迎随时咨询！",
+  "mcpMode" : "CUSTOMER_MOCK_FALLBACK",
+  "pendingMcpWrite" : false,
+  "toolCallCount" : 2,
+  "agentStepCount" : 4,
+  "graphStepCount" : 6,
+  "memoryBefore" : {
+    "userId" : "default-user",
+    "channel" : "XIANYU",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "PRODUCT_INQUIRY",
+    "riskFlags" : [ ],
+    "conversationCount" : 5,
+    "lastQuestion" : "这个 p-1001 商品还在吗？能介绍一下成色吗？"
+  },
+  "memoryAfter" : {
+    "userId" : "default-user",
+    "channel" : "WECHAT_OFFICIAL_ACCOUNT",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "LOGISTICS_QUERY",
+    "riskFlags" : [ ],
+    "conversationCount" : 6,
+    "lastQuestion" : "我的订单 o-202605150001 怎么还没到？帮我查一下物流。"
+  },
+  "agentSteps" : [ {
+    "name" : "ReceptionAgent",
+    "detail" : "接待用户并识别客服意图：LOGISTICS_QUERY。"
+  }, {
+    "name" : "SkillAgent",
+    "detail" : "根据渠道和意图选择客服技能：logistics-follow-up。"
+  }, {
+    "name" : "OfficialReactAgent",
+    "detail" : "由 Spring AI Alibaba ReactAgent 执行工具选择和回复生成。"
+  }, {
+    "name" : "RiskReviewerAgent",
+    "detail" : "通过提示词和 requestHumanHandoff 工具约束高风险动作。"
+  } ],
+  "graphSteps" : [ {
+    "name" : "AUTO_ROUTE",
+    "detail" : "识别到常规客服咨询，后端自动选择客服 ReactAgent 快速处理。"
+  }, {
+    "name" : "接收渠道消息",
+    "detail" : "渠道：WECHAT_OFFICIAL_ACCOUNT；消息：我的订单 o-202605150001 怎么还没到？帮我查一下物流。"
+  }, {
+    "name" : "识别客服意图",
+    "detail" : "Planner 识别为 LOGISTICS_QUERY。"
+  }, {
+    "name" : "读取用户记忆",
+    "detail" : "渠道：XIANYU；最近商品：p-1001；最近订单：o-202605150001；语气：简洁友好；风险标记：暂无；轮次：5；上次意图：PRODUCT_INQUIRY"
+  }, {
+    "name" : "选择客服技能",
+    "detail" : "命中 Skill：logistics-follow-up。"
+  }, {
+    "name" : "官方 ReactAgent",
+    "detail" : "调用 Spring AI Alibaba ReactAgent，由 Agent Framework 自主决定 Tool、RAG、Skill 和人工接管调用。"
+  } ],
+  "toolCalls" : [ {
+    "name" : "getOrderInfo",
+    "arguments" : {
+      "orderId" : "o-202605150001"
+    },
+    "result" : "订单ID：o-202605150001；商品ID：p-1001；用户：default-user；状态：已发货；实付：199 元；支付时间：2026-05-14 21:30:00；发货时间：2026-05-15 10:20:00"
+  }, {
+    "name" : "getLogisticsInfo",
+    "arguments" : {
+      "orderId" : "o-202605150001"
+    },
+    "result" : "订单ID：o-202605150001；快递：顺丰速运；单号：SF123456789CN；状态：运输中；最新动态：2026-05-15 13:40:00 包裹已到达上海转运中心。"
+  } ],
+  "mcpDebugInfo" : {
+    "mode" : "CUSTOMER_MOCK_FALLBACK",
+    "realMcpAvailable" : false,
+    "selectedToolName" : "",
+    "availableToolNames" : [ "createLearningResource", "updateLearningResource", "listLearningTopics", "getLearningResource", "searchLearningResources" ],
+    "fallbackReason" : "未发现匹配的智能客服 MCP 工具",
+    "query" : "getLogisticsInfo",
+    "limit" : null
+  }
+}, {
+  "id" : "run-689d6267-59d9-4bb4-b96a-3ad405af134c",
+  "createdAt" : "2026-05-21T18:19:00.996300700Z",
+  "userId" : "default-user",
+  "chainMode" : "CUSTOMER_SERVICE_ASSISTANT_MULTI_AGENT",
+  "message" : "订单 o-202605150001 我要退款，你直接帮我退掉。",
+  "historySize" : 18,
+  "intent" : "REFUND_REQUEST",
+  "answerSummary" : " 您好！您的退款申请已收到。 您的订单 o-202605150001 目前显示已发货状态，由于订单已在运输途中，处理退款需要结合签收情况。 为了更好地保障您的权益并确保退款流程顺畅，**您的退款请求已转至人工客服处理**，人工客服将稍后与您联系确认退款细节。 感谢您的理解和信任！如有其他问题，请随时告诉我。",
+  "answerContent" : "您好！您的退款申请已收到。\n\n您的订单 o-202605150001 目前显示已发货状态，由于订单已在运输途中，处理退款需要结合签收情况。\n\n为了更好地保障您的权益并确保退款流程顺畅，**您的退款请求已转至人工客服处理**，人工客服将稍后与您联系确认退款细节。\n\n感谢您的理解和信任！如有其他问题，请随时告诉我。",
+  "mcpMode" : "PENDING_APPROVAL_TASK",
+  "pendingMcpWrite" : false,
+  "toolCallCount" : 5,
+  "agentStepCount" : 5,
+  "graphStepCount" : 1,
+  "memoryBefore" : {
+    "userId" : "default-user",
+    "channel" : "WECHAT_OFFICIAL_ACCOUNT",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "LOGISTICS_QUERY",
+    "riskFlags" : [ ],
+    "conversationCount" : 6,
+    "lastQuestion" : "我的订单 o-202605150001 怎么还没到？帮我查一下物流。"
+  },
+  "memoryAfter" : {
+    "userId" : "default-user",
+    "channel" : "WEB",
+    "recentProductIds" : [ "p-1001" ],
+    "recentOrderIds" : [ "o-202605150001" ],
+    "preferredTone" : "简洁友好",
+    "lastIntent" : "REFUND_REQUEST",
+    "riskFlags" : [ "refund_request" ],
+    "conversationCount" : 7,
+    "lastQuestion" : "订单 o-202605150001 我要退款，你直接帮我退掉。"
+  },
+  "agentSteps" : [ {
+    "name" : "ReceptionAgent",
+    "detail" : "<think>用户要我提取结构化信息并输出Markdown摘要。让我从用户输入中提取相关信息： 1. 渠道：WEB 2. 用户问题：订单 o-202605150001 我要退款，你直接帮我退掉。 3. 商品号：无（涉及的是订单退款） 4. 订单号：o-202605150001 5. 用户情绪：中性偏急（\"我要退款，你直接帮我退掉\" - 直接要求，比较急切） 6. 意图：REFUND_REQUEST（退款请求） 客服处理策略已给出：本轮是退款请求，优先查询订单并检索退款政策，涉..."
+  }, {
+    "name" : "FactAgent",
+    "detail" : "<think>用户现在说：\"订单 o-202605150001 我要退款，你直接帮我退掉。\" 这是一个退款请求。用户直接要求帮她退掉订单，态度比较果断。 从接待摘要中我需要提取： - 当前渠道：WEB - 用户问题：订单 o-202605150001 我要退款，你直接帮我退掉。 - 识别意图：REFUND_REQUEST - 推荐 Skill：refund-handling 现在我需要判断是否需要查询事实： 1. 有订单号：o-202605150001 2. 用户要求退款 3..."
+  }, {
+    "name" : "PolicyAgent",
+    "detail" : "<think>用户要求我作为\"客服政策和技能 Agent\"，判断需要哪个客服 Skill 或政策知识。 让我分析当前情况： - 用户问题：订单 o-202605150001 我要退款，你直接帮我退掉。 - 识别意图：REFUND_REQUEST - 推荐 Skill：refund-handling - 客服处理策略：本轮是退款请求，优先查询订单并检索退款政策，涉及真实退款动作时必须生成人工确认建议。 根据指引： - 涉及闲鱼、微信、议价、退款、退货、投诉、改地址、质量争议或人..."
+  }, {
+    "name" : "ReplyAgent",
+    "detail" : "<think>用户现在说：\"订单 o-202605150001 我要退款，你直接帮我退掉。\" 让我分析当前情况： **接待摘要信息**： - 渠道：WEB - 用户问题：订单 o-202605150001 我要退款，你直接帮我退掉。 - 识别意图：REFUND_REQUEST - 推荐 Skill：refund-handling - 客服处理策略：本轮是退款请求，优先查询订单并检索退款政策，涉及真实退款动作时必须生成人工确认建议。 - 最近订单：o-202605150001（..."
+  }, {
+    "name" : "RiskReviewAgent",
+    "detail" : "<think>**Defining Response Structure** I've been meticulously refining the response structure. The focus is now on distilling the information into a concise, user-friendly format. I'm prioritizing clarity and avoiding internal jargon to ens..."
+  } ],
+  "graphSteps" : [ {
+    "name" : "AUTO_ROUTE",
+    "detail" : "识别到高风险或复合售后场景，后端自动选择 Multi-Agent 协作处理。"
+  } ],
+  "toolCalls" : [ {
+    "name" : "readCustomerSkill",
+    "arguments" : {
+      "skillName" : "refund-handling"
+    },
+    "result" : "退款处理技能：先查 getOrderInfo，再查 getRefundEligibility 和 searchCustomerPolicy；回答要说明订单状态、适用规则、用户下一步操作。"
+  }, {
+    "name" : "searchCustomerPolicy",
+    "arguments" : {
+      "query" : "退款政策 订单已发货 未收到货",
+      "limit" : 3
+    },
+    "result" : "RAG模式：LOCAL_KEYWORD；真实向量库：false；召回率：1.00；命中主题：refund、shipping、xianyu\n- refund-policy｜退货退款政策｜主题：refund\n  签收 7 天内且商品不影响二次销售时，可引导用户申请退货退款；超过 7 天需要说明平台规则和可选售后路径；涉及赔偿或直接退款时必须先查询订单事实，再给出合规解释。\n- shipping-policy｜发货与物流政策｜主题：shipping\n  已付款订单默认 48 小时内发货；已发货订单应先查询物流；待发货订单应说明预计发货时间并创建提醒；物流异常时应提供快递单号、最新节点和后续处理时效。\n- xianyu-reply-guide｜闲鱼回复规范｜主题：xianyu\n  闲鱼回复要短、自然、像真人；常用表达包括“还在的”“可以小刀”“发货前会检查”；不要承诺无法确认的信息；遇到退款、赔付、取消订单时先解释规则和下一步。"
+  }, {
+    "name" : "getOrderInfo",
+    "arguments" : {
+      "orderId" : "o-202605150001"
+    },
+    "result" : "订单ID：o-202605150001；商品ID：p-1001；用户：default-user；状态：已发货；实付：199 元；支付时间：2026-05-14 21:30:00；发货时间：2026-05-15 10:20:00"
+  }, {
+    "name" : "getRefundEligibility",
+    "arguments" : {
+      "orderId" : "o-202605150001"
+    },
+    "result" : "订单ID：o-202605150001；退款资格：已发货订单需结合签收状态、商品问题和退货政策判断；处理建议：先查询物流并说明收到货后按平台流程申请。"
+  }, {
+    "name" : "requestHumanHandoff",
+    "arguments" : {
+      "reason" : "用户要求对已发货订单立即退款，态度坚决，需人工介入处理退款流程",
+      "conversationId" : "default-user"
+    },
+    "result" : "已创建待审核任务：approval-1929eb91-a8b6-46f2-ae9a-92b89022f4da；动作：人工接管；状态：PENDING。模型不得直接执行退款、赔付、取消订单等高风险动作。原因：用户要求对已发货订单立即退款，态度坚决，需人工介入处理退款流程"
+  } ],
+  "mcpDebugInfo" : {
+    "mode" : "PENDING_APPROVAL_TASK",
+    "realMcpAvailable" : false,
+    "selectedToolName" : "createPendingApprovalTask",
+    "availableToolNames" : [ "createLearningResource", "updateLearningResource", "listLearningTopics", "getLearningResource", "searchLearningResources" ],
+    "fallbackReason" : "高风险动作已进入待审核任务，不直接执行真实 MCP 动作",
+    "query" : "requestHumanHandoff",
+    "limit" : null
+  }
 } ]

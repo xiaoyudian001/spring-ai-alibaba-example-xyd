@@ -18,14 +18,10 @@ package com.alibaba.cloud.ai.customer;
 
 import java.util.List;
 
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent.ReactAgentBuilder;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.ChatClient.ChatClientRequestBuilder;
-import org.springframework.ai.chat.memory.MessageWindowChatMemory;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.tool.method.MethodToolCallbackProvider;
-import org.springframework.beans.factory.annotation.Qualifier;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -111,65 +107,69 @@ private static final String FACT_COLLECTOR_SYSTEM = """
 """;
 
 @Bean
-public ReactAgent factCollectorAgent(ChatClient chatClient, ExpertAgentTools expertTools,
-MethodToolCallbackProvider toolCallbackProvider) {
-ReactAgentBuilder builder = ReactAgent.builder().chatClient(chatClient)
-.systemPrompt(FACT_COLLECTOR_SYSTEM).maxSteps(3).toolCallbackProvider(toolCallbackProvider)
-.chatMemory(MessageWindowChatMemory.withMaxMessages(10));
-return builder.build();
+public ReactAgent factCollectorAgent(ChatModel chatModel, OfficialCustomerServiceToolCallbacks toolCallbacks)
+throws GraphStateException {
+return agent("fact_collector_agent", "事实收集 Agent", FACT_COLLECTOR_SYSTEM, chatModel, toolCallbacks);
 }
 
 @Bean
-public ReactAgent productExpertAgent(ChatClient chatClient, ExpertAgentTools expertTools,
-MethodToolCallbackProvider toolCallbackProvider) {
-ReactAgentBuilder builder = ReactAgent.builder().chatClient(chatClient)
-.systemPrompt(PRODUCT_EXPERT_SYSTEM).maxSteps(5).toolCallbackProvider(toolCallbackProvider)
-.chatMemory(MessageWindowChatMemory.withMaxMessages(10));
-return builder.build();
+public ReactAgent productExpertAgent(ChatModel chatModel, OfficialCustomerServiceToolCallbacks toolCallbacks)
+throws GraphStateException {
+return agent("product_expert_agent", "商品专家 Agent", PRODUCT_EXPERT_SYSTEM, chatModel, toolCallbacks);
 }
 
 @Bean
-public ReactAgent orderExpertAgent(ChatClient chatClient, ExpertAgentTools expertTools,
-MethodToolCallbackProvider toolCallbackProvider) {
-ReactAgentBuilder builder = ReactAgent.builder().chatClient(chatClient)
-.systemPrompt(ORDER_EXPERT_SYSTEM).maxSteps(5).toolCallbackProvider(toolCallbackProvider)
-.chatMemory(MessageWindowChatMemory.withMaxMessages(10));
-return builder.build();
+public ReactAgent orderExpertAgent(ChatModel chatModel, OfficialCustomerServiceToolCallbacks toolCallbacks)
+throws GraphStateException {
+return agent("order_expert_agent", "订单专家 Agent", ORDER_EXPERT_SYSTEM, chatModel, toolCallbacks);
 }
 
 @Bean
-public ReactAgent complaintExpertAgent(ChatClient chatClient, ExpertAgentTools expertTools,
-MethodToolCallbackProvider toolCallbackProvider) {
-ReactAgentBuilder builder = ReactAgent.builder().chatClient(chatClient)
-.systemPrompt(COMPLAINT_EXPERT_SYSTEM).maxSteps(5).toolCallbackProvider(toolCallbackProvider)
-.chatMemory(MessageWindowChatMemory.withMaxMessages(10));
-return builder.build();
+public ReactAgent complaintExpertAgent(ChatModel chatModel, OfficialCustomerServiceToolCallbacks toolCallbacks)
+throws GraphStateException {
+return agent("complaint_expert_agent", "投诉专家 Agent", COMPLAINT_EXPERT_SYSTEM, chatModel, toolCallbacks);
 }
 
 @Bean
-public ReactAgent logisticsExpertAgent(ChatClient chatClient, ExpertAgentTools expertTools,
-MethodToolCallbackProvider toolCallbackProvider) {
-ReactAgentBuilder builder = ReactAgent.builder().chatClient(chatClient)
-.systemPrompt(LOGISTICS_EXPERT_SYSTEM).maxSteps(5).toolCallbackProvider(toolCallbackProvider)
-.chatMemory(MessageWindowChatMemory.withMaxMessages(10));
-return builder.build();
+public ReactAgent logisticsExpertAgent(ChatModel chatModel, OfficialCustomerServiceToolCallbacks toolCallbacks)
+throws GraphStateException {
+return agent("logistics_expert_agent", "物流专家 Agent", LOGISTICS_EXPERT_SYSTEM, chatModel, toolCallbacks);
 }
 
 @Bean
-public ReactAgent supervisorAgent(ChatClient chatClient, ExpertAgentTools expertTools,
-MethodToolCallbackProvider toolCallbackProvider) {
-ReactAgentBuilder builder = ReactAgent.builder().chatClient(chatClient).systemPrompt(SUPERVISOR_SYSTEM).maxSteps(3)
-.toolCallbackProvider(toolCallbackProvider).chatMemory(MessageWindowChatMemory.withMaxMessages(10));
-return builder.build();
+public ReactAgent supervisorAgent(ChatModel chatModel, OfficialCustomerServiceToolCallbacks toolCallbacks)
+throws GraphStateException {
+return agent("supervisor_agent", "主管 Agent", SUPERVISOR_SYSTEM, chatModel, toolCallbacks);
 }
 
 @Bean
-public ReactAgent responseAggregatorAgent(ChatClient chatClient, ExpertAgentTools expertTools,
-MethodToolCallbackProvider toolCallbackProvider) {
-ReactAgentBuilder builder = ReactAgent.builder().chatClient(chatClient)
-.systemPrompt(RESPONSE_AGGREGATOR_SYSTEM).maxSteps(3).toolCallbackProvider(toolCallbackProvider)
-.chatMemory(MessageWindowChatMemory.withMaxMessages(10));
-return builder.build();
+public ReactAgent responseAggregatorAgent(ChatModel chatModel, OfficialCustomerServiceToolCallbacks toolCallbacks)
+throws GraphStateException {
+return agent("response_aggregator_agent", "回复聚合 Agent", RESPONSE_AGGREGATOR_SYSTEM, chatModel, toolCallbacks);
+}
+
+/**
+ * 按当前 Spring AI Alibaba Agent Framework API 创建专家 ReactAgent。
+ * @param name Agent 名称
+ * @param description Agent 描述
+ * @param instruction Agent 指令
+ * @param chatModel 聊天模型
+ * @param toolCallbacks 官方客服工具回调
+ * @return 专家 ReactAgent
+ * @throws GraphStateException Agent 构建失败
+ * @author xyd
+ * @date 2026-05-22 12:30:00
+ */
+private ReactAgent agent(String name, String description, String instruction, ChatModel chatModel,
+OfficialCustomerServiceToolCallbacks toolCallbacks) throws GraphStateException {
+return ReactAgent.builder()
+.name(name)
+.description(description)
+.model(chatModel)
+.instruction(instruction + "\n\n用户输入：{input}")
+.tools(toolCallbacks.all())
+.outputKey(name + "_output")
+.build();
 }
 
 }

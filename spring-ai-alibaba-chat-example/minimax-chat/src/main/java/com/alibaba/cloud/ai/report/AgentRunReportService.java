@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import com.alibaba.cloud.ai.customer.ChannelType;
 import com.alibaba.cloud.ai.customer.CustomerServiceGraphResult;
 import com.alibaba.cloud.ai.customer.CustomerServiceAssistantResult;
 import com.alibaba.cloud.ai.customer.CustomerServiceMultiAgentResult;
@@ -71,11 +72,27 @@ public class AgentRunReportService {
 	 */
 	public AgentRunReport saveCustomerService(String userId, String message, int historySize,
 			CustomerServiceResult result) {
+		return saveCustomerService(userId, message, historySize, result, null);
+	}
+
+	/**
+	 * 保存智能客服助手执行报告，并记录真实客服渠道。
+	 * @param userId 用户唯一标识
+	 * @param message 用户原始输入
+	 * @param historySize 历史消息数量
+	 * @param result 智能客服助手响应结果
+	 * @param channel 本轮客服渠道
+	 * @return 已持久化的执行报告
+	 * @author xyd
+	 * @date 2026-05-22 13:10:00
+	 */
+	public AgentRunReport saveCustomerService(String userId, String message, int historySize,
+			CustomerServiceResult result, ChannelType channel) {
 		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "CUSTOMER_SERVICE_AGENT",
 				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
 				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
 				safeSize(result.toolCalls()), safeSize(result.multiAgentSteps()), safeSize(result.workflowSteps()),
-				channelName(result.channel()), result.memoryBefore(), result.memoryAfter(), result.multiAgentSteps(),
+				channelName(channel), result.memoryBefore(), result.memoryAfter(), result.multiAgentSteps(),
 				result.workflowSteps(), result.toolCalls(), result.mcpDebugInfo()));
 	}
 
@@ -91,11 +108,27 @@ public class AgentRunReportService {
 	 */
 	public AgentRunReport saveCustomerServiceAssistant(String userId, String message, int historySize,
 			CustomerServiceAssistantResult result) {
+		return saveCustomerServiceAssistant(userId, message, historySize, result, null);
+	}
+
+	/**
+	 * 保存客户无感统一客服入口的执行报告，并记录真实客服渠道。
+	 * @param userId 用户唯一标识
+	 * @param message 用户原始输入
+	 * @param historySize 历史消息数量
+	 * @param result 统一客服响应结果
+	 * @param channel 本轮客服渠道
+	 * @return 已持久化的执行报告
+	 * @author xyd
+	 * @date 2026-05-22 13:10:00
+	 */
+	public AgentRunReport saveCustomerServiceAssistant(String userId, String message, int historySize,
+			CustomerServiceAssistantResult result, ChannelType channel) {
 		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), result.chainMode(),
 				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
 				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
 				safeSize(result.toolCalls()), safeSize(result.multiAgentSteps()), safeSize(result.workflowSteps()),
-				channelName(result.channel()), result.memoryBefore(), result.memoryAfter(), result.multiAgentSteps(),
+				channelName(channel), result.memoryBefore(), result.memoryAfter(), result.multiAgentSteps(),
 				result.workflowSteps(), result.toolCalls(), result.mcpDebugInfo()));
 	}
 
@@ -111,11 +144,27 @@ public class AgentRunReportService {
 	 */
 	public AgentRunReport saveCustomerServiceGraph(String userId, String message, int historySize,
 			CustomerServiceGraphResult result) {
+		return saveCustomerServiceGraph(userId, message, historySize, result, null);
+	}
+
+	/**
+	 * 保存智能客服官方 StateGraph 执行报告，并记录真实客服渠道。
+	 * @param userId 用户唯一标识
+	 * @param message 用户原始输入
+	 * @param historySize 历史消息数量
+	 * @param result 智能客服官方 StateGraph 响应结果
+	 * @param channel 本轮客服渠道
+	 * @return 已持久化的执行报告
+	 * @author xyd
+	 * @date 2026-05-22 13:10:00
+	 */
+	public AgentRunReport saveCustomerServiceGraph(String userId, String message, int historySize,
+			CustomerServiceGraphResult result, ChannelType channel) {
 		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId), "CUSTOMER_SERVICE_GRAPH",
 				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
 				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
 				safeSize(result.toolCalls()), safeSize(result.agentSteps()), safeSize(result.graphSteps()),
-				channelName(result.channel()), result.memoryBefore(), result.memoryAfter(), result.agentSteps(),
+				channelName(channel), result.memoryBefore(), result.memoryAfter(), result.agentSteps(),
 				result.graphSteps(), result.toolCalls(), result.mcpDebugInfo()));
 	}
 
@@ -131,11 +180,27 @@ public class AgentRunReportService {
 	 */
 	public AgentRunReport saveCustomerServiceMultiAgent(String userId, String message, int historySize,
 			CustomerServiceMultiAgentResult result) {
+		return saveCustomerServiceMultiAgent(userId, message, historySize, result, null);
+	}
+
+	/**
+	 * 保存智能客服官方 Multi-Agent 执行报告，并记录真实客服渠道。
+	 * @param userId 用户唯一标识
+	 * @param message 用户原始输入
+	 * @param historySize 历史消息数量
+	 * @param result 智能客服官方 Multi-Agent 响应结果
+	 * @param channel 本轮客服渠道
+	 * @return 已持久化的执行报告
+	 * @author xyd
+	 * @date 2026-05-22 13:10:00
+	 */
+	public AgentRunReport saveCustomerServiceMultiAgent(String userId, String message, int historySize,
+			CustomerServiceMultiAgentResult result, ChannelType channel) {
 		return append(new AgentRunReport(newId(), Instant.now(), normalizeUserId(userId),
 				"CUSTOMER_SERVICE_MULTI_AGENT", normalizeText(message), historySize, intentName(result.intent()),
 				summarize(result.content()), fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()),
 				hasPendingWrite(result.mcpDebugInfo()), safeSize(result.toolCalls()), safeSize(result.agentSteps()),
-				0, channelName(result.channel()), result.memoryBefore(), result.memoryAfter(), result.agentSteps(),
+				0, channelName(channel), result.memoryBefore(), result.memoryAfter(), result.agentSteps(),
 				List.of(), result.toolCalls(), result.mcpDebugInfo()));
 	}
 

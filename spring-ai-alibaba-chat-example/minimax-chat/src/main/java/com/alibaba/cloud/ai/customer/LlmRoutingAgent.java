@@ -17,14 +17,10 @@
 
 package com.alibaba.cloud.ai.customer;
 
-import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.SystemUserPromptRenderer;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Service;
 
 /**

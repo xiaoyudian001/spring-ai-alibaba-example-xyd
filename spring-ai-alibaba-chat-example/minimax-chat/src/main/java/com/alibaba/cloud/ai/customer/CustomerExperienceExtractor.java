@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import com.alibaba.cloud.ai.evaluation.AgentEvaluationResult;
 import org.springframework.stereotype.Service;
 
 /**
@@ -98,9 +99,9 @@ public CustomerExperience extractFromApprovalTask(PendingApprovalTask task, bool
 if (task == null) {
 return null;
 }
-CustomerServiceIntent intent = inferIntent(task.taskType());
+CustomerServiceIntent intent = inferIntent(task.actionType());
 String title = "【审核通过】" + buildTitle(intent, task.reason());
-String content = buildApprovalContent(intent, task.taskType(), task.reason(), reviewNote);
+String content = buildApprovalContent(intent, task.actionType(), task.reason(), reviewNote);
 Set<String> topics = extractTopics(intent, task.reason());
 Set<String> patterns = extractPatterns(task.reason());
 return CustomerExperience.of("approval-" + task.id(), toExperienceType(intent), title, topics, patterns,
@@ -147,7 +148,7 @@ return experiences;
 }
 List<String> failedChecks = evaluationResult.checks().stream()
 .filter(c -> c.applicable() && !c.passed())
-.map(c -> c.checkName() + "：" + c.reason())
+.map(c -> c.name() + "：" + c.detail())
 .toList();
 if (failedChecks.isEmpty()) {
 return experiences;

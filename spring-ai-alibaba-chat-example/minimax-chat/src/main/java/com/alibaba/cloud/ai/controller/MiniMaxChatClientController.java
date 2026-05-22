@@ -148,11 +148,11 @@ public class MiniMaxChatClientController {
 	public CustomerServiceResult customerServiceChat(@RequestBody ChatRequest request) {
 		String userId = extractUserId(request);
 		String message = extractMessage(request);
+		ChannelType channel = extractChannel(request);
 		List<CustomerConversationMessage> history = loadConversationHistory(userId, request);
-		CustomerServiceResult result = this.customerServiceAgentService.chat(userId, extractChannel(request), message,
-				history);
+		CustomerServiceResult result = this.customerServiceAgentService.chat(userId, channel, message, history);
 		this.customerConversationContextService.appendTurn(userId, history, message, result.content());
-		saveEvaluation(this.agentRunReportService.saveCustomerService(userId, message, history.size(), result));
+		saveEvaluation(this.agentRunReportService.saveCustomerService(userId, message, history.size(), result, channel));
 		return result;
 	}
 
@@ -167,11 +167,13 @@ public class MiniMaxChatClientController {
 	public CustomerServiceAssistantResult customerServiceAssistantChat(@RequestBody ChatRequest request) {
 		String userId = extractUserId(request);
 		String message = extractMessage(request);
+		ChannelType channel = extractChannel(request);
 		List<CustomerConversationMessage> history = loadConversationHistory(userId, request);
-		CustomerServiceAssistantResult result = this.customerServiceAssistantService.chat(userId,
-				extractChannel(request), message, history);
+		CustomerServiceAssistantResult result = this.customerServiceAssistantService.chat(userId, channel, message,
+				history);
 		this.customerConversationContextService.appendTurn(userId, history, message, result.content());
-		saveEvaluation(this.agentRunReportService.saveCustomerServiceAssistant(userId, message, history.size(), result));
+		saveEvaluation(this.agentRunReportService.saveCustomerServiceAssistant(userId, message, history.size(), result,
+				channel));
 		return result;
 	}
 
@@ -186,11 +188,12 @@ public class MiniMaxChatClientController {
 	public CustomerServiceGraphResult customerServiceGraphChat(@RequestBody ChatRequest request) {
 		String userId = extractUserId(request);
 		String message = extractMessage(request);
+		ChannelType channel = extractChannel(request);
 		List<CustomerConversationMessage> history = loadConversationHistory(userId, request);
-		CustomerServiceGraphResult result = this.customerServiceGraphService.chat(userId, extractChannel(request),
-				message, history);
+		CustomerServiceGraphResult result = this.customerServiceGraphService.chat(userId, channel, message, history);
 		this.customerConversationContextService.appendTurn(userId, history, message, result.content());
-		saveEvaluation(this.agentRunReportService.saveCustomerServiceGraph(userId, message, history.size(), result));
+		saveEvaluation(this.agentRunReportService.saveCustomerServiceGraph(userId, message, history.size(), result,
+				channel));
 		return result;
 	}
 
@@ -205,12 +208,13 @@ public class MiniMaxChatClientController {
 	public CustomerServiceMultiAgentResult customerServiceMultiAgentChat(@RequestBody ChatRequest request) {
 		String userId = extractUserId(request);
 		String message = extractMessage(request);
+		ChannelType channel = extractChannel(request);
 		List<CustomerConversationMessage> history = loadConversationHistory(userId, request);
-		CustomerServiceMultiAgentResult result = this.customerServiceMultiAgentService.chat(userId,
-				extractChannel(request), message, history);
+		CustomerServiceMultiAgentResult result = this.customerServiceMultiAgentService.chat(userId, channel, message,
+				history);
 		this.customerConversationContextService.appendTurn(userId, history, message, result.content());
 		saveEvaluation(this.agentRunReportService.saveCustomerServiceMultiAgent(userId, message, history.size(),
-				result));
+				result, channel));
 		return result;
 	}
 

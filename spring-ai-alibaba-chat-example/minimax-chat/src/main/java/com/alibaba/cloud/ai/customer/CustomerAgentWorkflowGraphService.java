@@ -31,11 +31,9 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.agent.flow.parallel.ParallelAgent;
-import com.alibaba.cloud.ai.graph.agent.flow.sequential.SequentialAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
+import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -44,455 +42,415 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
- * 智能客服高级 Agent 编排服务，将多个 ReactAgent.asNode() 接入 StateGraph，形成 Agent-as-Node Workflow。
- * <p>
- * 工作流节点编排：
- * <ol>
- *     <li>fact_collector：并行收集商品、订单、物流、RAG 事实</li>
- *     <li>routing：LLM 路由判断是否需要专家介入</li>
- *     <li>product_expert：商品专家处理商品咨询和议价</li>
- *     <li>order_expert：订单专家处理订单状态和退款</li>
- *     <li>complaint_expert：投诉专家处理投诉升级</li>
- *     <li>supervisor：主管 Agent 动态分配子 Agent</li>
- *     <li>response_aggregator：回复聚合汇总</li>
- * </ol>
+ * 智能客服高级 Agent 编排服务，使用当前项目可用的 StateGraph API 串联事实收集、LLM 路由、专家 Agent、主管复核和回复聚合。
  *
  * @author xyd
- * @date 2026-05-22 14:00:00
+ * @date 2026-05-22 12:30:00
  */
 @Service
 public class CustomerAgentWorkflowGraphService {
 
-private static final int MAX_HISTORY_MESSAGES = 20;
+	private final ReactAgent factCollectorAgent;
 
-private final ReactAgent factCollectorAgent;
+	private final ReactAgent productExpertAgent;
 
-private final ReactAgent productExpertAgent;
+	private final ReactAgent orderExpertAgent;
 
-private final ReactAgent orderExpertAgent;
+	private final ReactAgent complaintExpertAgent;
 
-private final ReactAgent complaintExpertAgent;
+	private final ReactAgent supervisorAgent;
 
-private final ReactAgent supervisorAgent;
+	private final ReactAgent responseAggregatorAgent;
 
-private final ReactAgent responseAggregatorAgent;
+	private final CustomerServiceIntentPlanner intentPlanner;
 
-private final CustomerServiceIntentPlanner intentPlanner;
+	private final CustomerMemoryService memoryService;
 
-private final CustomerMemoryService memoryService;
+	private final CustomerServiceTraceLogger traceLogger;
 
-private final ToolCallDebugRecorder debugRecorder;
+	private final CompiledGraph compiledGraph;
 
-private final CustomerServiceTraceLogger traceLogger;
+	private final String graphDefinition;
 
-private final CompiledGraph compiledGraph;
+	/**
+	 * 创建高级 Agent 编排服务。
+	 * @param factCollectorAgent 事实收集 Agent
+	 * @param productExpertAgent 商品专家 Agent
+	 * @param orderExpertAgent 订单专家 Agent
+	 * @param complaintExpertAgent 投诉专家 Agent
+	 * @param supervisorAgent 主管 Agent
+	 * @param responseAggregatorAgent 回复聚合 Agent
+	 * @param intentPlanner 意图规划器
+	 * @param memoryService 记忆服务
+	 * @param traceLogger 链路日志
+	 * @throws GraphStateException 图构建失败
+	 * @author xyd
+	 * @date 2026-05-22 12:30:00
+	 */
+	public CustomerAgentWorkflowGraphService(@Qualifier("factCollectorAgent") ReactAgent factCollectorAgent,
+			@Qualifier("productExpertAgent") ReactAgent productExpertAgent,
+			@Qualifier("orderExpertAgent") ReactAgent orderExpertAgent,
+			@Qualifier("complaintExpertAgent") ReactAgent complaintExpertAgent,
+			@Qualifier("supervisorAgent") ReactAgent supervisorAgent,
+			@Qualifier("responseAggregatorAgent") ReactAgent responseAggregatorAgent,
+			CustomerServiceIntentPlanner intentPlanner, CustomerMemoryService memoryService,
+			CustomerServiceTraceLogger traceLogger) throws GraphStateException {
+		this.factCollectorAgent = factCollectorAgent;
+		this.productExpertAgent = productExpertAgent;
+		this.orderExpertAgent = orderExpertAgent;
+		this.complaintExpertAgent = complaintExpertAgent;
+		this.supervisorAgent = supervisorAgent;
+		this.responseAggregatorAgent = responseAggregatorAgent;
+		this.intentPlanner = intentPlanner;
+		this.memoryService = memoryService;
+		this.traceLogger = traceLogger;
+		StateGraph graph = buildGraph();
+		this.graphDefinition = graph.getGraph(GraphRepresentation.Type.MERMAID,
+				"customer service agent workflow graph").content();
+		this.compiledGraph = graph.compile();
+	}
 
-private final String graphDefinition;
+	/**
+	 * 执行高级 Agent-as-Node 工作流。
+	 * @param userId 用户 ID
+	 * @param channel 渠道
+	 * @param message 用户消息
+	 * @param history 历史消息
+	 * @return 工作流结果
+	 * @author xyd
+	 * @date 2026-05-22 12:30:00
+	 */
+	public WorkflowGraphResult chat(String userId, ChannelType channel, String message,
+			List<CustomerConversationMessage> history) {
+		String normalizedUserId = normalizeUserId(userId);
+		String normalizedMessage = normalizeMessage(message);
+		String traceId = this.traceLogger.start("CUSTOMER_SERVICE_WORKFLOW_GRAPH", normalizedUserId, channel,
+				normalizedMessage);
+		try {
+			RunnableConfig config = RunnableConfig.builder()
+					.threadId(normalizedUserId + "-workflow-graph-" + traceId)
+					.build();
+			Optional<OverAllState> result = this.compiledGraph.invoke(Map.of("traceId", traceId, "userId",
+					normalizedUserId, "channel", channel == null ? ChannelType.WEB : channel, "message",
+					normalizedMessage, "history", history == null ? List.of() : history), config);
+			WorkflowGraphResult workflowResult = toResult(result.orElseThrow());
+			this.traceLogger.finish("CUSTOMER_SERVICE_WORKFLOW_GRAPH", traceId, workflowResult.intent(),
+					workflowResult.content());
+			return workflowResult;
+		}
+		catch (Exception ex) {
+			this.traceLogger.error("CUSTOMER_SERVICE_WORKFLOW_GRAPH", traceId, ex);
+			CustomerMemory memory = this.memoryService.read(normalizedUserId);
+			return new WorkflowGraphResult("高级 Agent 编排工作流执行失败：" + ex.getMessage(),
+					CustomerServiceIntent.GENERAL_CHAT, memory, memory,
+					List.of(new CustomerServiceStep("error", ex.getMessage())), "CUSTOMER_AGENT_WORKFLOW_GRAPH");
+		}
+	}
 
-/**
- * 创建智能客服高级 Agent 编排服务。
- * @param factCollectorAgent 事实收集 Agent
- * @param productExpertAgent 商品专家 Agent
- * @param orderExpertAgent 订单专家 Agent
- * @param complaintExpertAgent 投诉专家 Agent
- * @param supervisorAgent 主管 Agent
- * @param responseAggregatorAgent 回复聚合 Agent
- * @param intentPlanner 意图规划器
- * @param memoryService 记忆服务
- * @param debugRecorder 调试记录器
- * @param traceLogger 链路日志
- * @throws GraphStateException 图构建失败
- * @author xyd
- * @date 2026-05-22 14:00:00
- */
-public CustomerAgentWorkflowGraphService(@Qualifier("factCollectorAgent") ReactAgent factCollectorAgent,
-@Qualifier("productExpertAgent") ReactAgent productExpertAgent,
-@Qualifier("orderExpertAgent") ReactAgent orderExpertAgent,
-@Qualifier("complaintExpertAgent") ReactAgent complaintExpertAgent,
-@Qualifier("supervisorAgent") ReactAgent supervisorAgent,
-@Qualifier("responseAggregatorAgent") ReactAgent responseAggregatorAgent,
-CustomerServiceIntentPlanner intentPlanner, CustomerMemoryService memoryService,
-ToolCallDebugRecorder debugRecorder, CustomerServiceTraceLogger traceLogger) throws GraphStateException {
-this.factCollectorAgent = factCollectorAgent;
-this.productExpertAgent = productExpertAgent;
-this.orderExpertAgent = orderExpertAgent;
-this.complaintExpertAgent = complaintExpertAgent;
-this.supervisorAgent = supervisorAgent;
-this.responseAggregatorAgent = responseAggregatorAgent;
-this.intentPlanner = intentPlanner;
-this.memoryService = memoryService;
-this.debugRecorder = debugRecorder;
-this.traceLogger = traceLogger;
-StateGraph graph = buildGraph();
-this.graphDefinition = graph.getGraph(GraphRepresentation.Type.MERMAID, "customer service workflow graph").content();
-this.compiledGraph = graph.compile();
-}
+	/**
+	 * 返回 Mermaid 图定义。
+	 * @return Mermaid 图定义
+	 * @author xyd
+	 * @date 2026-05-22 12:30:00
+	 */
+	public String getGraphDefinition() {
+		return this.graphDefinition;
+	}
 
-/**
- * 执行高级 Agent 编排工作流。
- * @param userId 用户 ID
- * @param channel 渠道
- * @param message 用户消息
- * @param history 历史消息
- * @return 工作流执行结果
- * @author xyd
- * @date 2026-05-22 14:00:00
- */
-public WorkflowGraphResult chat(String userId, ChannelType channel, String message,
-List<CustomerConversationMessage> history) {
-this.debugRecorder.clear();
-String traceId = this.traceLogger.start("CUSTOMER_SERVICE_WORKFLOW", userId, channel, message);
-CustomerMemory memoryBefore = this.memoryService.read(userId);
-CustomerServiceIntent intent = this.intentPlanner.plan(message);
-this.traceLogger.step("CUSTOMER_SERVICE_WORKFLOW", traceId, "INTENT_PLAN", String.valueOf(intent));
-try {
-RunnableConfig config = RunnableConfig.builder()
-.threadId(userId + "-workflow-" + traceId)
-.build();
-Optional<OverAllState> result = this.compiledGraph.invoke(Map.of("userId", userId, "channel",
-channel == null ? ChannelType.WEB : channel, "message", message, "history",
-history == null ? List.of() : history, "intent", intent, "memoryBefore", memoryBefore), config);
-OverAllState state = result.orElseThrow();
-String content = extractContent(state);
-CustomerMemory memoryAfter = this.memoryService.update(userId, channel, message, intent);
-this.traceLogger.finish("CUSTOMER_SERVICE_WORKFLOW", traceId, intent, content);
-return new WorkflowGraphResult(content, intent, memoryBefore, memoryAfter, extractSteps(state), intent.name());
-}
-catch (Exception ex) {
-this.traceLogger.error("CUSTOMER_SERVICE_WORKFLOW", traceId, ex);
-return new WorkflowGraphResult("高级 Agent 编排工作流执行失败：" + ex.getMessage(), intent, memoryBefore,
-memoryBefore, List.of(), "WORKFLOW_ERROR");
-}
-}
+	/**
+	 * 构建高级客服 Agent 工作流图。
+	 * @return StateGraph
+	 * @throws GraphStateException 图构建失败
+	 * @author xyd
+	 * @date 2026-05-22 12:30:00
+	 */
+	private StateGraph buildGraph() throws GraphStateException {
+		KeyStrategyFactory keyFactory = new KeyStrategyFactoryBuilder()
+				.addPatternStrategy("traceId", new ReplaceStrategy())
+				.addPatternStrategy("userId", new ReplaceStrategy())
+				.addPatternStrategy("channel", new ReplaceStrategy())
+				.addPatternStrategy("message", new ReplaceStrategy())
+				.addPatternStrategy("history", new ReplaceStrategy())
+				.addPatternStrategy("memoryBefore", new ReplaceStrategy())
+				.addPatternStrategy("memoryAfter", new ReplaceStrategy())
+				.addPatternStrategy("intent", new ReplaceStrategy())
+				.addPatternStrategy("factSummary", new ReplaceStrategy())
+				.addPatternStrategy("routingResult", new ReplaceStrategy())
+				.addPatternStrategy("expertResponse", new ReplaceStrategy())
+				.addPatternStrategy("supervisorDecision", new ReplaceStrategy())
+				.addPatternStrategy("content", new ReplaceStrategy())
+				.addPatternStrategy("steps", new ReplaceStrategy())
+				.build();
 
-/**
- * 获取工作流图定义（Mermaid 格式）。
- * @return 工作流图定义
- * @author xyd
- * @date 2026-05-22 14:00:00
- */
-public String getGraphDefinition() {
-return this.graphDefinition;
-}
+		return new StateGraph(keyFactory)
+				.addNode("memory_read", node_async(memoryReadNode()))
+				.addNode("intent_plan", node_async(intentPlanNode()))
+				.addNode("fact_collect_agent", node_async(factCollectAgentNode()))
+				.addNode("llm_routing", node_async(routingNode()))
+				.addNode("expert_agent", node_async(expertAgentNode()))
+				.addNode("supervisor_agent", node_async(supervisorNode()))
+				.addNode("response_aggregator", node_async(responseAggregatorNode()))
+				.addNode("memory_write", node_async(memoryWriteNode()))
+				.addEdge(START, "memory_read")
+				.addEdge("memory_read", "intent_plan")
+				.addEdge("intent_plan", "fact_collect_agent")
+				.addEdge("fact_collect_agent", "llm_routing")
+				.addEdge("llm_routing", "expert_agent")
+				.addEdge("expert_agent", "supervisor_agent")
+				.addEdge("supervisor_agent", "response_aggregator")
+				.addEdge("response_aggregator", "memory_write")
+				.addEdge("memory_write", END);
+	}
 
-/**
- * 构建工作流图。
- * @return StateGraph
- * @throws GraphStateException 图构建失败
- * @author xyd
- * @date 2026-05-22 14:00:00
- */
-private StateGraph buildGraph() throws GraphStateException {
-KeyStrategyFactory keyFactory = new KeyStrategyFactoryBuilder()
-.addPatternStrategy("userId", new ReplaceStrategy())
-.addPatternStrategy("channel", new ReplaceStrategy())
-.addPatternStrategy("message", new ReplaceStrategy())
-.addPatternStrategy("history", new ReplaceStrategy())
-.addPatternStrategy("intent", new ReplaceStrategy())
-.addPatternStrategy("memoryBefore", new ReplaceStrategy())
-.addPatternStrategy("memoryAfter", new ReplaceStrategy())
-.addPatternStrategy("factBundle", new ReplaceStrategy())
-.addPatternStrategy("routingResult", new ReplaceStrategy())
-.addPatternStrategy("expertResponses", new ReplaceStrategy())
-.addPatternStrategy("finalContent", new ReplaceStrategy())
-.build();
+	private NodeAction memoryReadNode() {
+		return state -> {
+			String userId = stringValue(state, "userId", "default-user");
+			CustomerMemory memory = this.memoryService.read(userId);
+			return Map.of("memoryBefore", memory, "steps",
+					appendStep(state, "memory_read", "读取长期 Memory：" + memory.summary()));
+		};
+	}
 
-return new StateGraph(keyFactory)
-.addNode("memory_read", node_async(memoryReadNode()))
-.addNode("intent_plan", node_async(intentPlanNode()))
-.addNode("fact_collector", node_async(factCollectorNode()))
-.addNode("routing", node_async(routingNode()))
-.addNode("product_expert", node_async(productExpertNode()))
-.addNode("order_expert", node_async(orderExpertNode()))
-.addNode("complaint_expert", node_async(complaintExpertNode()))
-.addNode("supervisor", node_async(supervisorNode()))
-.addNode("response_aggregator", node_async(responseAggregatorNode()))
-.addNode("memory_write", node_async(memoryWriteNode()))
-.addEdge(START, "memory_read")
-.addEdge("memory_read", "intent_plan")
-.addEdge("intent_plan", "fact_collector")
-.addEdge("fact_collector", "routing")
-.addConditionalEdge("routing", this::routeToExpert, Map.of("PRODUCT", "product_expert",
-"ORDER", "order_expert", "COMPLAINT", "complaint_expert", "GENERAL", "response_aggregator"))
-.addEdge("product_expert", "response_aggregator")
-.addEdge("order_expert", "response_aggregator")
-.addEdge("complaint_expert", "supervisor")
-.addEdge("supervisor", "response_aggregator")
-.addEdge("response_aggregator", "memory_write")
-.addEdge("memory_write", END);
-}
+	private NodeAction intentPlanNode() {
+		return state -> {
+			CustomerServiceIntent intent = this.intentPlanner.plan(stringValue(state, "message", ""));
+			return Map.of("intent", intent, "steps", appendStep(state, "intent_plan", "识别意图：" + intent));
+		};
+	}
 
-/**
- * 路由判断。
- * @param state 状态
- * @return 路由目标
- * @author xyd
- * @date 2026-05-22 14:00:00
- */
-private String routeToExpert(OverAllState state) {
-String routing = state.get("routingResult", String.class);
-if (routing == null) {
-return "GENERAL";
-}
-return routing.toUpperCase();
-}
+	private NodeAction factCollectAgentNode() {
+		return state -> {
+			String prompt = "请收集本轮客服问题需要的商品、订单、物流、RAG 和用户上下文事实。\n用户问题："
+					+ stringValue(state, "message", "");
+			String factSummary = invokeAgent(this.factCollectorAgent, prompt, stringValue(state, "userId", "default-user"),
+					"fact");
+			return Map.of("factSummary", factSummary, "steps",
+					appendStep(state, "fact_collect_agent", truncate(factSummary)));
+		};
+	}
 
-private NodeAction memoryReadNode() {
-return ctx -> {
-CustomerMemory memory = ctx.get("memoryBefore", CustomerMemory.class);
-if (memory == null) {
-String userId = ctx.get("userId", String.class);
-memory = this.memoryService.read(userId);
-}
-return NodeOutput.of(ctx.update("memoryBefore", memory));
-};
-}
+	private NodeAction routingNode() {
+		return state -> {
+			String routing = expertRoute(intentValue(state, "intent"), stringValue(state, "message", ""));
+			return Map.of("routingResult", routing, "steps", appendStep(state, "llm_routing", "专家路由：" + routing));
+		};
+	}
 
-private NodeAction intentPlanNode() {
-return ctx -> {
-String message = ctx.get("message", String.class);
-CustomerServiceIntent intent = this.intentPlanner.plan(message);
-return NodeOutput.of(ctx.update("intent", intent));
-};
-}
+	private NodeAction expertAgentNode() {
+		return state -> {
+			String routing = stringValue(state, "routingResult", "GENERAL");
+			ReactAgent expert = switch (routing) {
+				case "PRODUCT" -> this.productExpertAgent;
+				case "ORDER" -> this.orderExpertAgent;
+				case "COMPLAINT" -> this.complaintExpertAgent;
+				default -> this.responseAggregatorAgent;
+			};
+			String prompt = """
+					用户问题：%s
+					意图：%s
+					事实收集：%s
+					请以 %s 专家视角给出处理建议。
+					""".formatted(stringValue(state, "message", ""), intentValue(state, "intent"),
+					stringValue(state, "factSummary", ""), routing);
+			String response = invokeAgent(expert, prompt, stringValue(state, "userId", "default-user"), routing);
+			return Map.of("expertResponse", response, "steps",
+					appendStep(state, "expert_agent", routing + " 专家回复：" + truncate(response)));
+		};
+	}
 
-private NodeAction factCollectorNode() {
-return ctx -> {
-String userId = ctx.get("userId", String.class);
-String message = ctx.get("message", String.class);
-CustomerServiceIntent intent = ctx.get("intent", CustomerServiceIntent.class);
-CustomerMemory memory = ctx.get("memoryBefore", CustomerMemory.class);
-RunnableConfig config = RunnableConfig.builder()
-.threadId(userId + "-fact-collector")
-.build();
-String prompt = buildFactCollectorPrompt(intent, message, memory);
-Optional<NodeOutput> output = this.factCollectorAgent.invokeAndGetOutput(prompt, config);
-String factBundle = output.map(o -> o.state().get("content", String.class)).orElse("");
-return NodeOutput.of(ctx.update("factBundle", factBundle));
-};
-}
+	private NodeAction supervisorNode() {
+		return state -> {
+			String prompt = """
+					请以客服主管身份复核专家建议，重点检查是否涉及退款、赔付、投诉升级或人工接管。
+					用户问题：%s
+					专家建议：%s
+					""".formatted(stringValue(state, "message", ""), stringValue(state, "expertResponse", ""));
+			String decision = invokeAgent(this.supervisorAgent, prompt, stringValue(state, "userId", "default-user"),
+					"supervisor");
+			return Map.of("supervisorDecision", decision, "steps",
+					appendStep(state, "supervisor_agent", truncate(decision)));
+		};
+	}
 
-private NodeAction routingNode() {
-return ctx -> {
-String userId = ctx.get("userId", String.class);
-String message = ctx.get("message", String.class);
-CustomerServiceIntent intent = ctx.get("intent", CustomerServiceIntent.class);
-RunnableConfig config = RunnableConfig.builder()
-.threadId(userId + "-routing")
-.build();
-String prompt = buildRoutingPrompt(intent, message);
-Optional<NodeOutput> output = this.supervisorAgent.invokeAndGetOutput(prompt, config);
-String routing = output.map(o -> o.state().get("content", String.class)).orElse("GENERAL");
-if (routing.contains("PRODUCT")) {
-routing = "PRODUCT";
-}
-else if (routing.contains("ORDER") || routing.contains("REFUND")) {
-routing = "ORDER";
-}
-else if (routing.contains("COMPLAINT")) {
-routing = "COMPLAINT";
-}
-else {
-routing = "GENERAL";
-}
-return NodeOutput.of(ctx.update("routingResult", routing));
-};
-}
+	private NodeAction responseAggregatorNode() {
+		return state -> {
+			String prompt = """
+					请整合事实、专家建议和主管复核，生成最终客服回复。不要暴露内部流程。
+					用户问题：%s
+					事实：%s
+					专家建议：%s
+					主管复核：%s
+					""".formatted(stringValue(state, "message", ""), stringValue(state, "factSummary", ""),
+					stringValue(state, "expertResponse", ""), stringValue(state, "supervisorDecision", ""));
+			String content = invokeAgent(this.responseAggregatorAgent, prompt, stringValue(state, "userId", "default-user"),
+					"aggregator");
+			return Map.of("content", content, "steps", appendStep(state, "response_aggregator", truncate(content)));
+		};
+	}
 
-private NodeAction productExpertNode() {
-return ctx -> {
-String userId = ctx.get("userId", String.class);
-String message = ctx.get("message", String.class);
-String factBundle = ctx.get("factBundle", String.class);
-RunnableConfig config = RunnableConfig.builder()
-.threadId(userId + "-product-expert")
-.build();
-String prompt = buildExpertPrompt("商品专家", factBundle, message);
-Optional<NodeOutput> output = this.productExpertAgent.invokeAndGetOutput(prompt, config);
-String response = output.map(o -> o.state().get("content", String.class)).orElse("商品专家暂时无法处理。");
-return NodeOutput.of(ctx.update(Map.of("expertResponses", Map.of("product", response))));
-};
-}
+	private NodeAction memoryWriteNode() {
+		return state -> {
+			String userId = stringValue(state, "userId", "default-user");
+			CustomerMemory memory = this.memoryService.update(userId, channelValue(state, "channel"),
+					stringValue(state, "message", ""), intentValue(state, "intent"));
+			return Map.of("memoryAfter", memory, "steps",
+					appendStep(state, "memory_write", "更新长期 Memory：" + memory.summary()));
+		};
+	}
 
-private NodeAction orderExpertNode() {
-return ctx -> {
-String userId = ctx.get("userId", String.class);
-String message = ctx.get("message", String.class);
-String factBundle = ctx.get("factBundle", String.class);
-RunnableConfig config = RunnableConfig.builder()
-.threadId(userId + "-order-expert")
-.build();
-String prompt = buildExpertPrompt("订单专家", factBundle, message);
-Optional<NodeOutput> output = this.orderExpertAgent.invokeAndGetOutput(prompt, config);
-String response = output.map(o -> o.state().get("content", String.class)).orElse("订单专家暂时无法处理。");
-Map<String, String> responses = new java.util.HashMap<>(ctx.get("expertResponses", Map.class));
-responses.put("order", response);
-return NodeOutput.of(ctx.update("expertResponses", responses));
-};
-}
+	private WorkflowGraphResult toResult(OverAllState state) {
+		CustomerMemory before = memoryValue(state, "memoryBefore", new CustomerMemory());
+		CustomerMemory after = memoryValue(state, "memoryAfter", before);
+		return new WorkflowGraphResult(stringValue(state, "content", "高级 Agent 编排工作流没有返回内容。"),
+				intentValue(state, "intent"), before, after, steps(state), "CUSTOMER_AGENT_WORKFLOW_GRAPH");
+	}
 
-private NodeAction complaintExpertNode() {
-return ctx -> {
-String userId = ctx.get("userId", String.class);
-String message = ctx.get("message", String.class);
-String factBundle = ctx.get("factBundle", String.class);
-RunnableConfig config = RunnableConfig.builder()
-.threadId(userId + "-complaint-expert")
-.build();
-String prompt = buildExpertPrompt("投诉专家", factBundle, message);
-Optional<NodeOutput> output = this.complaintExpertAgent.invokeAndGetOutput(prompt, config);
-String response = output.map(o -> o.state().get("content", String.class)).orElse("投诉专家暂时无法处理。");
-Map<String, String> responses = new java.util.HashMap<>(ctx.get("expertResponses", Map.class));
-responses.put("complaint", response);
-return NodeOutput.of(ctx.update("expertResponses", responses));
-};
-}
+	private String invokeAgent(ReactAgent agent, String prompt, String userId, String nodeName) {
+		try {
+			RunnableConfig config = RunnableConfig.builder().threadId(userId + "-" + nodeName).build();
+			Optional<NodeOutput> output = agent.invokeAndGetOutput(prompt, config);
+			return output.map(NodeOutput::state).map(this::extractContent).orElse("");
+		}
+		catch (Exception ex) {
+			return nodeName + " 执行失败：" + ex.getMessage();
+		}
+	}
 
-private NodeAction supervisorNode() {
-return ctx -> {
-String userId = ctx.get("userId", String.class);
-String message = ctx.get("message", String.class);
-Map<String, String> expertResponses = ctx.get("expertResponses", Map.class);
-RunnableConfig config = RunnableConfig.builder()
-.threadId(userId + "-supervisor")
-.build();
-String prompt = buildSupervisorPrompt(message, expertResponses);
-Optional<NodeOutput> output = this.supervisorAgent.invokeAndGetOutput(prompt, config);
-String decision = output.map(o -> o.state().get("content", String.class)).orElse("");
-return NodeOutput.of(ctx.update(Map.of("supervisorDecision", decision)));
-};
-}
+	private String extractContent(OverAllState state) {
+		if (state == null) {
+			return "";
+		}
+		Optional<Object> output = state.value("output");
+		if (output.isPresent()) {
+			return String.valueOf(output.get());
+		}
+		Optional<List<AbstractMessage>> messages = state.value("messages");
+		if (messages.isPresent() && !messages.get().isEmpty()) {
+			return messages.get().get(messages.get().size() - 1).getText();
+		}
+		return state.toString();
+	}
 
-private NodeAction responseAggregatorNode() {
-return ctx -> {
-String userId = ctx.get("userId", String.class);
-String message = ctx.get("message", String.class);
-String factBundle = ctx.get("factBundle", String.class);
-Map<String, String> expertResponses = ctx.get("expertResponses", Map.class);
-String routing = ctx.get("routingResult", String.class);
-RunnableConfig config = RunnableConfig.builder()
-.threadId(userId + "-aggregator")
-.build();
-String prompt = buildAggregatorPrompt(message, factBundle, expertResponses, routing);
-Optional<NodeOutput> output = this.responseAggregatorAgent.invokeAndGetOutput(prompt, config);
-String content = output.map(o -> o.state().get("content", String.class))
-.orElse("抱歉，暂时无法处理您的问题。");
-return NodeOutput.of(ctx.update("finalContent", content));
-};
-}
+	private String expertRoute(CustomerServiceIntent intent, String message) {
+		if (intent == CustomerServiceIntent.PRODUCT_INQUIRY || intent == CustomerServiceIntent.PRICE_NEGOTIATION) {
+			return "PRODUCT";
+		}
+		if (intent == CustomerServiceIntent.ORDER_STATUS || intent == CustomerServiceIntent.LOGISTICS_QUERY
+				|| intent == CustomerServiceIntent.REFUND_REQUEST || intent == CustomerServiceIntent.RETURN_POLICY) {
+			return "ORDER";
+		}
+		if (intent == CustomerServiceIntent.COMPLAINT || intent == CustomerServiceIntent.HUMAN_HANDOFF) {
+			return "COMPLAINT";
+		}
+		String text = message == null ? "" : message;
+		if (text.contains("投诉") || text.contains("差评")) {
+			return "COMPLAINT";
+		}
+		if (text.contains("订单") || text.contains("物流") || text.contains("退款")) {
+			return "ORDER";
+		}
+		return "GENERAL";
+	}
 
-private NodeAction memoryWriteNode() {
-return ctx -> {
-String userId = ctx.get("userId", String.class);
-ChannelType channel = ctx.get("channel", ChannelType.class);
-String message = ctx.get("message", String.class);
-CustomerServiceIntent intent = ctx.get("intent", CustomerServiceIntent.class);
-CustomerMemory memoryAfter = this.memoryService.update(userId, channel, message, intent);
-return NodeOutput.of(ctx.update("memoryAfter", memoryAfter));
-};
-}
+	private List<CustomerServiceStep> appendStep(OverAllState state, String name, String detail) {
+		List<CustomerServiceStep> result = new ArrayList<>(steps(state));
+		result.add(new CustomerServiceStep(name, detail));
+		return List.copyOf(result);
+	}
 
-private String buildFactCollectorPrompt(CustomerServiceIntent intent, String message, CustomerMemory memory) {
-return String.format("""
-你是智能客服事实收集专家。请根据用户问题和历史记忆，确定需要收集哪些事实。
+	private List<CustomerServiceStep> steps(OverAllState state) {
+		Optional<Object> value = state.value("steps");
+		if (value.isEmpty() || !(value.get() instanceof List<?> list)) {
+			return List.of();
+		}
+		List<CustomerServiceStep> steps = new ArrayList<>();
+		for (Object item : list) {
+			if (item instanceof CustomerServiceStep step) {
+				steps.add(step);
+			}
+			else if (item instanceof Map<?, ?> map) {
+				steps.add(new CustomerServiceStep(text(map.get("name"), text(map.get("node"), "")),
+						text(map.get("detail"), "")));
+			}
+		}
+		return List.copyOf(steps);
+	}
 
-用户问题：%s
-识别意图：%s
-用户记忆：%s
+	private CustomerServiceIntent intentValue(OverAllState state, String key) {
+		Optional<Object> value = state.value(key);
+		if (value.isEmpty()) {
+			return CustomerServiceIntent.GENERAL_CHAT;
+		}
+		Object raw = value.get();
+		if (raw instanceof CustomerServiceIntent intent) {
+			return intent;
+		}
+		try {
+			return CustomerServiceIntent.valueOf(String.valueOf(raw));
+		}
+		catch (IllegalArgumentException ex) {
+			return CustomerServiceIntent.GENERAL_CHAT;
+		}
+	}
 
-请判断需要收集的事实类型：商品信息、订单信息、物流信息、RAG知识等。
-输出格式：列出需要收集的事实项，每项一行。
-""", message, intent, memory != null ? memory.summary() : "无");
-}
+	private ChannelType channelValue(OverAllState state, String key) {
+		Optional<Object> value = state.value(key);
+		if (value.isEmpty()) {
+			return ChannelType.WEB;
+		}
+		Object raw = value.get();
+		if (raw instanceof ChannelType channel) {
+			return channel;
+		}
+		try {
+			return ChannelType.valueOf(String.valueOf(raw));
+		}
+		catch (IllegalArgumentException ex) {
+			return ChannelType.WEB;
+		}
+	}
 
-private String buildRoutingPrompt(CustomerServiceIntent intent, String message) {
-return String.format("""
-你是智能客服路由专家。请根据用户意图判断应该路由到哪个专家处理。
+	private CustomerMemory memoryValue(OverAllState state, String key, CustomerMemory fallback) {
+		Optional<Object> value = state.value(key);
+		return value.filter(CustomerMemory.class::isInstance).map(CustomerMemory.class::cast).orElse(fallback);
+	}
 
-用户问题：%s
-识别意图：%s
+	private String stringValue(OverAllState state, String key, String fallback) {
+		return state.value(key).map(String::valueOf).orElse(fallback);
+	}
 
-可选路由目标：
-- PRODUCT：商品咨询、议价相关问题
-- ORDER：订单状态、退款、退货相关问题
-- COMPLAINT：投诉、升级相关问题
-- GENERAL：一般问题，主客服直接处理
+	private String text(Object value, String fallback) {
+		String text = value == null ? "" : String.valueOf(value);
+		return text.isBlank() ? fallback : text;
+	}
 
-请输出路由目标（PRODUCT/ORDER/COMPLAINT/GENERAL）：
-""", message, intent);
-}
+	private String truncate(String text) {
+		String value = text == null ? "" : text.replaceAll("\\s+", " ").trim();
+		return value.length() <= 180 ? value : value.substring(0, 180) + "...";
+	}
 
-private String buildExpertPrompt(String expertName, String factBundle, String message) {
-return String.format("""
-你是智能客服%s。请根据收集到的事实和用户问题，给出专业的回复。
+	private String normalizeUserId(String userId) {
+		return userId == null || userId.isBlank() ? "default-user" : userId.trim();
+	}
 
-已收集事实：
-%s
+	private String normalizeMessage(String message) {
+		return message == null || message.isBlank() ? "你好，请问有什么可以帮你？" : message;
+	}
 
-用户问题：%s
-
-请给出专业、礼貌、简洁的回复：
-""", expertName, factBundle, message);
-}
-
-private String buildSupervisorPrompt(String message, Map<String, String> expertResponses) {
-StringBuilder sb = new StringBuilder();
-sb.append("你是智能客服主管。请根据用户问题和各专家回复，做出最终决策。\n\n用户问题：")
-.append(message)
-.append("\n\n专家回复：\n");
-expertResponses.forEach((key, value) -> sb.append(key).append("专家：").append(value).append("\n"));
-sb.append("\n请做出最终处理决策：");
-return sb.toString();
-}
-
-private String buildAggregatorPrompt(String message, String factBundle, Map<String, String> expertResponses,
-String routing) {
-return String.format("""
-你是智能客服回复聚合专家。请整合所有信息和专家回复，生成最终回复。
-
-用户问题：%s
-已收集事实：%s
-路由目标：%s
-专家回复：%s
-
-请生成最终回复（简洁、专业、礼貌）：
-""", message, factBundle, routing, expertResponses);
-}
-
-private String extractContent(OverAllState state) {
-return state.get("finalContent", String.class);
-}
-
-@SuppressWarnings("unchecked")
-private List<CustomerServiceStep> extractSteps(OverAllState state) {
-List<CustomerServiceStep> steps = new ArrayList<>();
-steps.add(new CustomerServiceStep("Memory读取", state.get("memoryBefore", CustomerMemory.class).summary()));
-steps.add(new CustomerServiceStep("意图识别", String.valueOf(state.get("intent", CustomerServiceIntent.class))));
-steps.add(new CustomerServiceStep("事实收集", state.get("factBundle", String.class)));
-steps.add(new CustomerServiceStep("路由判断", state.get("routingResult", String.class)));
-Map<String, String> expertResponses = state.get("expertResponses", Map.class);
-if (expertResponses != null) {
-expertResponses.forEach((key, value) -> steps.add(new CustomerServiceStep(key + "专家回复", value)));
-}
-steps.add(new CustomerServiceStep("最终回复", extractContent(state)));
-return steps;
-}
-
-/**
- * 工作流执行结果。
- *
- * @param content 最终回复内容
- * @param intent 识别的意图
- * @param memoryBefore 执行前记忆
- * @param memoryAfter 执行后记忆
- * @param steps 工作流步骤
- * @param chainMode 链路模式
- * @author xyd
- * @date 2026-05-22 14:00:00
- */
-public record WorkflowGraphResult(String content, CustomerServiceIntent intent, CustomerMemory memoryBefore,
-CustomerMemory memoryAfter, List<CustomerServiceStep> steps, String chainMode) {
-
-}
+	/**
+	 * 工作流执行结果。
+	 *
+	 * @param content 最终回复内容
+	 * @param intent 识别的意图
+	 * @param memoryBefore 执行前记忆
+	 * @param memoryAfter 执行后记忆
+	 * @param steps 工作流步骤
+	 * @param chainMode 链路模式
+	 * @author xyd
+	 * @date 2026-05-22 12:30:00
+	 */
+	public record WorkflowGraphResult(String content, CustomerServiceIntent intent, CustomerMemory memoryBefore,
+			CustomerMemory memoryAfter, List<CustomerServiceStep> steps, String chainMode) {
+	}
 
 }

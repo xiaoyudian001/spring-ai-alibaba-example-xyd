@@ -251,31 +251,31 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=redis"
 
 MySQL 会承载 `customer_memory`、`customer_approval_task`、`operation_audit_event` 等长期数据表；Redis 会承载 `minimax:customer:conversation:{userId}` 短期多轮上下文，默认保留 20 条消息，TTL 为 12 小时。
 
-## v2.0 待办任务
+## v2.0 推进状态
 
-v2.0 目标是从“智能客服学习 Demo”继续升级为“可验证、可解释、可扩展的真实客服 Agent 系统”。后续开发优先围绕高级 Agent 编排、Memory 经验复用、工作台增强和测试闭环推进。
+v2.0 目标是从“智能客服学习 Demo”继续升级为“可验证、可解释、可扩展的真实客服 Agent 系统”。当前已完成 Memory 经验复用、高级 Agent 编排、工作台增强和 RAG 知识治理，后续重点转向自动化测试闭环。
 
-### P1：Memory 经验复用
+### 已完成：Memory 经验复用
 
-- 待开发：新增 `CustomerExperienceExtractor`，从历史对话、审核任务、人工接管和评价结果中提取可复用客服经验。
-- 待开发：新增 `CustomerExperienceProvider`，在相似问题再次出现时，把历史经验注入 Agent 提示词。
-- 待开发：区分用户画像 Memory、短期上下文 Context、客服经验 Experience，避免所有信息混在一个 Memory 对象里。
-- 待开发：工作台增加经验查看、启停和删除能力。
+- 已完成：新增 `CustomerExperienceExtractor`，可从历史对话、审核任务、人工接管和评价结果中提取可复用客服经验。
+- 已完成：新增 `CustomerExperienceProvider`，在相似问题再次出现时，把历史经验注入 Agent 提示词。
+- 已完成：区分用户画像 Memory、短期上下文 Context、客服经验 Experience，避免所有信息混在一个 Memory 对象里。
+- 已完成：工作台和接口支持经验查看、匹配、启停和删除。
 
-### P1：高级 Agent 编排
+### 已完成：高级 Agent 编排
 
-- 待开发：新增 `CustomerAgentWorkflowGraphService`，把多个 `ReactAgent.asNode()` 接入 `StateGraph`，形成 Agent-as-Node Workflow。
-- 待开发：新增并行事实收集 Agent，商品、订单、物流、RAG 可并行收集后再汇总给回复 Agent。
-- 待开发：引入 `LlmRoutingAgent`，逐步替代部分手写 Planner，用于判断商品、订单、退款、投诉、人工接管等专家路由。
-- 待开发：引入 `SupervisorAgent`，用于复杂投诉、退款争议、多轮升级场景，由主管 Agent 动态分配子 Agent。
-- 待开发：探索 Agent Tool，把售后专家、物流专家、投诉专家封装为主客服 Agent 可调用的工具。
+- 已完成：新增 `CustomerAgentWorkflowGraphService`，把多个 `ReactAgent.asNode()` 接入 `StateGraph`，形成 Agent-as-Node Workflow。
+- 已完成：新增并行事实收集 Agent，商品、订单、物流、RAG 可并行收集后再汇总给回复 Agent。
+- 已完成：引入 `LlmRoutingAgent`，用于判断商品、订单、退款、投诉、人工接管等专家路由。
+- 已完成：引入 Supervisor 主管 Agent，用于复杂投诉、退款争议、多轮升级场景，由主管 Agent 动态分配子 Agent。
+- 已完成：探索 Agent Tool，把售后专家、物流专家、投诉专家封装为主客服 Agent 可调用的工具。
 
-### P1：工作台增强
+### 已完成：工作台增强
 
-- 待开发：工作台支持按用户、渠道、意图、链路模式筛选报告。
-- 待开发：工作台增加 Trace Timeline，展示 `receive -> intent_plan -> fact_collect -> rag_retrieve -> tool_call -> agent_generate -> risk_review -> memory_write`。
-- 待开发：Memory 可视化编辑增加字段校验、变更预览和审计记录。
-- 待开发：RAG 知识管理支持分组筛选、版本切换、启停控制和召回测试。
+- 已完成：工作台支持按用户、渠道、意图、链路模式筛选报告。
+- 已完成：工作台增加 Trace Timeline，展示 `receive -> intent_plan -> fact_collect -> rag_retrieve -> tool_call -> agent_generate -> risk_review -> memory_write`。
+- 已完成：Memory 可视化编辑增加字段校验、变更预览和审计记录。
+- 已完成：RAG 知识管理支持分组筛选、版本切换、启停控制和召回测试。
 
 ### P2：测试与验收闭环
 

@@ -2,6 +2,7 @@
 @demoUser = e2e-user
 @directUser = e2e-direct-user
 @ragDocId = e2e-refund-policy
+@experienceId = e2e-refund-experience
 
 ### 00 统一存储健康检查
 GET {{baseUrl}}/minimax/chat-client/customer-service/storage/status
@@ -134,3 +135,72 @@ POST {{baseUrl}}/minimax/chat-client/judge/latest
 
 ### 26 查看 AI Judge 结果
 GET {{baseUrl}}/minimax/chat-client/judge/runs?limit=5
+
+### 27 Memory 经验复用：删除同名测试经验，保证用例可重复运行
+DELETE {{baseUrl}}/minimax/experience/{{experienceId}}
+
+### 28 Memory 经验复用：新增退款处理经验，预期写入 customer_experiences
+POST {{baseUrl}}/minimax/experience
+Content-Type: application/json; charset=utf-8
+
+{
+  "id": "{{experienceId}}",
+  "type": "REFUND",
+  "title": "E2E 退款争议经验",
+  "triggerTopics": ["refund", "售后", "退款"],
+  "triggerPatterns": ["已发货", "退款", "投诉"],
+  "experienceContent": "遇到已发货订单退款时，先查询订单和物流状态，再说明不能直接承诺立即退款；如用户情绪激烈，应创建待审核任务或建议人工接管。"
+}
+
+### 29 Memory 经验复用：查看经验统计
+GET {{baseUrl}}/minimax/experience/stats
+
+### 30 Memory 经验复用：按意图和消息匹配经验，预期命中 e2e-refund-experience
+GET {{baseUrl}}/minimax/experience/match?intent=REFUND_REQUEST&message=订单已发货但是我要退款并投诉
+
+### 31 Memory 经验复用：禁用经验，预期 enabled=false
+PUT {{baseUrl}}/minimax/experience/{{experienceId}}/enabled?enabled=false
+
+### 32 Memory 经验复用：重新启用经验，预期 enabled=true
+PUT {{baseUrl}}/minimax/experience/{{experienceId}}/enabled?enabled=true
+
+### 33 Memory 经验复用：按类型查询退款经验
+GET {{baseUrl}}/minimax/experience/type/REFUND
+
+### 34 高级 Agent 编排：查看 Agent-as-Node Workflow Mermaid 图定义
+GET {{baseUrl}}/minimax/chat-client/customer-service/workflow-graph/definition
+
+### 35 高级 Agent 编排：执行 Agent-as-Node Workflow，预期包含事实收集、路由判断、专家回复和最终回复步骤
+POST {{baseUrl}}/minimax/chat-client/customer-service/workflow-graph/chat
+Content-Type: application/json; charset=utf-8
+
+{
+  "userId": "{{demoUser}}",
+  "channel": "XIANYU",
+  "message": "p-1001 商品还在吗？如果订单 o-202605150001 已发货但我想退款，你们怎么处理？我有点不满意。",
+  "history": []
+}
+
+### 36 工作台增强：按用户筛选执行报告
+GET {{baseUrl}}/minimax/chat-client/report/runs/filter?userId={{demoUser}}&limit=10
+
+### 37 工作台增强：按渠道筛选执行报告
+GET {{baseUrl}}/minimax/chat-client/report/runs/filter?channel=XIANYU&limit=10
+
+### 38 工作台增强：按意图筛选执行报告
+GET {{baseUrl}}/minimax/chat-client/report/runs/filter?intent=PRODUCT_INQUIRY&limit=10
+
+### 39 工作台增强：按链路模式筛选执行报告
+GET {{baseUrl}}/minimax/chat-client/report/runs/filter?chainMode=CUSTOMER_SERVICE_MULTI_AGENT&limit=10
+
+### 40 RAG 知识管理增强：V2 检索返回命中文档、Chunk、召回率和召回模式
+GET {{baseUrl}}/minimax/rag/search?query=已发货订单退款并投诉怎么处理&expectedTopics=refund,complaint&limit=8
+
+### 41 RAG 知识管理增强：baseline 关键词检索，用于和 VectorStore 召回对比
+GET {{baseUrl}}/minimax/rag/search/baseline?query=已发货订单退款并投诉怎么处理&limit=8
+
+### 42 RAG 知识管理增强：V2 RAG 运行状态
+GET {{baseUrl}}/minimax/rag/status
+
+### 43 RAG 知识管理增强：V2 分组概览
+GET {{baseUrl}}/minimax/rag/groups

@@ -28,6 +28,8 @@ import com.alibaba.cloud.ai.audit.OperationAuditService;
 import com.alibaba.cloud.ai.customer.ApprovalTaskService;
 import com.alibaba.cloud.ai.customer.ApprovalTaskStatus;
 import com.alibaba.cloud.ai.customer.ChannelType;
+import com.alibaba.cloud.ai.customer.CustomerAgentWorkflowGraphService;
+import com.alibaba.cloud.ai.customer.CustomerAgentWorkflowGraphService.WorkflowGraphResult;
 import com.alibaba.cloud.ai.customer.CustomerConversationMessage;
 import com.alibaba.cloud.ai.customer.CustomerConversationContextService;
 import com.alibaba.cloud.ai.customer.CustomerConversationContextService.CustomerConversationContextStatus;
@@ -86,6 +88,8 @@ public class MiniMaxChatClientController {
 
 	private final CustomerServiceMultiAgentService customerServiceMultiAgentService;
 
+	private final CustomerAgentWorkflowGraphService customerAgentWorkflowGraphService;
+
 	private final CustomerMemoryService customerMemoryService;
 
 	private final CustomerConversationContextService customerConversationContextService;
@@ -110,7 +114,7 @@ public class MiniMaxChatClientController {
 			CustomerServiceAssistantService customerServiceAssistantService,
 			CustomerServiceGraphService customerServiceGraphService,
 			CustomerServiceMultiAgentService customerServiceMultiAgentService,
-			CustomerMemoryService customerMemoryService,
+			CustomerAgentWorkflowGraphService customerAgentWorkflowGraphService, CustomerMemoryService customerMemoryService,
 			CustomerConversationContextService customerConversationContextService,
 			CustomerMcpService customerMcpService, CustomerPolicyRagService customerPolicyRagService,
 			CustomerStorageAdminService customerStorageAdminService, AgentRunReportService agentRunReportService,
@@ -120,6 +124,7 @@ public class MiniMaxChatClientController {
 		this.customerServiceAssistantService = customerServiceAssistantService;
 		this.customerServiceGraphService = customerServiceGraphService;
 		this.customerServiceMultiAgentService = customerServiceMultiAgentService;
+		this.customerAgentWorkflowGraphService = customerAgentWorkflowGraphService;
 		this.customerMemoryService = customerMemoryService;
 		this.customerConversationContextService = customerConversationContextService;
 		this.customerMcpService = customerMcpService;
@@ -207,6 +212,35 @@ public class MiniMaxChatClientController {
 		saveEvaluation(this.agentRunReportService.saveCustomerServiceMultiAgent(userId, message, history.size(),
 				result));
 		return result;
+	}
+
+	/**
+	 * 执行高级 Agent-as-Node Workflow，对外暴露多个专家 ReactAgent 接入 StateGraph 的测试入口。
+	 * @param request 前端聊天请求
+	 * @return 高级 Agent 编排工作流响应结果
+	 * @author xyd
+	 * @date 2026-05-22 12:30:00
+	 */
+	@PostMapping(value = "/customer-service/workflow-graph/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public WorkflowGraphResult customerServiceWorkflowGraphChat(@RequestBody ChatRequest request) {
+		String userId = extractUserId(request);
+		String message = extractMessage(request);
+		List<CustomerConversationMessage> history = loadConversationHistory(userId, request);
+		WorkflowGraphResult result = this.customerAgentWorkflowGraphService.chat(userId, extractChannel(request),
+				message, history);
+		this.customerConversationContextService.appendTurn(userId, history, message, result.content());
+		return result;
+	}
+
+	/**
+	 * 查询高级 Agent-as-Node Workflow 的 Mermaid 图定义，用于工作台或 HTTP 用例确认节点编排。
+	 * @return Mermaid 图定义
+	 * @author xyd
+	 * @date 2026-05-22 12:30:00
+	 */
+	@GetMapping("/customer-service/workflow-graph/definition")
+	public String customerServiceWorkflowGraphDefinition() {
+		return this.customerAgentWorkflowGraphService.getGraphDefinition();
 	}
 
 	/**

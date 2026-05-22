@@ -69,6 +69,8 @@ public class CustomerServiceGraphService {
 
 	private final CustomerServiceTraceLogger traceLogger;
 
+	private final CustomerFactCollectorService factCollectorService;
+
 	private final CompiledGraph compiledGraph;
 
 	private final String graphDefinition;
@@ -82,6 +84,7 @@ public class CustomerServiceGraphService {
 	 * @param customerMcpService 智能客服 MCP 门面服务
 	 * @param debugRecorder 工具调用调试记录器
 	 * @param traceLogger 智能客服链路日志埋点
+	 * @param factCollectorService 客服事实收集服务
 	 * @throws GraphStateException 官方 StateGraph 构建失败时抛出
 	 * @author xyd
 	 * @date 2026-05-19 00:20:26
@@ -89,7 +92,8 @@ public class CustomerServiceGraphService {
 	public CustomerServiceGraphService(@Qualifier("customerServiceReactAgent") ReactAgent customerServiceReactAgent,
 			CustomerServiceIntentPlanner intentPlanner, CustomerMemoryService memoryService,
 			CustomerSkillService skillService, CustomerMcpService customerMcpService,
-			ToolCallDebugRecorder debugRecorder, CustomerServiceTraceLogger traceLogger) throws GraphStateException {
+			ToolCallDebugRecorder debugRecorder, CustomerServiceTraceLogger traceLogger,
+			CustomerFactCollectorService factCollectorService) throws GraphStateException {
 		this.customerServiceReactAgent = customerServiceReactAgent;
 		this.intentPlanner = intentPlanner;
 		this.memoryService = memoryService;
@@ -97,6 +101,7 @@ public class CustomerServiceGraphService {
 		this.customerMcpService = customerMcpService;
 		this.debugRecorder = debugRecorder;
 		this.traceLogger = traceLogger;
+		this.factCollectorService = factCollectorService;
 		StateGraph graph = buildGraph();
 		this.graphDefinition = graph.getGraph(GraphRepresentation.Type.MERMAID, "customer service graph").content();
 		this.compiledGraph = graph.compile();
@@ -137,7 +142,7 @@ public class CustomerServiceGraphService {
 					CustomerServiceIntent.GENERAL_CHAT, memory, memory,
 					List.of(new CustomerServiceStep("error", ex.getMessage())), List.of(),
 					this.debugRecorder.snapshot(), this.customerMcpService.snapshotDebugInfo(), Map.of(),
-					this.graphDefinition);
+					this.graphDefinition, CustomerFactBundle.empty());
 		}
 		finally {
 			this.debugRecorder.remove();
@@ -163,6 +168,7 @@ public class CustomerServiceGraphService {
 				.addPatternStrategy("memoryAfter", new ReplaceStrategy())
 				.addPatternStrategy("intent", new ReplaceStrategy())
 				.addPatternStrategy("selectedSkill", new ReplaceStrategy())
+				.addPatternStrategy("factBundle", new ReplaceStrategy())
 				.addPatternStrategy("content", new ReplaceStrategy())
 				.addPatternStrategy("agentSteps", new ReplaceStrategy())
 				.addPatternStrategy("toolCalls", new ReplaceStrategy())
@@ -175,6 +181,7 @@ public class CustomerServiceGraphService {
 				.addNode("memory_read", node_async(memoryReadNode()))
 				.addNode("intent_plan", node_async(intentPlanNode()))
 				.addNode("skill_select", node_async(skillSelectNode()))
+				.addNode("fact_collect", node_async(factCollectNode()))
 				.addNode("react_agent", node_async(reactAgentNode()))
 				.addNode("risk_review", node_async(riskReviewNode()))
 				.addNode("memory_write", node_async(memoryWriteNode()))
@@ -182,7 +189,8 @@ public class CustomerServiceGraphService {
 				.addEdge(START, "memory_read")
 				.addEdge("memory_read", "intent_plan")
 				.addEdge("intent_plan", "skill_select")
-				.addEdge("skill_select", "react_agent")
+				.addEdge("skill_select", "fact_collect")
+				.addEdge("fact_collect", "react_agent")
 				.addEdge("react_agent", "risk_review")
 				.addEdge("risk_review", "memory_write")
 				.addEdge("memory_write", "response")
@@ -241,6 +249,26 @@ public class CustomerServiceGraphService {
 	}
 
 	/**
+	 * 后端事实预取节点，在调用模型前确定性查询商品、订单、物流、售后和 RAG 知识。
+	 * @return 官方 Graph 节点动作
+	 * @author xyd
+	 * @date 2026-05-22 02:32:00
+	 */
+	private NodeAction factCollectNode() {
+		return state -> {
+			String userId = stringValue(state, "userId", "default-user");
+			String message = stringValue(state, "message", "");
+			CustomerServiceIntent intent = intentValue(state, "intent");
+			CustomerMemory memory = memoryValue(state, "memoryBefore", this.memoryService.read(userId));
+			CustomerFactBundle factBundle = this.factCollectorService.collect(intent, message, memory);
+			this.traceLogger.step("CUSTOMER_SERVICE_STATE_GRAPH", stringValue(state, "traceId", "-"),
+					"fact_collect", factBundle.summaryForPrompt());
+			return Map.of("factBundle", factBundle, "graphSteps",
+					appendStep(state, "fact_collect", factBundle.summaryForPrompt()));
+		};
+	}
+
+	/**
 	 * 调用官方客服 ReactAgent 节点。
 	 * @return 官方 Graph 节点动作
 	 * @author xyd
@@ -255,6 +283,7 @@ public class CustomerServiceGraphService {
 			CustomerServiceIntent intent = intentValue(state, "intent");
 			String selectedSkill = stringValue(state, "selectedSkill", "xianyu-reply");
 			CustomerMemory memory = memoryValue(state, "memoryBefore", this.memoryService.read(userId));
+			CustomerFactBundle factBundle = factBundleValue(state);
 			List<CustomerConversationMessage> history = historyValue(state);
 			this.traceLogger.step("CUSTOMER_SERVICE_STATE_GRAPH", stringValue(state, "traceId", "-"),
 					"react_agent", "调用官方客服 ReactAgent");
@@ -262,13 +291,13 @@ public class CustomerServiceGraphService {
 					.threadId(userId + "-customer-service-react-agent-" + stringValue(state, "traceId", "-"))
 					.build();
 			Optional<NodeOutput> output = this.customerServiceReactAgent.invokeAndGetOutput(
-					buildAgentPrompt(channel, message, history, intent, selectedSkill, memory), config);
+					buildAgentPrompt(channel, message, history, intent, selectedSkill, memory, factBundle), config);
 			OverAllState agentState = output.map(NodeOutput::state).orElse(null);
 			String content = extractContent(agentState);
 			List<ToolCallDebugRecorder.ToolCallDebug> toolCalls = this.debugRecorder.snapshot();
 			this.traceLogger.tools("CUSTOMER_SERVICE_STATE_GRAPH", stringValue(state, "traceId", "-"), toolCalls);
 			this.debugRecorder.remove();
-			return Map.of("content", content, "toolCalls", toolCalls,
+			return Map.of("content", content, "toolCalls", toolCalls, "factBundle", factBundle,
 					"rawAgentState", agentState == null ? Map.of() : agentState.data(),
 					"mcpDebugInfo", this.customerMcpService.snapshotDebugInfo(),
 					"agentSteps", agentSteps(intent, selectedSkill), "graphSteps",
@@ -342,9 +371,11 @@ public class CustomerServiceGraphService {
 		String userId = stringValue(state, "userId", "default-user");
 		CustomerMemory memoryBefore = memoryValue(state, "memoryBefore", this.memoryService.read(userId));
 		CustomerMemory memoryAfter = memoryValue(state, "memoryAfter", memoryBefore);
+		CustomerFactBundle factBundle = factBundleValue(state);
 		return new CustomerServiceGraphResult(stringValue(state, "content", "智能客服官方 StateGraph 没有返回内容。"),
 				intentValue(state, "intent"), memoryBefore, memoryAfter, steps(state, "graphSteps"),
-				steps(state, "agentSteps"), toolCalls(state), mcpDebugInfo(state), state.data(), this.graphDefinition);
+				steps(state, "agentSteps"), toolCalls(state), mcpDebugInfo(state), state.data(), this.graphDefinition,
+				factBundle);
 	}
 
 	/**
@@ -355,12 +386,13 @@ public class CustomerServiceGraphService {
 	 * @param intent 客服意图
 	 * @param selectedSkill 命中的客服技能
 	 * @param memory 客服长期记忆
+	 * @param factBundle 后端预取事实包
 	 * @return ReactAgent 输入提示词
 	 * @author xyd
-	 * @date 2026-05-19 00:20:26
+	 * @date 2026-05-22 02:32:00
 	 */
 	private String buildAgentPrompt(ChannelType channel, String message, List<CustomerConversationMessage> history,
-			CustomerServiceIntent intent, String selectedSkill, CustomerMemory memory) {
+			CustomerServiceIntent intent, String selectedSkill, CustomerMemory memory, CustomerFactBundle factBundle) {
 		return """
 				当前渠道：
 				%s
@@ -380,6 +412,9 @@ public class CustomerServiceGraphService {
 				客服长期记忆：
 				%s
 
+				后端预取事实：
+				%s
+
 				最近对话历史：
 				%s
 
@@ -388,10 +423,40 @@ public class CustomerServiceGraphService {
 
 				请使用 Spring AI Alibaba ReactAgent 的工具能力完成本轮客服处理。
 				必须优先回答“本轮用户问题”，最近对话历史只能作为上下文参考，不能把历史里的旧问题当成本轮问题。
+				如果“后端预取事实”已经包含商品、订单、物流、售后或政策信息，必须优先依据这些事实回复，不能编造与事实相冲突的内容。
 				需要商品、订单、物流、议价底价、退款资格或售后状态事实时调用工具；需要政策或话术时检索知识库或读取 Skill；
 				涉及退款、赔偿、取消订单、修改地址、承诺额外优惠、投诉升级等高风险动作时，必须请求人工接管。
 				""".formatted(channel, intent, this.intentPlanner.instructionFor(intent), selectedSkill,
-				this.skillService.listSkills(), memory.summary(), historySummary(history), message);
+				this.skillService.listSkills(), memory.summary(),
+				factBundle == null ? CustomerFactBundle.empty().summaryForPrompt() : factBundle.summaryForPrompt(),
+				historySummary(history), message);
+	}
+
+	/**
+	 * 从 Graph 状态中读取事实包，兼容 StateGraph 序列化后变为 Map 的场景。
+	 * @param state 官方 Graph 总状态
+	 * @return 本轮后端预取事实包
+	 * @author xyd
+	 * @date 2026-05-22 02:32:00
+	 */
+	private CustomerFactBundle factBundleValue(OverAllState state) {
+		Optional<Object> value = state.value("factBundle");
+		if (value.isEmpty()) {
+			return CustomerFactBundle.empty();
+		}
+		Object raw = value.get();
+		if (raw instanceof CustomerFactBundle factBundle) {
+			return factBundle;
+		}
+		if (raw instanceof Map<?, ?> map) {
+			return new CustomerFactBundle(text(map.get("productId"), ""), text(map.get("orderId"), ""),
+					text(map.get("productInfo"), ""), text(map.get("orderInfo"), ""),
+					text(map.get("logisticsInfo"), ""), text(map.get("pricePolicy"), ""),
+					text(map.get("refundEligibility"), ""), text(map.get("afterSaleStatus"), ""),
+					text(map.get("ragSummary"), ""), stringList(map.get("sourceNames")),
+					stringList(map.get("missingFacts")));
+		}
+		return CustomerFactBundle.empty();
 	}
 
 	private List<CustomerServiceStep> agentSteps(CustomerServiceIntent intent, String selectedSkill) {

@@ -40,21 +40,25 @@ public class CustomerDirectChatService {
 
 	private final CustomerServiceTraceLogger traceLogger;
 
+	private final CustomerFactCollectorService factCollectorService;
+
 	/**
 	 * 创建客服轻量直连大模型服务。
 	 * @param chatModel Spring AI 聊天模型
 	 * @param memoryService 客服长期记忆服务
 	 * @param traceLogger 智能客服链路日志埋点
+	 * @param factCollectorService 客服事实收集服务
 	 * @author xyd
 	 * @date 2026-05-21 11:20:00
 	 */
 	public CustomerDirectChatService(ChatModel chatModel, CustomerMemoryService memoryService,
-			CustomerServiceTraceLogger traceLogger) {
+			CustomerServiceTraceLogger traceLogger, CustomerFactCollectorService factCollectorService) {
 		this.chatClient = ChatClient.builder(chatModel)
 				.defaultOptions(OpenAiChatOptions.builder().model("MiniMax-M2.7").temperature(0.5).build())
 				.build();
 		this.memoryService = memoryService;
 		this.traceLogger = traceLogger;
+		this.factCollectorService = factCollectorService;
 	}
 
 	/**
@@ -71,26 +75,30 @@ public class CustomerDirectChatService {
 			List<CustomerConversationMessage> history) {
 		String traceId = this.traceLogger.start("CUSTOMER_SERVICE_DIRECT_LLM", userId, channel, message);
 		CustomerMemory memory = this.memoryService.read(userId);
+		CustomerFactBundle factBundle = this.factCollectorService.collect(CustomerServiceIntent.GENERAL_CHAT, message,
+				memory);
+		this.traceLogger.step("CUSTOMER_SERVICE_DIRECT_LLM", traceId, "FACT_COLLECT",
+				factBundle.summaryForPrompt());
 		this.traceLogger.step("CUSTOMER_SERVICE_DIRECT_LLM", traceId, "DIRECT_ROUTE",
 				"简单对话直连 MiniMax，不调用 Tool、RAG、MCP 或 Agent。");
 		try {
 			this.traceLogger.step("CUSTOMER_SERVICE_DIRECT_LLM", traceId, "MODEL_CALL", "调用 MiniMax-M2.7 轻量客服回复");
 			String content = this.chatClient.prompt()
 					.system(systemPrompt(channel))
-					.user(userPrompt(message, history, memory))
+					.user(userPrompt(message, history, memory, factBundle))
 					.options(OpenAiChatOptions.builder().model("MiniMax-M2.7").temperature(0.5).build())
 					.call()
 					.content();
 			this.traceLogger.finish("CUSTOMER_SERVICE_DIRECT_LLM", traceId, CustomerServiceIntent.GENERAL_CHAT,
 					content);
 			return CustomerServiceAssistantResult.fromDirect(content, memory, memory,
-					new CustomerServiceStep("DIRECT_LLM", "识别为简单对话，直接调用 MiniMax-M2.7 生成回复。"));
+					new CustomerServiceStep("DIRECT_LLM", "识别为简单对话，直接调用 MiniMax-M2.7 生成回复。"), factBundle);
 		}
 		catch (Exception ex) {
 			this.traceLogger.error("CUSTOMER_SERVICE_DIRECT_LLM", traceId, ex);
 			return CustomerServiceAssistantResult.fromDirect("您好，我是小雨点智能客服。刚才轻量模型调用失败："
 					+ ex.getMessage() + "。您可以继续告诉我商品号、订单号或具体售后问题。", memory, memory,
-					new CustomerServiceStep("DIRECT_LLM_ERROR", "轻量直连大模型失败，返回友好兜底回复。"));
+					new CustomerServiceStep("DIRECT_LLM_ERROR", "轻量直连大模型失败，返回友好兜底回复。"), factBundle);
 		}
 	}
 
@@ -116,11 +124,13 @@ public class CustomerDirectChatService {
 	 * @param message 用户原始问题
 	 * @param history 短期多轮上下文
 	 * @param memory 客服长期记忆
+	 * @param factBundle 后端预取事实包
 	 * @return 用户提示词
 	 * @author xyd
 	 * @date 2026-05-21 11:20:00
 	 */
-	private String userPrompt(String message, List<CustomerConversationMessage> history, CustomerMemory memory) {
+	private String userPrompt(String message, List<CustomerConversationMessage> history, CustomerMemory memory,
+			CustomerFactBundle factBundle) {
 		return """
 				最近对话：
 				%s
@@ -128,12 +138,17 @@ public class CustomerDirectChatService {
 				客服长期记忆摘要：
 				%s
 
+				后端预取事实：
+				%s
+
 				用户当前消息：
 				%s
 
 				必须优先回答“用户当前消息”，最近对话只作为上下文参考，不能把历史里的旧问题当成本轮问题。
+				如“后端预取事实”不为空，必须优先依据事实回答，不能编造商品、订单、物流或售后状态。
 				请直接回复用户，不要输出调试信息。
-				""".formatted(historySummary(history), memory == null ? "暂无" : memory.summary(), safeText(message));
+				""".formatted(historySummary(history), memory == null ? "暂无" : memory.summary(),
+				factBundle == null ? "暂无后端预取事实。" : factBundle.summaryForPrompt(), safeText(message));
 	}
 
 	/**

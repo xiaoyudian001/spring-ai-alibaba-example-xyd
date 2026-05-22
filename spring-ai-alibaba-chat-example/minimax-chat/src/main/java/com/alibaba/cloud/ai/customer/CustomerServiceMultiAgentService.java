@@ -55,6 +55,8 @@ public class CustomerServiceMultiAgentService {
 
 	private final CustomerServiceTraceLogger traceLogger;
 
+	private final CustomerFactCollectorService factCollectorService;
+
 	/**
 	 * 创建智能客服官方 Multi-Agent 服务。
 	 * @param customerServiceSequentialAgent 智能客服官方 SequentialAgent
@@ -64,6 +66,7 @@ public class CustomerServiceMultiAgentService {
 	 * @param customerMcpService 智能客服 MCP 门面服务
 	 * @param debugRecorder 工具调用调试记录器
 	 * @param traceLogger 智能客服链路日志埋点
+	 * @param factCollectorService 客服事实收集服务
 	 * @author xyd
 	 * @date 2026-05-19 00:20:26
 	 */
@@ -71,7 +74,8 @@ public class CustomerServiceMultiAgentService {
 			@Qualifier("customerServiceSequentialAgent") SequentialAgent customerServiceSequentialAgent,
 			CustomerServiceIntentPlanner intentPlanner, CustomerMemoryService memoryService,
 			CustomerSkillService skillService, CustomerMcpService customerMcpService,
-			ToolCallDebugRecorder debugRecorder, CustomerServiceTraceLogger traceLogger) {
+			ToolCallDebugRecorder debugRecorder, CustomerServiceTraceLogger traceLogger,
+			CustomerFactCollectorService factCollectorService) {
 		this.customerServiceSequentialAgent = customerServiceSequentialAgent;
 		this.intentPlanner = intentPlanner;
 		this.memoryService = memoryService;
@@ -79,6 +83,7 @@ public class CustomerServiceMultiAgentService {
 		this.customerMcpService = customerMcpService;
 		this.debugRecorder = debugRecorder;
 		this.traceLogger = traceLogger;
+		this.factCollectorService = factCollectorService;
 	}
 
 	/**
@@ -104,6 +109,8 @@ public class CustomerServiceMultiAgentService {
 		this.traceLogger.step("CUSTOMER_SERVICE_MULTI_AGENT", traceId, "INTENT_PLAN", String.valueOf(intent));
 		String selectedSkill = this.skillService.selectSkill(safeChannel, intent);
 		this.traceLogger.step("CUSTOMER_SERVICE_MULTI_AGENT", traceId, "SKILL_SELECT", selectedSkill);
+		CustomerFactBundle factBundle = this.factCollectorService.collect(intent, message, memoryBefore);
+		this.traceLogger.step("CUSTOMER_SERVICE_MULTI_AGENT", traceId, "FACT_COLLECT", factBundle.summaryForPrompt());
 		try {
 			RunnableConfig config = RunnableConfig.builder()
 					.threadId(normalizedUserId + "-customer-service-multi-agent-" + traceId)
@@ -111,7 +118,7 @@ public class CustomerServiceMultiAgentService {
 			this.traceLogger.step("CUSTOMER_SERVICE_MULTI_AGENT", traceId, "SEQUENTIAL_AGENT",
 					"调用官方 SequentialAgent");
 			Optional<OverAllState> stateOptional = this.customerServiceSequentialAgent.invoke(buildPrompt(safeChannel,
-					message, history, intent, selectedSkill, memoryBefore), config);
+					message, history, intent, selectedSkill, memoryBefore, factBundle), config);
 			OverAllState state = stateOptional.orElseThrow();
 			List<ToolCallDebugRecorder.ToolCallDebug> toolCalls = this.debugRecorder.snapshot();
 			this.traceLogger.tools("CUSTOMER_SERVICE_MULTI_AGENT", traceId, toolCalls);
@@ -120,14 +127,14 @@ public class CustomerServiceMultiAgentService {
 			this.traceLogger.step("CUSTOMER_SERVICE_MULTI_AGENT", traceId, "MEMORY_WRITE", memoryAfter.summary());
 			this.traceLogger.finish("CUSTOMER_SERVICE_MULTI_AGENT", traceId, intent, content);
 			return new CustomerServiceMultiAgentResult(content, intent, memoryBefore, memoryAfter, agentSteps(state),
-					toolCalls, this.customerMcpService.snapshotDebugInfo(), state.data());
+					toolCalls, this.customerMcpService.snapshotDebugInfo(), state.data(), factBundle);
 		}
 		catch (Exception ex) {
 			this.traceLogger.error("CUSTOMER_SERVICE_MULTI_AGENT", traceId, ex);
 			CustomerMemory memoryAfter = this.memoryService.read(normalizedUserId);
 			return new CustomerServiceMultiAgentResult("智能客服官方 Multi-Agent 调用失败：" + ex.getMessage(), intent,
 					memoryBefore, memoryAfter, List.of(new CustomerServiceStep("error", ex.getMessage())),
-					this.debugRecorder.snapshot(), this.customerMcpService.snapshotDebugInfo(), Map.of());
+					this.debugRecorder.snapshot(), this.customerMcpService.snapshotDebugInfo(), Map.of(), factBundle);
 		}
 		finally {
 			this.debugRecorder.remove();
@@ -143,26 +150,32 @@ public class CustomerServiceMultiAgentService {
 	 * @param intent 客服意图
 	 * @param selectedSkill 命中的客服技能
 	 * @param memory 客服长期记忆
+	 * @param factBundle 后端预取事实包
 	 * @return SequentialAgent 输入提示词
 	 * @author xyd
 	 * @date 2026-05-19 00:20:26
 	 */
 	private String buildPrompt(ChannelType channel, String message, List<CustomerConversationMessage> history,
-			CustomerServiceIntent intent, String selectedSkill, CustomerMemory memory) {
+			CustomerServiceIntent intent, String selectedSkill, CustomerMemory memory, CustomerFactBundle factBundle) {
 		return """
 				当前渠道：%s
 				识别意图：%s
 				推荐 Skill：%s
 				客服处理策略：%s
 				客服长期记忆：%s
+				后端预取事实：
+				%s
+
 				最近对话历史：
 				%s
 
 				本轮用户问题：%s
 
 				必须优先回答“本轮用户问题”，最近对话历史只能作为上下文参考，不能把历史里的旧问题当成本轮问题。
+				如“后端预取事实”不为空，必须优先依据这些事实回答；只有事实不足时才继续调用工具补充。
 				""".formatted(channel, intent, selectedSkill, this.intentPlanner.instructionFor(intent),
-				memory.summary(), historySummary(history), normalizeMessage(message));
+				memory.summary(), factBundle == null ? "暂无后端预取事实。" : factBundle.summaryForPrompt(),
+				historySummary(history), normalizeMessage(message));
 	}
 
 	/**

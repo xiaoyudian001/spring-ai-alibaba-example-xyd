@@ -35,11 +35,12 @@ import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
  * @param mcpDebugInfo MCP 调试信息
  * @param rawState 官方 StateGraph 原始状态
  * @param graphDefinition 官方 StateGraph Mermaid 定义
+ * @param factBundle 后端在模型调用前预取的业务事实包
  * @author xyd
  * @date 2026-05-19 00:20:26
  */
 public record CustomerServiceGraphResult(String content, CustomerServiceIntent intent, CustomerMemory memoryBefore,
 		CustomerMemory memoryAfter, List<CustomerServiceStep> graphSteps, List<CustomerServiceStep> agentSteps,
 		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls, McpDebugInfo mcpDebugInfo,
-		Map<String, Object> rawState, String graphDefinition) {
+		Map<String, Object> rawState, String graphDefinition, CustomerFactBundle factBundle) {
 }

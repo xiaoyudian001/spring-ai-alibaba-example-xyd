@@ -56,6 +56,8 @@ public class CustomerServiceAgentService {
 
 	private final CustomerServiceTraceLogger traceLogger;
 
+	private final CustomerFactCollectorService factCollectorService;
+
 	/**
 	 * 创建智能客服官方 Agent 服务。
 	 * @param customerServiceReactAgent 智能客服官方 ReactAgent
@@ -65,13 +67,15 @@ public class CustomerServiceAgentService {
 	 * @param customerMcpService 智能客服 MCP 门面服务
 	 * @param debugRecorder 工具调用调试记录器
 	 * @param traceLogger 智能客服链路日志埋点
+	 * @param factCollectorService 客服事实收集服务
 	 * @author xyd
 	 * @date 2026-05-18 11:34:38
 	 */
 	public CustomerServiceAgentService(@Qualifier("customerServiceReactAgent") ReactAgent customerServiceReactAgent,
 			CustomerServiceIntentPlanner intentPlanner, CustomerMemoryService memoryService,
 			CustomerSkillService skillService, CustomerMcpService customerMcpService,
-			ToolCallDebugRecorder debugRecorder, CustomerServiceTraceLogger traceLogger) {
+			ToolCallDebugRecorder debugRecorder, CustomerServiceTraceLogger traceLogger,
+			CustomerFactCollectorService factCollectorService) {
 		this.customerServiceReactAgent = customerServiceReactAgent;
 		this.intentPlanner = intentPlanner;
 		this.memoryService = memoryService;
@@ -79,6 +83,7 @@ public class CustomerServiceAgentService {
 		this.customerMcpService = customerMcpService;
 		this.debugRecorder = debugRecorder;
 		this.traceLogger = traceLogger;
+		this.factCollectorService = factCollectorService;
 	}
 
 	/**
@@ -102,7 +107,11 @@ public class CustomerServiceAgentService {
 		this.traceLogger.step("CUSTOMER_SERVICE_REACT_AGENT", traceId, "INTENT_PLAN", String.valueOf(intent));
 		String selectedSkill = this.skillService.selectSkill(channel, intent);
 		this.traceLogger.step("CUSTOMER_SERVICE_REACT_AGENT", traceId, "SKILL_SELECT", selectedSkill);
-		List<CustomerServiceStep> workflowSteps = workflowSteps(channel, message, intent, selectedSkill, memoryBefore);
+		CustomerFactBundle factBundle = this.factCollectorService.collect(intent, message, memoryBefore);
+		this.traceLogger.step("CUSTOMER_SERVICE_REACT_AGENT", traceId, "FACT_COLLECT",
+				factBundle.summaryForPrompt());
+		List<CustomerServiceStep> workflowSteps = workflowSteps(channel, message, intent, selectedSkill, memoryBefore,
+				factBundle);
 		List<CustomerServiceStep> multiAgentSteps = multiAgentSteps(intent, selectedSkill);
 		try {
 			RunnableConfig config = RunnableConfig.builder()
@@ -111,7 +120,7 @@ public class CustomerServiceAgentService {
 			this.traceLogger.step("CUSTOMER_SERVICE_REACT_AGENT", traceId, "MODEL_CALL",
 					"调用 Spring AI Alibaba ReactAgent");
 			Optional<NodeOutput> output = this.customerServiceReactAgent.invokeAndGetOutput(
-					buildPrompt(channel, message, history, intent, selectedSkill, memoryBefore), config);
+					buildPrompt(channel, message, history, intent, selectedSkill, memoryBefore, factBundle), config);
 			OverAllState state = output.map(NodeOutput::state).orElse(null);
 			String content = extractContent(state);
 			List<ToolCallDebugRecorder.ToolCallDebug> toolCalls = this.debugRecorder.snapshot();
@@ -121,7 +130,7 @@ public class CustomerServiceAgentService {
 			McpDebugInfo mcpDebugInfo = this.customerMcpService.snapshotDebugInfo();
 			this.traceLogger.finish("CUSTOMER_SERVICE_REACT_AGENT", traceId, intent, content);
 			return new CustomerServiceResult(content, intent, memoryBefore, memoryAfter, workflowSteps,
-					multiAgentSteps, toolCalls, mcpDebugInfo);
+					multiAgentSteps, toolCalls, mcpDebugInfo, factBundle);
 		}
 		catch (Exception ex) {
 			this.traceLogger.error("CUSTOMER_SERVICE_REACT_AGENT", traceId, ex);
@@ -129,7 +138,7 @@ public class CustomerServiceAgentService {
 			List<ToolCallDebugRecorder.ToolCallDebug> toolCalls = this.debugRecorder.snapshot();
 			return new CustomerServiceResult("官方智能客服 ReactAgent 调用失败：" + ex.getMessage(), intent,
 					memoryBefore, memoryAfter, workflowSteps, multiAgentSteps, toolCalls,
-					this.customerMcpService.snapshotDebugInfo());
+					this.customerMcpService.snapshotDebugInfo(), factBundle);
 		}
 		finally {
 			this.debugRecorder.remove();
@@ -144,17 +153,20 @@ public class CustomerServiceAgentService {
 	 * @param intent 客服意图
 	 * @param selectedSkill 命中的客服技能
 	 * @param memory 调用前客服记忆
+	 * @param factBundle 后端预取事实包
 	 * @return Workflow 步骤列表
 	 * @author xyd
 	 * @date 2026-05-18 11:34:38
 	 */
 	private List<CustomerServiceStep> workflowSteps(ChannelType channel, String message, CustomerServiceIntent intent,
-			String selectedSkill, CustomerMemory memory) {
+			String selectedSkill, CustomerMemory memory, CustomerFactBundle factBundle) {
 		List<CustomerServiceStep> steps = new ArrayList<>();
 		steps.add(new CustomerServiceStep("接收渠道消息", "渠道：" + channel + "；消息：" + normalizeForStep(message)));
 		steps.add(new CustomerServiceStep("识别客服意图", "Planner 识别为 " + intent + "。"));
 		steps.add(new CustomerServiceStep("读取用户记忆", memory.summary()));
 		steps.add(new CustomerServiceStep("选择客服技能", "命中 Skill：" + selectedSkill + "。"));
+		steps.add(new CustomerServiceStep("后端事实预取", factBundle == null ? "暂无后端预取事实。"
+				: factBundle.summaryForPrompt()));
 		steps.add(new CustomerServiceStep("官方 ReactAgent",
 				"调用 Spring AI Alibaba ReactAgent，由 Agent Framework 自主决定 Tool、RAG、Skill 和人工接管调用。"));
 		return steps;
@@ -185,12 +197,13 @@ public class CustomerServiceAgentService {
 	 * @param intent 客服意图
 	 * @param selectedSkill 命中的客服技能
 	 * @param memory 客服长期记忆
+	 * @param factBundle 后端预取事实包
 	 * @return ReactAgent 输入提示词
 	 * @author xyd
 	 * @date 2026-05-18 11:34:38
 	 */
 	private String buildPrompt(ChannelType channel, String message, List<CustomerConversationMessage> history,
-			CustomerServiceIntent intent, String selectedSkill, CustomerMemory memory) {
+			CustomerServiceIntent intent, String selectedSkill, CustomerMemory memory, CustomerFactBundle factBundle) {
 		return """
 				当前渠道：
 				%s
@@ -210,6 +223,9 @@ public class CustomerServiceAgentService {
 				客服长期记忆：
 				%s
 
+				后端预取事实：
+				%s
+
 				最近对话历史：
 				%s
 
@@ -218,10 +234,12 @@ public class CustomerServiceAgentService {
 
 				请使用 Spring AI Alibaba ReactAgent 的工具能力完成本轮客服处理。
 				必须优先回答“本轮用户问题”，最近对话历史只能作为上下文参考，不能把历史里的旧问题当成本轮问题。
+				如“后端预取事实”不为空，必须优先依据这些事实回答；只有事实不足时才继续调用工具补充。
 				需要商品、订单、物流、议价底价、退款资格或售后状态事实时调用工具；需要政策或话术时检索知识库或读取 Skill；
 				涉及高风险动作必须请求人工接管。
 				""".formatted(channel, intent, this.intentPlanner.instructionFor(intent), selectedSkill,
-				this.skillService.listSkills(), memory.summary(), historySummary(history), message);
+				this.skillService.listSkills(), memory.summary(), factBundle == null ? "暂无后端预取事实。"
+						: factBundle.summaryForPrompt(), historySummary(history), message);
 	}
 
 	/**

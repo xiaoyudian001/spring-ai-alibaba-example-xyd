@@ -33,12 +33,14 @@ import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
  * @param toolCalls 本轮工具调用明细
  * @param mcpDebugInfo MCP 调试信息
  * @param chainMode 后端实际选择的执行链路，仅用于调试页和报告评估
+ * @param factBundle 后端在模型调用前预取的业务事实包
  * @author xyd
  * @date 2026-05-20 09:38:00
  */
 public record CustomerServiceAssistantResult(String content, CustomerServiceIntent intent, CustomerMemory memoryBefore,
 		CustomerMemory memoryAfter, List<CustomerServiceStep> workflowSteps, List<CustomerServiceStep> multiAgentSteps,
-		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls, McpDebugInfo mcpDebugInfo, String chainMode) {
+		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls, McpDebugInfo mcpDebugInfo, String chainMode,
+		CustomerFactBundle factBundle) {
 
 	/**
 	 * 将普通客服 ReactAgent 结果转换为统一客服响应。
@@ -51,7 +53,7 @@ public record CustomerServiceAssistantResult(String content, CustomerServiceInte
 	public static CustomerServiceAssistantResult fromAgent(CustomerServiceResult result, CustomerServiceStep routeStep) {
 		return new CustomerServiceAssistantResult(result.content(), result.intent(), result.memoryBefore(),
 				result.memoryAfter(), prepend(routeStep, result.workflowSteps()), result.multiAgentSteps(),
-				result.toolCalls(), result.mcpDebugInfo(), "CUSTOMER_SERVICE_ASSISTANT_AGENT");
+				result.toolCalls(), result.mcpDebugInfo(), "CUSTOMER_SERVICE_ASSISTANT_AGENT", result.factBundle());
 	}
 
 	/**
@@ -66,7 +68,7 @@ public record CustomerServiceAssistantResult(String content, CustomerServiceInte
 			CustomerServiceStep routeStep) {
 		return new CustomerServiceAssistantResult(result.content(), result.intent(), result.memoryBefore(),
 				result.memoryAfter(), List.of(routeStep), result.agentSteps(), result.toolCalls(), result.mcpDebugInfo(),
-				"CUSTOMER_SERVICE_ASSISTANT_MULTI_AGENT");
+				"CUSTOMER_SERVICE_ASSISTANT_MULTI_AGENT", result.factBundle());
 	}
 
 	/**
@@ -80,9 +82,10 @@ public record CustomerServiceAssistantResult(String content, CustomerServiceInte
 	 * @date 2026-05-21 11:20:00
 	 */
 	public static CustomerServiceAssistantResult fromDirect(String content, CustomerMemory memoryBefore,
-			CustomerMemory memoryAfter, CustomerServiceStep routeStep) {
+			CustomerMemory memoryAfter, CustomerServiceStep routeStep, CustomerFactBundle factBundle) {
 		return new CustomerServiceAssistantResult(content, CustomerServiceIntent.GENERAL_CHAT, memoryBefore,
-				memoryAfter, List.of(routeStep), List.of(), List.of(), null, "CUSTOMER_SERVICE_DIRECT_LLM");
+				memoryAfter, List.of(routeStep), List.of(), List.of(), null, "CUSTOMER_SERVICE_DIRECT_LLM",
+				factBundle == null ? CustomerFactBundle.empty() : factBundle);
 	}
 
 	/**

@@ -33,11 +33,12 @@ import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
  * @param toolCalls 本轮工具调用明细
  * @param mcpDebugInfo MCP 调试信息
  * @param rawState 官方 SequentialAgent 原始状态
+ * @param factBundle 后端在模型调用前预取的业务事实包
  * @author xyd
  * @date 2026-05-19 00:20:26
  */
 public record CustomerServiceMultiAgentResult(String content, CustomerServiceIntent intent,
 		CustomerMemory memoryBefore, CustomerMemory memoryAfter, List<CustomerServiceStep> agentSteps,
 		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls, McpDebugInfo mcpDebugInfo,
-		Map<String, Object> rawState) {
+		Map<String, Object> rawState, CustomerFactBundle factBundle) {
 }

@@ -1,0 +1,20 @@
+server:
+  port: 19001
+
+spring:
+  application:
+    name: minimax-customer-mcp-server
+  ai:
+    mcp:
+      server:
+        enabled: true
+        name: minimax-customer-mcp-server
+        version: 1.0.0
+        type: SYNC
+        instructions: "提供智能客服商品、订单、物流、售后和工单工具，供 minimax-chat 通过 MCP Client 调用。"
+        sse-message-endpoint: /mcp/messages
+        capabilities:
+          tool: true
+          resource: false
+          prompt: false
+          completion: false

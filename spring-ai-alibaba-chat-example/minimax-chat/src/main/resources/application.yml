@@ -52,5 +52,5 @@ spring:
         sse:
           connections:
             customer:
-              # 对应未来真实 customer-mcp-server；未启动时 CustomerMcpService 会回退本地 Mock 数据。
-              url: http://localhost:19000
+              # 对应 minimax-customer-mcp-server；未启动时 CustomerMcpService 会回退本地 Mock 数据。
+              url: http://localhost:19001

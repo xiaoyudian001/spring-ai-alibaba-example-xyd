@@ -1918,7 +1918,33 @@
 		`;
 	}
 
-	function renderDebug(messageNode, intent, toolCalls, graphSteps, agentSteps, memoryBefore, memoryAfter, chainMode, graphDefinition, mcpDebugInfo) {
+	function formatFactBundle(factBundle) {
+		const fact = factBundle || {};
+		const sources = Array.isArray(fact.sourceNames) ? fact.sourceNames : [];
+		const missing = Array.isArray(fact.missingFacts) ? fact.missingFacts : [];
+		const rows = [
+			["商品 ID", fact.productId],
+			["订单 ID", fact.orderId],
+			["商品事实", fact.productInfo],
+			["订单事实", fact.orderInfo],
+			["物流事实", fact.logisticsInfo],
+			["议价策略", fact.pricePolicy],
+			["退款资格", fact.refundEligibility],
+			["售后状态", fact.afterSaleStatus],
+			["RAG 摘要", fact.ragSummary],
+			["事实来源", sources.join("、")],
+			["缺失事实", missing.join("；")]
+		].filter(([, value]) => value !== undefined && value !== null && String(value).trim());
+		if (!rows.length) return "";
+		return `
+			<div class="memory-card">
+				<div class="memory-card-title">后端事实预取</div>
+				${rows.map(([label, value]) => `<div>${escapeHtml(label)}：${escapeHtml(value)}</div>`).join("")}
+			</div>
+		`;
+	}
+
+	function renderDebug(messageNode, intent, toolCalls, graphSteps, agentSteps, memoryBefore, memoryAfter, chainMode, graphDefinition, mcpDebugInfo, factBundle) {
 		if (!debugToggle.checked) return;
 		const existing = messageNode.querySelector(":scope > .debug-panel");
 		if (existing) existing.remove();
@@ -1927,6 +1953,7 @@
 		const graphCount = graphSteps && graphSteps.length ? graphSteps.length : 0;
 		const agentStepCount = agentSteps && agentSteps.length ? agentSteps.length : 0;
 		const toolCallCount = toolCalls && toolCalls.length ? toolCalls.length : 0;
+		const factSourceCount = factBundle && Array.isArray(factBundle.sourceNames) ? factBundle.sourceNames.length : 0;
 		panel.innerHTML = `
 			<button class="debug-tip-button" type="button" aria-expanded="false" title="查看本轮 Agent、Tool、Memory 和 MCP 调试信息">
 				<span class="debug-tip-label">Tips</span>
@@ -1934,6 +1961,7 @@
 					<span class="debug-pill">${escapeHtml(intent || "UNKNOWN")}</span>
 					<span class="debug-pill">Tool ${toolCallCount}</span>
 					<span class="debug-pill">Step ${agentStepCount + graphCount}</span>
+					<span class="debug-pill">Fact ${factSourceCount}</span>
 				</span>
 			</button>
 		`;
@@ -1967,6 +1995,13 @@
 			</div>
 		`;
 		content.appendChild(memory);
+		const factHtml = formatFactBundle(factBundle);
+		if (factHtml) {
+			const factDebug = document.createElement("div");
+			factDebug.className = "memory-grid";
+			factDebug.innerHTML = factHtml;
+			content.appendChild(factDebug);
+		}
 		const mcpDebugHtml = formatMcpDebug(mcpDebugInfo, toolCalls);
 		if (mcpDebugHtml) {
 			const mcpDebug = document.createElement("div");
@@ -2491,7 +2526,7 @@
 				data.workflowSteps || data.graphSteps || [],
 				data.multiAgentSteps || data.agentSteps || [], data.memoryBefore, data.memoryAfter,
 				data.chainMode || currentAgentModeLabel(),
-				data.graphDefinition, data.mcpDebugInfo);
+				data.graphDefinition, data.mcpDebugInfo, data.factBundle);
 			addHistory("user", message);
 			addHistory("assistant", answer);
 			await refreshEvaluationDashboard();

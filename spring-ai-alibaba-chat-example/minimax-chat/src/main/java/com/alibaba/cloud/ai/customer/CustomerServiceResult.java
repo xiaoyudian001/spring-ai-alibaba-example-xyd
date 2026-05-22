@@ -32,10 +32,12 @@ import com.alibaba.cloud.ai.tool.ToolCallDebugRecorder;
  * @param multiAgentSteps 客服 Multi-Agent 角色步骤
  * @param toolCalls 本轮工具调用明细
  * @param mcpDebugInfo MCP 调试信息，第一阶段可为空
+ * @param factBundle 后端在模型调用前预取的业务事实包
  * @author xyd
  * @date 2026-05-15 14:57:11
  */
 public record CustomerServiceResult(String content, CustomerServiceIntent intent, CustomerMemory memoryBefore,
 		CustomerMemory memoryAfter, List<CustomerServiceStep> workflowSteps, List<CustomerServiceStep> multiAgentSteps,
-		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls, McpDebugInfo mcpDebugInfo) {
+		List<ToolCallDebugRecorder.ToolCallDebug> toolCalls, McpDebugInfo mcpDebugInfo,
+		CustomerFactBundle factBundle) {
 }

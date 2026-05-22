@@ -127,8 +127,12 @@ http://localhost:8080/dashboard.html
 如需开启真实 MCP Client：
 
 ```powershell
+mvn -pl spring-ai-alibaba-chat-example/minimax-customer-mcp-server -am spring-boot:run
 mvn -pl spring-ai-alibaba-chat-example/minimax-chat -am spring-boot:run "-Dspring-boot.run.profiles=mcp"
 ```
+
+启动后可通过 `GET http://localhost:19001/customer-mcp/health` 确认客服 MCP Server 已运行，
+再通过 `GET /minimax/chat-client/customer-service/mcp/status` 确认 `mcpMode` 为 `REAL_CUSTOMER_MCP_READY`。
 
 如需测试向量库配置边界：
 
@@ -246,3 +250,48 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=redis"
 ```
 
 MySQL 会承载 `customer_memory`、`customer_approval_task`、`operation_audit_event` 等长期数据表；Redis 会承载 `minimax:customer:conversation:{userId}` 短期多轮上下文，默认保留 20 条消息，TTL 为 12 小时。
+
+## v2.0 待办任务
+
+v2.0 目标是从“智能客服学习 Demo”继续升级为“可验证、可解释、可扩展的真实客服 Agent 系统”。后续开发优先围绕 RAG 知识治理、高级 Agent 编排、Memory 经验复用、工作台增强和测试闭环推进。
+
+### P1：RAG 知识治理
+
+- 待开发：客服知识库增加分组、版本、启停、更新时间和维护人字段。
+- 待开发：实现真实文档切分流程：`Document -> Chunk -> Embedding -> Retrieval`。
+- 待开发：工作台展示命中文档、命中 chunk、召回分数、召回主题和召回模式。
+- 待开发：保留本地关键词召回作为 baseline，用于和真实向量召回效果对比。
+- 待开发：优先用 MySQL 保存文档和 chunk 元数据，后续再接入真实 `VectorStore`。
+
+### P1：Memory 经验复用
+
+- 待开发：新增 `CustomerExperienceExtractor`，从历史对话、审核任务、人工接管和评价结果中提取可复用客服经验。
+- 待开发：新增 `CustomerExperienceProvider`，在相似问题再次出现时，把历史经验注入 Agent 提示词。
+- 待开发：区分用户画像 Memory、短期上下文 Context、客服经验 Experience，避免所有信息混在一个 Memory 对象里。
+- 待开发：工作台增加经验查看、启停和删除能力。
+
+### P1：高级 Agent 编排
+
+- 待开发：新增 `CustomerAgentWorkflowGraphService`，把多个 `ReactAgent.asNode()` 接入 `StateGraph`，形成 Agent-as-Node Workflow。
+- 待开发：新增并行事实收集 Agent，商品、订单、物流、RAG 可并行收集后再汇总给回复 Agent。
+- 待开发：引入 `LlmRoutingAgent`，逐步替代部分手写 Planner，用于判断商品、订单、退款、投诉、人工接管等专家路由。
+- 待开发：引入 `SupervisorAgent`，用于复杂投诉、退款争议、多轮升级场景，由主管 Agent 动态分配子 Agent。
+- 待开发：探索 Agent Tool，把售后专家、物流专家、投诉专家封装为主客服 Agent 可调用的工具。
+
+### P1：工作台增强
+
+- 待开发：工作台支持按用户、渠道、意图、链路模式筛选报告。
+- 待开发：工作台增加 Trace Timeline，展示 `receive -> intent_plan -> fact_collect -> rag_retrieve -> tool_call -> agent_generate -> risk_review -> memory_write`。
+- 待开发：Memory 可视化编辑增加字段校验、变更预览和审计记录。
+- 待开发：RAG 知识管理支持分组筛选、版本切换、启停控制和召回测试。
+
+### P2：测试与验收闭环
+
+- 待开发：新增商品问题必须命中商品事实的自动化测试。
+- 待开发：新增订单问题必须命中订单事实的自动化测试。
+- 待开发：新增退款、赔偿、人工接管必须创建待审核任务的自动化测试。
+- 待开发：新增不同 `userId` 的 MySQL Memory 和 Redis Context 不串数据测试。
+- 待开发：新增 Redis 短期上下文不覆盖本轮当前问题的回归测试。
+- 待开发：新增 MCP 不可用时 fallback 正常、MCP 可用时优先真实工具的测试。
+- 待开发：新增 RAG 召回率低于阈值时给出提示和备选方案的测试。
+- 待开发：新增 Graph 节点输出完整性和 Multi-Agent 高风险话术复核测试。

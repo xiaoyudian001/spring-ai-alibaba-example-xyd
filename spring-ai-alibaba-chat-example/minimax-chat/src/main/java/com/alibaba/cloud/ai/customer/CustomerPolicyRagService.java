@@ -16,83 +16,38 @@
 
 package com.alibaba.cloud.ai.customer;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
+import com.alibaba.cloud.ai.customer.RagSearchServiceV2.RagStatus;
 import org.springframework.stereotype.Service;
 
 /**
- * 客服知识库检索服务，支持本地高召回关键词检索，并在存在 VectorStore Bean 时自动切换到真实向量库。
+ * 客服 RAG 兼容门面，保留早期接口形态，但底层统一使用 MySQL 知识库、Chunk 和 RAG V2 检索。
  *
  * @author xyd
- * @date 2026-05-19 13:31:27
+ * @date 2026-05-22 11:36:13
  */
 @Service
 public class CustomerPolicyRagService {
 
-	private static final String LOCAL_KEYWORD_MODE = "LOCAL_KEYWORD";
+	private final KnowledgeManagementService knowledgeManagementService;
 
-	private static final String VECTOR_STORE_MODE = "VECTOR_STORE";
-
-	private final ObjectProvider<VectorStore> vectorStoreProvider;
-
-	private final ObjectMapper objectMapper;
-
-	private final Path knowledgeFile;
-
-	private final boolean vectorEnabled;
-
-	private final List<CustomerKnowledgeDocument> documents = new ArrayList<>();
+	private final RagSearchServiceV2 ragSearchService;
 
 	/**
-	 * 创建客服 RAG 服务。
-	 * @param vectorStoreProvider Spring AI VectorStore 提供器，存在真实向量库 Bean 时自动使用
-	 * @param objectMapper JSON 序列化工具
-	 * @param knowledgeFile 自定义客服知识文件路径
-	 * @param vectorEnabled 是否启用真实向量库检索
+	 * 创建客服 RAG 兼容门面。
+	 * @param knowledgeManagementService MySQL 知识治理服务
+	 * @param ragSearchService RAG V2 检索服务
 	 * @author xyd
-	 * @date 2026-05-19 13:31:27
+	 * @date 2026-05-22 11:36:13
 	 */
-	public CustomerPolicyRagService(ObjectProvider<VectorStore> vectorStoreProvider, ObjectMapper objectMapper,
-			@Value("${minimax.customer.rag.knowledge-file:spring-ai-alibaba-chat-example/minimax-chat/memory/customer-knowledge.json}") String knowledgeFile,
-			@Value("${minimax.customer.rag.vector-enabled:false}") boolean vectorEnabled) {
-		this.vectorStoreProvider = vectorStoreProvider;
-		this.objectMapper = objectMapper;
-		this.knowledgeFile = Path.of(knowledgeFile);
-		this.vectorEnabled = vectorEnabled;
-	}
-
-	/**
-	 * 初始化客服业务知识文档，并在可用时写入真实向量库。
-	 *
-	 * @author xyd
-	 * @date 2026-05-19 13:31:27
-	 */
-	@PostConstruct
-	public void initializeKnowledgeBase() {
-		reloadDocuments();
-		if (this.vectorEnabled) {
-			this.vectorStoreProvider.ifAvailable(this::seedVectorStore);
-		}
+	public CustomerPolicyRagService(KnowledgeManagementService knowledgeManagementService,
+			RagSearchServiceV2 ragSearchService) {
+		this.knowledgeManagementService = knowledgeManagementService;
+		this.ragSearchService = ragSearchService;
 	}
 
 	/**
@@ -101,466 +56,170 @@ public class CustomerPolicyRagService {
 	 * @param limit 返回结果数量
 	 * @return 检索结果摘要
 	 * @author xyd
-	 * @date 2026-05-19 13:31:27
+	 * @date 2026-05-22 11:36:13
 	 */
 	public String search(String query, Integer limit) {
-		return searchWithMetrics(query, limit, Set.of()).summary();
+		return this.ragSearchService.search(query, safeLimit(limit), Set.of()).summary();
 	}
 
 	/**
-	 * 根据用户问题检索客服知识，并返回召回率、命中主题和向量库状态。
+	 * 根据用户问题检索客服知识，并返回兼容早期页面的召回率、命中主题和向量库状态。
 	 * @param query 用户问题或检索关键词
 	 * @param limit 返回结果数量
 	 * @param expectedTopics 期望命中的主题集合
 	 * @return 客服 RAG 检索结果
 	 * @author xyd
-	 * @date 2026-05-19 13:31:27
+	 * @date 2026-05-22 11:36:13
 	 */
 	public CustomerPolicySearchResult searchWithMetrics(String query, Integer limit, Set<String> expectedTopics) {
-		int max = limit == null || limit <= 0 ? 5 : Math.min(limit, 8);
-		Optional<VectorStore> vectorStore = this.vectorEnabled ? this.vectorStoreProvider.stream().findFirst()
-				: Optional.empty();
-		List<CustomerKnowledgeDocument> hits = vectorStore
-				.map(store -> vectorSearch(store, query, max))
-				.filter(items -> !items.isEmpty())
-				.orElseGet(() -> localSearch(query, max));
-		String mode = vectorStore.isPresent() && this.vectorEnabled ? VECTOR_STORE_MODE : LOCAL_KEYWORD_MODE;
-		Set<String> hitTopics = hits.stream().map(CustomerKnowledgeDocument::topic)
+		RagSearchResultV2 result = this.ragSearchService.search(query, safeLimit(limit), expectedTopics);
+		Set<String> hitTopics = result.documents().stream()
+				.map(CustomerKnowledgeDocumentV2::topic)
 				.collect(Collectors.toCollection(LinkedHashSet::new));
-		Set<String> safeExpectedTopics = normalizeTopics(expectedTopics);
-		return new CustomerPolicySearchResult(mode, vectorStore.isPresent(), normalize(query), safeExpectedTopics,
-				hitTopics, recallRate(safeExpectedTopics, hitTopics), hits);
+		boolean realVectorStoreUsed = result.recallModes().stream().anyMatch("VECTOR_STORE"::equals);
+		return new CustomerPolicySearchResult(result.mode(), realVectorStoreUsed, result.query(),
+				result.expectedTopics(), hitTopics, result.documentRecallRate(), toLegacyDocuments(result.documents()));
 	}
 
 	/**
 	 * 返回当前知识库覆盖的主题，用于调试知识覆盖率。
 	 * @return 知识主题集合
 	 * @author xyd
-	 * @date 2026-05-19 13:31:27
+	 * @date 2026-05-22 11:36:13
 	 */
 	public Set<String> topics() {
-		return this.documents.stream().map(CustomerKnowledgeDocument::topic)
+		return this.knowledgeManagementService.findAllEnabled().stream()
+				.map(CustomerKnowledgeDocumentV2::topic)
 				.collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 	/**
-	 * 返回当前客服知识库中的全部知识文档，包含内置知识和 JSON 自定义知识。
+	 * 返回当前客服知识库中的全部知识文档，兼容早期页面的文档结构。
 	 * @return 客服知识文档列表
 	 * @author xyd
-	 * @date 2026-05-19 23:48:12
+	 * @date 2026-05-22 11:36:13
 	 */
 	public synchronized List<CustomerKnowledgeDocument> documents() {
-		return List.copyOf(this.documents);
+		return toLegacyDocuments(this.knowledgeManagementService.findAll());
 	}
 
 	/**
-	 * 查询当前客服 RAG 运行状态，用于工作台确认本地关键词检索或真实 VectorStore 是否生效。
+	 * 查询当前客服 RAG 运行状态，用于工作台确认本地关键词检索、真实 VectorStore 和 MySQL 知识库状态。
 	 * @return 客服 RAG 运行状态
 	 * @author xyd
-	 * @date 2026-05-21 00:00:00
+	 * @date 2026-05-22 11:36:13
 	 */
 	public CustomerPolicyRagStatus status() {
-		boolean realVectorStoreAvailable = this.vectorEnabled && this.vectorStoreProvider.stream().findFirst().isPresent();
-		String mode = realVectorStoreAvailable ? VECTOR_STORE_MODE : LOCAL_KEYWORD_MODE;
-		String message = realVectorStoreAvailable ? "已启用真实 VectorStore 检索"
-				: this.vectorEnabled ? "已开启向量检索开关，但未发现 VectorStore Bean，当前回退本地关键词检索"
-						: "当前使用本地高召回关键词检索";
-		return new CustomerPolicyRagStatus(this.vectorEnabled, realVectorStoreAvailable, mode,
-				this.knowledgeFile.toString(), this.documents.size(), topics().size(), message);
+		RagStatus status = this.ragSearchService.status();
+		int topicCount = topics().size();
+		return new CustomerPolicyRagStatus(status.vectorEnabled(), status.hasVectorStore(), status.mode(),
+				"MYSQL:knowledge_documents/knowledge_chunks", status.documentCount(), topicCount, status.message());
 	}
 
 	/**
-	 * 新增或更新一条自定义客服知识，并写回 JSON 文件；启用 VectorStore 时同步写入向量库。
+	 * 新增或更新一条自定义客服知识，并写入 MySQL 文档表和 Chunk 表。
 	 * @param request 知识新增或更新请求
-	 * @return 保存后的客服知识文档
+	 * @return 保存后的客服知识文档兼容视图
 	 * @author xyd
-	 * @date 2026-05-19 23:48:12
+	 * @date 2026-05-22 11:36:13
 	 */
 	public synchronized CustomerKnowledgeDocument upsertCustomDocument(CustomerKnowledgeUpsertRequest request) {
-		CustomerKnowledgeDocument document = toDocument(request);
-		Map<String, CustomerKnowledgeDocument> customDocuments = readCustomDocumentMap();
-		customDocuments.put(document.id(), document);
-		writeCustomDocuments(customDocuments);
-		reloadDocuments();
-		if (this.vectorEnabled) {
-			this.vectorStoreProvider.ifAvailable(store -> store.add(List.of(toVectorDocument(document))));
-		}
-		return document;
+		CustomerKnowledgeDocumentV2 document = toV2Document(request);
+		CustomerKnowledgeDocumentV2 saved = this.knowledgeManagementService.findById(document.id())
+				.flatMap(existing -> this.knowledgeManagementService.updateDocument(existing.id(), document))
+				.orElseGet(() -> this.knowledgeManagementService.createDocument(document));
+		return toLegacyDocument(saved);
 	}
 
 	/**
-	 * 删除一条自定义客服知识；内置知识不会被删除。
+	 * 删除一条客服知识文档，并同步删除关联 Chunk。
 	 * @param id 文档唯一标识
-	 * @return 删除成功返回 true，不存在或为内置知识时返回 false
+	 * @return 删除成功返回 true
 	 * @author xyd
-	 * @date 2026-05-19 23:48:12
+	 * @date 2026-05-22 11:36:13
 	 */
 	public synchronized boolean deleteCustomDocument(String id) {
-		String safeId = normalize(id);
-		if (safeId.isBlank()) {
+		if (id == null || id.isBlank()) {
 			return false;
 		}
-		Map<String, CustomerKnowledgeDocument> customDocuments = readCustomDocumentMap();
-		CustomerKnowledgeDocument removed = customDocuments.remove(safeId);
-		if (removed == null) {
-			return false;
-		}
-		writeCustomDocuments(customDocuments);
-		reloadDocuments();
-		return true;
+		return this.knowledgeManagementService.deleteDocument(id.trim());
+	}
+
+	private int safeLimit(Integer limit) {
+		return limit == null || limit <= 0 ? 5 : Math.min(limit, 10);
 	}
 
 	/**
-	 * 把本地客服知识文档写入真实向量库。
-	 * @param vectorStore 真实向量库
+	 * 将 V2 知识文档列表转换为旧版页面兼容结构。
+	 * @param documents V2 知识文档列表
+	 * @return 旧版客服知识文档列表
 	 * @author xyd
-	 * @date 2026-05-19 13:31:27
+	 * @date 2026-05-22 12:12:30
 	 */
-	private void seedVectorStore(VectorStore vectorStore) {
-		List<Document> vectorDocuments = this.documents.stream()
-				.map(this::toVectorDocument)
-				.toList();
-		vectorStore.add(vectorDocuments);
+	private List<CustomerKnowledgeDocument> toLegacyDocuments(List<CustomerKnowledgeDocumentV2> documents) {
+		return documents.stream().map(this::toLegacyDocument).toList();
 	}
 
 	/**
-	 * 将客服知识文档转换为 Spring AI VectorStore 可写入的 Document。
-	 * @param document 客服知识文档
-	 * @return 向量库文档
+	 * 将单个 V2 知识文档转换为旧版页面兼容结构。
+	 * @param document V2 知识文档
+	 * @return 旧版客服知识文档
 	 * @author xyd
-	 * @date 2026-05-19 23:48:12
+	 * @date 2026-05-22 12:12:30
 	 */
-	private Document toVectorDocument(CustomerKnowledgeDocument document) {
-		return new Document(document.id(), document.content(), Map.of("id", document.id(), "title", document.title(),
-				"topic", document.topic(), "keywords", String.join(",", document.keywords())));
+	private CustomerKnowledgeDocument toLegacyDocument(CustomerKnowledgeDocumentV2 document) {
+		return new CustomerKnowledgeDocument(document.id(), document.title(), document.topic(), document.content(),
+				document.keywords());
 	}
 
 	/**
-	 * 使用真实向量库执行相似度检索，并把结果映射回客服知识文档。
-	 * @param vectorStore 真实向量库
-	 * @param query 用户问题
-	 * @param limit 返回数量
-	 * @return 命中的客服知识文档
+	 * 将旧版知识新增请求转换为 V2 知识文档，统一写入 MySQL 文档和 Chunk 流程。
+	 * @param request 旧版知识新增请求
+	 * @return V2 知识文档
 	 * @author xyd
-	 * @date 2026-05-19 13:31:27
+	 * @date 2026-05-22 12:12:30
 	 */
-	private List<CustomerKnowledgeDocument> vectorSearch(VectorStore vectorStore, String query, int limit) {
-		SearchRequest request = SearchRequest.builder()
-				.query(normalize(query))
-				.topK(limit)
-				.similarityThresholdAll()
-				.build();
-		return vectorStore.similaritySearch(request).stream()
-				.map(document -> documentById(String.valueOf(document.getMetadata().get("id"))))
-				.flatMap(Optional::stream)
-				.distinct()
-				.limit(limit)
-				.toList();
-	}
-
-	/**
-	 * 使用本地高召回关键词策略检索客服知识。
-	 * @param query 用户问题
-	 * @param limit 返回数量
-	 * @return 命中的客服知识文档
-	 * @author xyd
-	 * @date 2026-05-19 13:31:27
-	 */
-	private List<CustomerKnowledgeDocument> localSearch(String query, int limit) {
-		Set<String> queryTokens = tokens(query);
-		return this.documents.stream()
-				.map(document -> Map.entry(document, score(document, queryTokens)))
-				.filter(entry -> entry.getValue() > 0 || queryTokens.isEmpty())
-				.sorted(Map.Entry.<CustomerKnowledgeDocument, Integer>comparingByValue(Comparator.reverseOrder()))
-				.limit(limit)
-				.map(Map.Entry::getKey)
-				.toList();
-	}
-
-	/**
-	 * 根据用户问题关键词计算单个客服知识文档的命中分数。
-	 * @param document 客服知识文档
-	 * @param queryTokens 用户问题拆分后的关键词
-	 * @return 文档命中分数
-	 * @author xyd
-	 * @date 2026-05-19 13:31:27
-	 */
-	private int score(CustomerKnowledgeDocument document, Set<String> queryTokens) {
-		if (queryTokens.isEmpty()) {
-			return 1;
+	private CustomerKnowledgeDocumentV2 toV2Document(CustomerKnowledgeUpsertRequest request) {
+		String topic = normalize(request == null ? "" : request.topic(), "custom");
+		String title = blankDefault(request == null ? "" : request.title(), "自定义客服知识");
+		String content = blankDefault(request == null ? "" : request.content(), "暂无内容");
+		String id = normalize(request == null ? "" : request.id(), "");
+		if (id.isBlank()) {
+			id = "custom-" + Math.abs((title + topic + content).hashCode());
 		}
-		int score = 0;
-		String text = normalize(document.id() + " " + document.title() + " " + document.topic() + " "
-				+ document.content() + " " + String.join(" ", document.keywords()));
-		for (String token : queryTokens) {
-			if (text.contains(token)) {
-				score += document.keywords().contains(token) ? 3 : 1;
-			}
-		}
-		return score;
-	}
-
-	/**
-	 * 根据文档 ID 从本地知识库中查找客服知识文档。
-	 * @param id 文档唯一标识
-	 * @return 匹配的客服知识文档
-	 * @author xyd
-	 * @date 2026-05-19 13:31:27
-	 */
-	private Optional<CustomerKnowledgeDocument> documentById(String id) {
-		return this.documents.stream().filter(document -> document.id().equals(id)).findFirst();
-	}
-
-	/**
-	 * 根据期望主题和实际命中主题计算本轮 RAG 召回率。
-	 * @param expectedTopics 期望命中的主题集合
-	 * @param hitTopics 实际命中的主题集合
-	 * @return 召回率，范围为 0 到 1
-	 * @author xyd
-	 * @date 2026-05-19 13:31:27
-	 */
-	private double recallRate(Set<String> expectedTopics, Set<String> hitTopics) {
-		if (expectedTopics == null || expectedTopics.isEmpty()) {
-			return hitTopics.isEmpty() ? 0.0 : 1.0;
-		}
-		long hitCount = expectedTopics.stream().filter(hitTopics::contains).count();
-		return (double) hitCount / expectedTopics.size();
-	}
-
-	/**
-	 * 归一化召回评估的期望主题，避免大小写或空白导致误判。
-	 * @param topics 原始主题集合
-	 * @return 归一化后的主题集合
-	 * @author xyd
-	 * @date 2026-05-19 13:31:27
-	 */
-	private Set<String> normalizeTopics(Set<String> topics) {
-		if (topics == null || topics.isEmpty()) {
-			return Set.of();
-		}
-		return topics.stream().map(this::normalize).filter(text -> !text.isBlank())
-				.collect(Collectors.toCollection(LinkedHashSet::new));
-	}
-
-	/**
-	 * 从用户问题中提取检索关键词，并补充命中的业务关键词。
-	 * @param query 用户问题
-	 * @return 检索关键词集合
-	 * @author xyd
-	 * @date 2026-05-19 13:31:27
-	 */
-	private Set<String> tokens(String query) {
-		String text = normalize(query);
-		Set<String> tokens = new LinkedHashSet<>();
-		for (String token : text.split("[\\s,，。；;：:、/\\\\()（）\\[\\]{}<>《》\"']+")) {
-			if (!token.isBlank()) {
-				tokens.add(token);
-			}
-		}
-		for (CustomerKnowledgeDocument document : this.documents) {
-			for (String keyword : document.keywords()) {
-				if (text.contains(keyword)) {
-					tokens.add(keyword);
-				}
-			}
-		}
-		return tokens;
-	}
-
-	/**
-	 * 对文本做基础归一化，统一用于关键词匹配和主题比较。
-	 * @param value 原始文本
-	 * @return 小写、去除多余空白后的文本
-	 * @author xyd
-	 * @date 2026-05-19 13:31:27
-	 */
-	private String normalize(String value) {
-		return value == null ? "" : value.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ").trim();
-	}
-
-	/**
-	 * 重新加载内置知识和 JSON 自定义知识，保持内存检索集合与持久化文件一致。
-	 *
-	 * @author xyd
-	 * @date 2026-05-19 23:48:12
-	 */
-	private void reloadDocuments() {
-		Map<String, CustomerKnowledgeDocument> merged = new LinkedHashMap<>();
-		for (CustomerKnowledgeDocument document : seedDocuments()) {
-			merged.put(document.id(), document);
-		}
-		merged.putAll(readCustomDocumentMap());
-		this.documents.clear();
-		this.documents.addAll(merged.values());
-	}
-
-	/**
-	 * 从 JSON 文件读取自定义客服知识，读取失败时返回空集合以保证应用可启动。
-	 * @return 自定义客服知识映射
-	 * @author xyd
-	 * @date 2026-05-19 23:48:12
-	 */
-	private Map<String, CustomerKnowledgeDocument> readCustomDocumentMap() {
-		if (!Files.exists(this.knowledgeFile)) {
-			return new LinkedHashMap<>();
-		}
-		try {
-			List<CustomerKnowledgeDocument> items = this.objectMapper.readValue(this.knowledgeFile.toFile(),
-					new TypeReference<List<CustomerKnowledgeDocument>>() {
-					});
-			Map<String, CustomerKnowledgeDocument> map = new LinkedHashMap<>();
-			for (CustomerKnowledgeDocument item : items) {
-				if (item != null && item.id() != null && !item.id().isBlank()) {
-					map.put(normalize(item.id()), normalizeDocument(item));
-				}
-			}
-			return map;
-		}
-		catch (IOException ex) {
-			return new LinkedHashMap<>();
-		}
-	}
-
-	/**
-	 * 把自定义客服知识写回 JSON 文件，作为页面知识管理和 RAG 检索的数据源。
-	 * @param customDocuments 自定义客服知识映射
-	 * @author xyd
-	 * @date 2026-05-19 23:48:12
-	 */
-	private void writeCustomDocuments(Map<String, CustomerKnowledgeDocument> customDocuments) {
-		try {
-			Path parent = this.knowledgeFile.getParent();
-			if (parent != null) {
-				Files.createDirectories(parent);
-			}
-			this.objectMapper.writerWithDefaultPrettyPrinter().writeValue(this.knowledgeFile.toFile(),
-					new ArrayList<>(customDocuments.values()));
-		}
-		catch (IOException ex) {
-			throw new IllegalStateException("Failed to write customer knowledge file: " + this.knowledgeFile, ex);
-		}
-	}
-
-	/**
-	 * 将页面提交的知识请求转换为规范化客服知识文档。
-	 * @param request 知识新增或更新请求
-	 * @return 规范化客服知识文档
-	 * @author xyd
-	 * @date 2026-05-19 23:48:12
-	 */
-	private CustomerKnowledgeDocument toDocument(CustomerKnowledgeUpsertRequest request) {
-		String content = request == null ? "" : request.content();
-		String title = request == null ? "" : request.title();
-		String topic = request == null ? "" : request.topic();
-		String id = request == null ? "" : request.id();
-		Set<String> keywords = new LinkedHashSet<>();
-		if (request != null && request.keywords() != null) {
-			for (String keyword : request.keywords()) {
-				String safeKeyword = normalize(keyword);
-				if (!safeKeyword.isBlank()) {
-					keywords.add(safeKeyword);
-				}
-			}
-		}
+		Set<String> keywords = request == null || request.keywords() == null ? Set.of()
+				: request.keywords().stream().map(item -> normalize(item, ""))
+						.filter(item -> !item.isBlank())
+						.collect(Collectors.toCollection(LinkedHashSet::new));
 		if (keywords.isEmpty()) {
-			keywords.add(normalize(topic));
-			keywords.add(normalize(title));
+			keywords = new LinkedHashSet<>(List.of(topic, title));
 		}
-		String safeId = normalize(id);
-		if (safeId.isBlank()) {
-			safeId = "custom-" + Math.abs((normalize(title) + normalize(topic) + normalize(content)).hashCode());
-		}
-		return normalizeDocument(new CustomerKnowledgeDocument(safeId, blankDefault(title, "自定义客服知识"),
-				blankDefault(topic, "custom"), blankDefault(content, "暂无内容"), keywords));
+		return CustomerKnowledgeDocumentV2.of(id, topic, title, topic, content, keywords, "1.0", true, "dashboard");
 	}
 
 	/**
-	 * 规范化客服知识文档的 ID、主题和关键词。
-	 * @param document 原始客服知识文档
-	 * @return 规范化后的客服知识文档
+	 * 规范化字符串值，主要用于 ID、主题和关键词生成。
+	 * @param value 原始值
+	 * @param defaultValue 默认值
+	 * @return 规范化后的字符串
 	 * @author xyd
-	 * @date 2026-05-19 23:48:12
+	 * @date 2026-05-22 12:12:30
 	 */
-	private CustomerKnowledgeDocument normalizeDocument(CustomerKnowledgeDocument document) {
-		Set<String> keywords = document.keywords() == null ? Set.of() : document.keywords().stream()
-				.map(this::normalize)
-				.filter(text -> !text.isBlank())
-				.collect(Collectors.toCollection(LinkedHashSet::new));
-		return new CustomerKnowledgeDocument(normalize(document.id()), blankDefault(document.title(), "客服知识"),
-				normalize(blankDefault(document.topic(), "custom")), blankDefault(document.content(), "暂无内容"),
-				keywords);
+	private String normalize(String value, String defaultValue) {
+		String text = value == null ? "" : value.toLowerCase(java.util.Locale.ROOT).replaceAll("\\s+", " ").trim();
+		return text.isBlank() ? defaultValue : text;
 	}
 
 	/**
-	 * 当文本为空时返回默认值，用于保证页面写入的知识具备可展示内容。
-	 * @param value 原始文本
-	 * @param defaultValue 默认文本
-	 * @return 非空文本
+	 * 当字符串为空时返回默认值，否则返回去除首尾空白后的原值。
+	 * @param value 原始值
+	 * @param defaultValue 默认值
+	 * @return 非空字符串
 	 * @author xyd
-	 * @date 2026-05-19 23:48:12
+	 * @date 2026-05-22 12:12:30
 	 */
 	private String blankDefault(String value, String defaultValue) {
 		return value == null || value.isBlank() ? defaultValue : value.trim();
-	}
-
-	/**
-	 * 初始化智能客服内置知识文档，作为本地 RAG 和向量库入库的数据源。
-	 * @return 客服知识文档列表
-	 * @author xyd
-	 * @date 2026-05-19 13:31:27
-	 */
-	private List<CustomerKnowledgeDocument> seedDocuments() {
-		List<CustomerKnowledgeDocument> docs = new ArrayList<>();
-		docs.add(doc("refund-policy", "退货退款政策", "refund",
-				"签收 7 天内且商品不影响二次销售时，可引导用户申请退货退款；超过 7 天需要说明平台规则和可选售后路径；涉及赔偿或直接退款时必须先查询订单事实，再给出合规解释。",
-				"退款", "退货", "售后", "7天", "七天", "赔偿"));
-		docs.add(doc("shipping-policy", "发货与物流政策", "shipping",
-				"已付款订单默认 48 小时内发货；已发货订单应先查询物流；待发货订单应说明预计发货时间并创建提醒；物流异常时应提供快递单号、最新节点和后续处理时效。",
-				"发货", "物流", "快递", "签收", "运输", "没到"));
-		docs.add(doc("price-policy", "议价与价格策略", "price",
-				"闲鱼议价先查询商品底价和库存；可接受范围内给出温和让步；低于底价时礼貌拒绝并说明商品状态、稀缺性或包邮成本；不得承诺超出策略的优惠。",
-				"便宜", "优惠", "包邮", "议价", "小刀", "底价"));
-		docs.add(doc("xianyu-reply-guide", "闲鱼回复规范", "xianyu",
-				"闲鱼回复要短、自然、像真人；常用表达包括“还在的”“可以小刀”“发货前会检查”；不要承诺无法确认的信息；遇到退款、赔付、取消订单时先解释规则和下一步。",
-				"闲鱼", "买家", "小刀", "还在", "自然", "二手"));
-		docs.add(doc("wechat-service-guide", "微信客服规范", "wechat",
-				"微信客服回复要完整、礼貌、可追踪；需要保留订单号和工单号；复杂售后建议创建工单并告知处理时效；不要使用过于随意的闲鱼话术。",
-				"微信", "公众号", "企业微信", "小程序", "工单", "处理时效"));
-		docs.add(doc("complaint-handling", "投诉处理规范", "complaint",
-				"投诉处理先表达理解和歉意，再复述问题，随后给出可执行处理动作；态度激烈、差评威胁、监管投诉等场景应创建工单，记录诉求和证据。",
-				"投诉", "差评", "生气", "举报", "升级", "安抚"));
-		docs.add(doc("address-change-policy", "地址修改规范", "address",
-				"用户要求改地址时必须先查询订单状态；未发货可提示用户提供新地址并记录工单；已发货只能建议联系快递或等待派送前改派，不能直接承诺一定修改成功。",
-				"地址", "改地址", "收货人", "电话", "派送", "改派"));
-		docs.add(doc("invoice-policy", "发票与凭证规范", "invoice",
-				"用户索要发票、购买凭证或交易截图时，应先确认订单号和支付状态；二手闲置交易通常提供交易凭证，不默认承诺正式发票。",
-				"发票", "凭证", "截图", "支付", "交易记录"));
-		docs.add(doc("product-quality-policy", "商品质量与验货规范", "quality",
-				"商品质量咨询应说明成色、瑕疵、配件和测试情况；发货前可承诺再次检查；收到后争议需结合签收时间、开箱证据和商品说明处理。",
-				"质量", "成色", "瑕疵", "配件", "验货", "开箱"));
-		docs.add(doc("conversation-style", "通用客服语气规范", "tone",
-				"客服回复应简洁友好、先解决问题再解释规则；事实不明确时先询问商品号或订单号；不要编造物流、库存、退款状态或不存在的政策。",
-				"语气", "礼貌", "简洁", "不要编造", "事实"));
-		return docs;
-	}
-
-	/**
-	 * 构建客服知识文档，并统一归一化主题和关键词。
-	 * @param id 文档唯一标识
-	 * @param title 文档标题
-	 * @param topic 业务主题
-	 * @param content 文档内容
-	 * @param keywords 召回关键词
-	 * @return 客服知识文档
-	 * @author xyd
-	 * @date 2026-05-19 13:31:27
-	 */
-	private CustomerKnowledgeDocument doc(String id, String title, String topic, String content, String... keywords) {
-		Set<String> keywordSet = new LinkedHashSet<>();
-		for (String keyword : keywords) {
-			keywordSet.add(normalize(keyword));
-		}
-		return new CustomerKnowledgeDocument(id, title, normalize(topic), content, keywordSet);
 	}
 
 	/**
@@ -569,12 +228,12 @@ public class CustomerPolicyRagService {
 	 * @param vectorEnabled 是否开启真实向量库检索开关
 	 * @param realVectorStoreAvailable 是否存在真实 VectorStore Bean
 	 * @param mode 当前实际检索模式
-	 * @param knowledgeFile 本地知识库文件路径
-	 * @param documentCount 当前知识文档数量
+	 * @param knowledgeFile 知识库位置，合并后固定为 MySQL 表说明
+	 * @param documentCount 当前启用知识文档数量
 	 * @param topicCount 当前知识主题数量
 	 * @param message 状态说明
 	 * @author xyd
-	 * @date 2026-05-21 00:00:00
+	 * @date 2026-05-22 11:36:13
 	 */
 	public record CustomerPolicyRagStatus(boolean vectorEnabled, boolean realVectorStoreAvailable, String mode,
 			String knowledgeFile, int documentCount, int topicCount, String message) {

@@ -665,6 +665,350 @@
 			font-size: 12px;
 		}
 
+		.file-upload-zone {
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			margin-top: 16px;
+			padding: 16px;
+			border: 2px dashed var(--line);
+			border-radius: 8px;
+			background: var(--surface-soft);
+			transition: border-color 0.2s, background 0.2s;
+		}
+
+		.file-upload-zone.drag-over {
+			border-color: var(--primary);
+			background: #edf8f1;
+		}
+
+		.file-upload-zone input[type="file"] {
+			display: none;
+		}
+
+		.file-upload-label {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			cursor: pointer;
+			font-size: 13px;
+			color: var(--primary);
+			font-weight: 700;
+		}
+
+		.file-upload-label:hover {
+			color: var(--primary-dark);
+		}
+
+		.file-upload-hint {
+			font-size: 11px;
+			color: var(--muted);
+		}
+
+		.file-list {
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+		}
+
+		.file-item {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 8px 10px;
+			background: white;
+			border: 1px solid var(--line);
+			border-radius: 6px;
+			font-size: 12px;
+		}
+
+		.file-item-name {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			color: var(--text);
+		}
+
+		.file-item-size {
+			color: var(--muted);
+		}
+
+		.file-item-remove {
+			width: 24px;
+			height: 24px;
+			border-radius: 4px;
+			border: none;
+			background: transparent;
+			color: var(--muted);
+			cursor: pointer;
+			font-size: 14px;
+		}
+
+		.file-item-remove:hover {
+			background: #fee2e2;
+			color: var(--danger);
+		}
+
+		.file-upload-actions {
+			display: flex;
+			gap: 8px;
+			align-items: center;
+		}
+
+		.file-upload-progress {
+			height: 4px;
+			background: var(--line);
+			border-radius: 2px;
+			overflow: hidden;
+		}
+
+		.file-upload-progress-bar {
+			height: 100%;
+			background: var(--primary);
+			transition: width 0.3s;
+		}
+
+		.file-upload-result {
+			padding: 8px 10px;
+			border-radius: 6px;
+			font-size: 12px;
+		}
+
+		.file-upload-result.success {
+			background: #ecfdf5;
+			color: #065f46;
+		}
+
+		.file-upload-result.error {
+			background: #fef2f2;
+			color: #991b1b;
+		}
+
+		.report-filter {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			padding: 12px;
+			background: var(--surface-soft);
+			border-radius: 8px;
+			margin-bottom: 8px;
+		}
+
+		.report-filter label {
+			display: flex;
+			flex-direction: column;
+			gap: 2px;
+		}
+
+		.report-filter .field-label {
+			font-size: 10px;
+			color: var(--muted);
+			font-weight: 600;
+		}
+
+		.report-filter select, .report-filter input {
+			height: 28px;
+			padding: 0 8px;
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			font-size: 12px;
+			background: white;
+		}
+
+		.report-filter button {
+			height: 28px;
+			align-self: flex-end;
+		}
+
+		.trace-timeline {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+			padding: 12px;
+			background: var(--debug-bg);
+			border-radius: 8px;
+			font-size: 12px;
+		}
+
+		.trace-timeline-header {
+			font-weight: 700;
+			color: var(--text);
+			margin-bottom: 4px;
+		}
+
+		.trace-step {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 4px 8px;
+			border-radius: 4px;
+			background: white;
+			border-left: 3px solid var(--line);
+		}
+
+		.trace-step.success {
+			border-left-color: var(--primary);
+			background: #f0fdf4;
+		}
+
+		.trace-step.pending {
+			border-left-color: var(--accent);
+			background: var(--accent-soft);
+		}
+
+		.trace-step.error {
+			border-left-color: var(--danger);
+			background: #fef2f2;
+		}
+
+		.trace-step-time {
+			color: var(--muted);
+			font-size: 10px;
+			min-width: 50px;
+		}
+
+		.trace-step-name {
+			font-weight: 600;
+			color: var(--text);
+			min-width: 100px;
+		}
+
+		.trace-step-detail {
+			color: var(--muted);
+			flex: 1;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.memory-edit-form {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 10px;
+			padding: 12px;
+			background: var(--surface-soft);
+			border-radius: 8px;
+			margin-top: 12px;
+		}
+
+		.memory-edit-form label {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+		}
+
+		.memory-edit-form .field-label {
+			font-size: 11px;
+			color: var(--muted);
+			font-weight: 600;
+		}
+
+		.memory-edit-form input, .memory-edit-form select {
+			height: 28px;
+			padding: 0 8px;
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			font-size: 12px;
+		}
+
+		.memory-edit-form textarea {
+			min-height: 60px;
+			padding: 8px;
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			font-size: 12px;
+			resize: vertical;
+		}
+
+		.memory-preview {
+			grid-column: 1 / -1;
+			padding: 8px;
+			background: white;
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			font-size: 11px;
+			white-space: pre-wrap;
+			max-height: 150px;
+			overflow-y: auto;
+		}
+
+		.memory-actions {
+			grid-column: 1 / -1;
+			display: flex;
+			gap: 8px;
+			justify-content: flex-end;
+		}
+
+		.rag-filter-bar {
+			display: flex;
+			gap: 8px;
+			margin-bottom: 12px;
+			flex-wrap: wrap;
+		}
+
+		.rag-filter-bar select {
+			height: 32px;
+			padding: 0 8px;
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			font-size: 12px;
+		}
+
+		.knowledge-doc-card {
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			padding: 12px;
+			background: white;
+		}
+
+		.knowledge-doc-card.disabled {
+			opacity: 0.6;
+			background: var(--surface-soft);
+		}
+
+		.knowledge-doc-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			gap: 8px;
+			margin-bottom: 8px;
+		}
+
+		.knowledge-doc-title {
+			font-weight: 700;
+			font-size: 13px;
+			color: var(--text);
+		}
+
+		.knowledge-doc-meta {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 6px;
+			margin-top: 4px;
+		}
+
+		.knowledge-doc-tag {
+			display: inline-flex;
+			padding: 2px 6px;
+			background: var(--surface-soft);
+			border-radius: 4px;
+			font-size: 10px;
+			color: var(--muted);
+		}
+
+		.knowledge-doc-actions {
+			display: flex;
+			gap: 4px;
+			margin-top: 8px;
+		}
+
+		.knowledge-doc-actions button {
+			height: 26px;
+			font-size: 11px;
+			padding: 0 8px;
+			border-radius: 4px;
+		}
+
 		.messages {
 			height: clamp(420px, 57vh, 720px);
 			min-height: 420px;
@@ -1294,10 +1638,39 @@
 		<div class="rag-lab-header">
 			<div>
 				<div class="rag-lab-title">客服 RAG 知识库管理台</div>
-				<div class="rag-lab-subtitle">新增自定义客服知识会写入 customer-knowledge.json，随后可直接参与本地 RAG 召回；内置知识只能查看不能删除</div>
+				<div class="rag-lab-subtitle">新增自定义客服知识会写入数据库，随后可直接参与 RAG 召回；支持 TXT 和 Markdown 文件批量导入，自动切分为 Chunk</div>
 			</div>
 			<button id="loadKnowledgeButton" class="secondary dashboard-refresh" type="button">加载知识</button>
 		</div>
+
+		<div class="file-upload-zone" id="fileUploadZone">
+			<label class="file-upload-label" for="knowledgeFileInput">
+				<span>+ 添加文件</span>
+				<input id="knowledgeFileInput" type="file" accept=".txt,.md,.markdown,.docx,.pdf,.text" multiple>
+			</label>
+			<div class="file-upload-hint">支持 TXT、Markdown、Word (.docx)、PDF，可多选；上传后自动解析文本并切分为 Chunk</div>
+			<div id="fileList" class="file-list"></div>
+			<div class="file-upload-actions">
+				<label class="field" style="margin-bottom:0">
+					<span class="field-label" style="font-size:11px">分组</span>
+					<input id="uploadGroupIdInput" type="text" value="" placeholder="refund / shipping" style="height:28px;font-size:12px">
+				</label>
+				<label class="field" style="margin-bottom:0">
+					<span class="field-label" style="font-size:11px">主题</span>
+					<input id="uploadTopicInput" type="text" value="" placeholder="auto" style="height:28px;font-size:12px">
+				</label>
+				<label class="field" style="margin-bottom:0">
+					<span class="field-label" style="font-size:11px">维护人</span>
+					<input id="uploadMaintainerInput" type="text" value="system" style="height:28px;font-size:12px">
+				</label>
+				<button id="uploadFilesButton" class="primary" type="button" disabled>上传文件</button>
+			</div>
+			<div id="fileUploadProgress" class="file-upload-progress" style="display:none">
+				<div id="fileUploadProgressBar" class="file-upload-progress-bar" style="width:0%"></div>
+			</div>
+			<div id="fileUploadResult" class="file-upload-result" style="display:none"></div>
+		</div>
+
 		<div class="knowledge-form">
 			<label class="field">
 				<span class="field-label">文档 ID</span>
@@ -1430,6 +1803,17 @@
 	const knowledgeContentInput = document.getElementById("knowledgeContentInput");
 	const knowledgeKeywordsInput = document.getElementById("knowledgeKeywordsInput");
 	const knowledgeList = document.getElementById("knowledgeList");
+	const fileUploadZone = document.getElementById("fileUploadZone");
+	const knowledgeFileInput = document.getElementById("knowledgeFileInput");
+	const fileList = document.getElementById("fileList");
+	const uploadFilesButton = document.getElementById("uploadFilesButton");
+	const uploadGroupIdInput = document.getElementById("uploadGroupIdInput");
+	const uploadTopicInput = document.getElementById("uploadTopicInput");
+	const uploadMaintainerInput = document.getElementById("uploadMaintainerInput");
+	const fileUploadProgress = document.getElementById("fileUploadProgress");
+	const fileUploadProgressBar = document.getElementById("fileUploadProgressBar");
+	const fileUploadResult = document.getElementById("fileUploadResult");
+	let selectedFiles = [];
 	const averageScoreStat = document.getElementById("averageScoreStat");
 	const passCountStat = document.getElementById("passCountStat");
 	const warnFailCountStat = document.getElementById("warnFailCountStat");
@@ -2112,15 +2496,31 @@
 			return "当前还没有 Agent 执行报告。先发送一轮对话，再回来查看。";
 		}
 		return reports.map((report, index) => {
+			const timeline = buildTraceTimeline(report);
 			return `### ${index + 1}. ${report.chainMode || "UNKNOWN"}\n`
 				+ `- 时间：${report.createdAt || ""}\n`
-				+ `- 用户：${report.userId || currentUserId()}\n`
+				+ `- 用户：${report.userId || currentUserId()} / 渠道：${report.channel || "WEB"}\n`
 				+ `- 意图：${report.intent || "UNKNOWN"}\n`
 				+ `- MCP：${report.mcpMode || "NOT_USED"}\n`
-				+ `- Tool 调用：${report.toolCallCount ?? 0} 次，Agent 步骤：${report.agentStepCount ?? 0} 步，Graph 节点：${report.graphStepCount ?? 0} 个\n`
-				+ `- 问题：${report.message || ""}\n`
-				+ `- 摘要：${report.answerSummary || ""}`;
-		}).join("\n\n");
+				+ `- 链路统计：Tool ${report.toolCallCount ?? 0} 次 / Agent 步骤 ${report.agentStepCount ?? 0} 步 / Graph 节点 ${report.graphStepCount ?? 0} 个\n`
+				+ `\n**Trace Timeline：**\n${timeline}\n`
+				+ `\n**问题：** ${report.message || ""}\n`
+				+ `**摘要：** ${report.answerSummary || ""}`;
+		}).join("\n---\n");
+	}
+
+	function buildTraceTimeline(report) {
+		const steps = [
+			{ name: "receive", detail: report.message || "", status: "success" },
+			{ name: "intent_plan", detail: report.intent || "UNKNOWN", status: "success" },
+			{ name: "fact_collect", detail: `Tool ${report.toolCallCount ?? 0} 次`, status: report.toolCallCount > 0 ? "success" : "pending" },
+			{ name: "rag_retrieve", detail: report.mcpMode || "NOT_USED", status: report.mcpMode !== "NOT_USED" ? "success" : "pending" },
+			{ name: "tool_call", detail: `Tool ${report.toolCallCount ?? 0} 次`, status: report.toolCallCount > 0 ? "success" : "pending" },
+			{ name: "agent_generate", detail: "生成回复", status: report.answerSummary ? "success" : "error" },
+			{ name: "risk_review", detail: report.pendingMcpWrite ? "含待审核动作" : "无需审核", status: report.pendingMcpWrite ? "pending" : "success" },
+			{ name: "memory_write", detail: "更新 Memory", status: "success" }
+		];
+		return steps.map(step => `[${step.status === "success" ? "✓" : step.status === "pending" ? "○" : "✗"}] ${step.name}: ${step.detail}`).join("\n");
 	}
 
 	function formatAgentEvaluations(evaluations) {
@@ -2666,6 +3066,125 @@
 		setKnowledgeCase("custom-quality-dispute", "质量争议举证规则", "quality",
 			"用户反馈商品有瑕疵时，先安抚并要求提供开箱照片或视频；再结合商品说明、签收时间和订单状态判断售后路径。",
 			"质量,瑕疵,开箱,照片,视频,售后");
+	});
+
+	fileUploadZone.addEventListener("dragover", (event) => {
+		event.preventDefault();
+		fileUploadZone.classList.add("drag-over");
+	});
+
+	fileUploadZone.addEventListener("dragleave", () => {
+		fileUploadZone.classList.remove("drag-over");
+	});
+
+	fileUploadZone.addEventListener("drop", (event) => {
+		event.preventDefault();
+		fileUploadZone.classList.remove("drag-over");
+		handleFileSelect(event.dataTransfer.files);
+	});
+
+	knowledgeFileInput.addEventListener("change", (event) => {
+		handleFileSelect(event.target.files);
+	});
+
+	function handleFileSelect(files) {
+		selectedFiles = Array.from(files).filter(f => f.size <= 50000);
+		renderFileList();
+		uploadFilesButton.disabled = selectedFiles.length === 0;
+	}
+
+	function renderFileList() {
+		if (selectedFiles.length === 0) {
+			fileList.innerHTML = "";
+			return;
+		}
+		fileList.innerHTML = selectedFiles.map((f, i) => `
+			<div class="file-item">
+				<span class="file-item-name">
+					<span>${escapeHtml(f.name)}</span>
+					<span class="file-item-size">(${formatFileSize(f.size)})</span>
+				</span>
+				<button class="file-item-remove" data-index="${i}" type="button">&times;</button>
+			</div>
+		`).join("");
+	}
+
+	function formatFileSize(bytes) {
+		if (bytes < 1024) return bytes + "B";
+		if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + "KB";
+		return (bytes / 1024 / 1024).toFixed(1) + "MB";
+	}
+
+	fileList.addEventListener("click", (event) => {
+		const button = event.target.closest(".file-item-remove");
+		if (!button) return;
+		const index = parseInt(button.dataset.index, 10);
+		selectedFiles.splice(index, 1);
+		renderFileList();
+		uploadFilesButton.disabled = selectedFiles.length === 0;
+	});
+
+	uploadFilesButton.addEventListener("click", async () => {
+		if (selectedFiles.length === 0) return;
+		uploadFilesButton.disabled = true;
+		uploadFilesButton.textContent = "上传中...";
+		fileUploadResult.style.display = "none";
+		fileUploadProgress.style.display = "block";
+		fileUploadProgressBar.style.width = "0%";
+
+		const formData = new FormData();
+		selectedFiles.forEach(f => formData.append("files", f));
+		if (uploadGroupIdInput.value.trim()) {
+			formData.append("groupId", uploadGroupIdInput.value.trim());
+		}
+		if (uploadTopicInput.value.trim()) {
+			formData.append("topic", uploadTopicInput.value.trim());
+		}
+		formData.append("maintainer", uploadMaintainerInput.value.trim() || "system");
+
+		try {
+			fileUploadProgressBar.style.width = "50%";
+			const response = await fetch("/minimax/knowledge/upload/batch", {
+				method: "POST",
+				body: formData
+			});
+			fileUploadProgressBar.style.width = "100%";
+
+			if (!response.ok) {
+				throw new Error(`HTTP ${response.status}`);
+			}
+
+			const results = await response.json();
+			const successCount = results.filter(r => r.success).length;
+			const totalChunks = results.filter(r => r.success).reduce((sum, r) => sum + r.chunkCount, 0);
+
+			fileUploadResult.className = "file-upload-result success";
+			fileUploadResult.textContent = `上传成功 ${successCount}/${results.length} 个文件，共切分 ${totalChunks} 个 Chunk`;
+			fileUploadResult.style.display = "block";
+			appendMessage("assistant", `文件上传成功：${successCount} 个文件，共 ${totalChunks} 个 Chunk 已入库。`);
+
+			selectedFiles = [];
+			knowledgeFileInput.value = "";
+			renderFileList();
+
+			if (typeof fetchCustomerKnowledgeDocuments === "function") {
+				const documents = await fetchCustomerKnowledgeDocuments();
+				renderKnowledgeDocuments(documents);
+			}
+		}
+		catch (error) {
+			fileUploadResult.className = "file-upload-result error";
+			fileUploadResult.textContent = "上传失败：" + error.message;
+			fileUploadResult.style.display = "block";
+			appendMessage("error", "文件上传失败：" + error.message);
+		}
+		finally {
+			uploadFilesButton.disabled = selectedFiles.length === 0;
+			uploadFilesButton.textContent = "上传文件";
+			setTimeout(() => {
+				fileUploadProgress.style.display = "none";
+			}, 2000);
+		}
 	});
 
 	knowledgeList.addEventListener("click", async (event) => {

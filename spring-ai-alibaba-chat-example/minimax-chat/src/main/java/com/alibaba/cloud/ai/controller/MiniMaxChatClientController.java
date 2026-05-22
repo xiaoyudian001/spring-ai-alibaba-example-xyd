@@ -474,6 +474,16 @@ public class MiniMaxChatClientController {
 		return this.agentRunReportService.latest(limit);
 	}
 
+	@GetMapping("/report/runs/filter")
+	public List<AgentRunReport> filterAgentRunReports(
+			@RequestParam(value = "userId", required = false) String userId,
+			@RequestParam(value = "intent", required = false) String intent,
+			@RequestParam(value = "chainMode", required = false) String chainMode,
+			@RequestParam(value = "channel", required = false) String channel,
+			@RequestParam(value = "limit", defaultValue = "20") int limit) {
+		return this.agentRunReportService.filter(userId, intent, chainMode, channel, limit);
+	}
+
 	@DeleteMapping("/report/runs")
 	public ClearReportResponse clearAgentRunReports() {
 		int deleted = this.agentRunReportService.clear();

@@ -1,6 +1,7 @@
 @baseUrl = http://localhost:8080
 @demoUser = e2e-user
 @directUser = e2e-direct-user
+@ragDocId = e2e-refund-policy
 
 ### 00 统一存储健康检查
 GET {{baseUrl}}/minimax/chat-client/customer-service/storage/status
@@ -62,29 +63,74 @@ Content-Type: application/json; charset=utf-8
 ### 06 RAG 召回率：预期命中 refund、shipping、complaint
 GET {{baseUrl}}/minimax/chat-client/customer-service/rag/evaluate?query=订单迟迟不到我想退款并投诉客服&expectedTopics=refund,shipping,complaint&limit=6
 
-### 07 查看 MySQL 长期 Memory
+### 07 RAG 运行状态：确认当前召回模式、VectorStore 状态和已启用文档数量
+GET {{baseUrl}}/minimax/chat-client/customer-service/rag/status
+
+### 08 RAG 知识治理：查看知识分组概览
+GET {{baseUrl}}/minimax/knowledge/groups
+
+### 09 RAG 知识治理：删除同名测试知识，保证用例可重复运行
+DELETE {{baseUrl}}/minimax/knowledge/documents/{{ragDocId}}
+
+### 10 RAG 知识治理：新增知识文档，预期写入 MySQL 并自动切分 Chunk
+POST {{baseUrl}}/minimax/knowledge/documents
+Content-Type: application/json; charset=utf-8
+
+{
+  "id": "{{ragDocId}}",
+  "groupId": "refund",
+  "title": "E2E 退款政策测试文档",
+  "topic": "refund",
+  "content": "用户申请退款时，客服必须先查询订单状态、物流状态和退款资格。已发货订单不能直接承诺立即退款，应说明需要结合签收状态和平台售后规则处理。\n\n如果用户同时表达投诉或强烈不满，客服需要先安抚情绪，再创建待审核任务或人工接管请求。对于高风险动作，模型不能直接执行退款、赔付、取消订单等操作。",
+  "keywords": ["退款", "售后", "订单状态", "物流", "人工接管", "高风险"],
+  "version": "1.0",
+  "maintainer": "e2e"
+}
+
+### 11 RAG 知识治理：按分组查询知识文档，预期包含 e2e-refund-policy
+GET {{baseUrl}}/minimax/knowledge/documents?groupId=refund
+
+### 12 RAG 知识治理：查询全部知识文档，预期返回 groupId、version、enabled、maintainer、updatedAt
+GET {{baseUrl}}/minimax/knowledge/documents/all
+
+### 13 RAG 知识治理：查询单个知识文档详情
+GET {{baseUrl}}/minimax/knowledge/documents/{{ragDocId}}
+
+### 14 RAG 知识治理：查询文档 Chunk，预期返回 chunkIndex、content、keywords
+GET {{baseUrl}}/minimax/knowledge/documents/{{ragDocId}}/chunks
+
+### 15 RAG 知识治理：禁用文档，预期 enabled=false 且不参与检索
+PUT {{baseUrl}}/minimax/knowledge/documents/{{ragDocId}}/enabled?enabled=false
+
+### 16 RAG 知识治理：重新启用文档，预期 enabled=true
+PUT {{baseUrl}}/minimax/knowledge/documents/{{ragDocId}}/enabled?enabled=true
+
+### 17 RAG 召回评估：验证退款政策测试文档参与召回，并展示召回率
+GET {{baseUrl}}/minimax/chat-client/customer-service/rag/evaluate?query=已发货订单现在要退款并投诉客服怎么处理&expectedTopics=refund,complaint&limit=8
+
+### 18 查看 MySQL 长期 Memory
 GET {{baseUrl}}/minimax/chat-client/customer-service/memory?userId={{demoUser}}
 
-### 08 查看 Redis 短期上下文，需启用 redis profile
+### 19 查看 Redis 短期上下文，需启用 redis profile
 GET {{baseUrl}}/minimax/chat-client/customer-service/context?userId={{demoUser}}
 
-### 09 查看 MySQL 表概览
+### 20 查看 MySQL 表概览
 GET {{baseUrl}}/minimax/chat-client/customer-service/storage/tables
 
-### 10 查看待审核任务
+### 21 查看待审核任务
 GET {{baseUrl}}/minimax/chat-client/customer-service/approval/tasks?limit=10
 
-### 11 查看操作审计
+### 22 查看操作审计
 GET {{baseUrl}}/minimax/chat-client/audit/events?limit=10
 
-### 12 查看执行报告，确认 chainMode、intent、toolCalls、memoryBefore/memoryAfter
+### 23 查看执行报告，确认 chainMode、intent、toolCalls、memoryBefore/memoryAfter
 GET {{baseUrl}}/minimax/chat-client/report/runs?limit=10
 
-### 13 查看规则评估
+### 24 查看规则评估
 GET {{baseUrl}}/minimax/chat-client/evaluation/runs?limit=10
 
-### 14 AI Judge 评审最近一轮
+### 25 AI Judge 评审最近一轮
 POST {{baseUrl}}/minimax/chat-client/judge/latest
 
-### 15 查看 AI Judge 结果
+### 26 查看 AI Judge 结果
 GET {{baseUrl}}/minimax/chat-client/judge/runs?limit=5

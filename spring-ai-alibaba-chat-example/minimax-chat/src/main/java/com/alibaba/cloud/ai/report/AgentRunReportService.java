@@ -75,8 +75,8 @@ public class AgentRunReportService {
 				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
 				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
 				safeSize(result.toolCalls()), safeSize(result.multiAgentSteps()), safeSize(result.workflowSteps()),
-				result.memoryBefore(), result.memoryAfter(), result.multiAgentSteps(), result.workflowSteps(),
-				result.toolCalls(), result.mcpDebugInfo()));
+				channelName(result.channel()), result.memoryBefore(), result.memoryAfter(), result.multiAgentSteps(),
+				result.workflowSteps(), result.toolCalls(), result.mcpDebugInfo()));
 	}
 
 	/**
@@ -95,8 +95,8 @@ public class AgentRunReportService {
 				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
 				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
 				safeSize(result.toolCalls()), safeSize(result.multiAgentSteps()), safeSize(result.workflowSteps()),
-				result.memoryBefore(), result.memoryAfter(), result.multiAgentSteps(), result.workflowSteps(),
-				result.toolCalls(), result.mcpDebugInfo()));
+				channelName(result.channel()), result.memoryBefore(), result.memoryAfter(), result.multiAgentSteps(),
+				result.workflowSteps(), result.toolCalls(), result.mcpDebugInfo()));
 	}
 
 	/**
@@ -115,8 +115,8 @@ public class AgentRunReportService {
 				normalizeText(message), historySize, intentName(result.intent()), summarize(result.content()),
 				fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()), hasPendingWrite(result.mcpDebugInfo()),
 				safeSize(result.toolCalls()), safeSize(result.agentSteps()), safeSize(result.graphSteps()),
-				result.memoryBefore(), result.memoryAfter(), result.agentSteps(), result.graphSteps(),
-				result.toolCalls(), result.mcpDebugInfo()));
+				channelName(result.channel()), result.memoryBefore(), result.memoryAfter(), result.agentSteps(),
+				result.graphSteps(), result.toolCalls(), result.mcpDebugInfo()));
 	}
 
 	/**
@@ -135,8 +135,8 @@ public class AgentRunReportService {
 				"CUSTOMER_SERVICE_MULTI_AGENT", normalizeText(message), historySize, intentName(result.intent()),
 				summarize(result.content()), fullAnswer(result.content()), mcpMode(result.mcpDebugInfo()),
 				hasPendingWrite(result.mcpDebugInfo()), safeSize(result.toolCalls()), safeSize(result.agentSteps()),
-				0, result.memoryBefore(), result.memoryAfter(), result.agentSteps(), List.of(), result.toolCalls(),
-				result.mcpDebugInfo()));
+				0, channelName(result.channel()), result.memoryBefore(), result.memoryAfter(), result.agentSteps(),
+				List.of(), result.toolCalls(), result.mcpDebugInfo()));
 	}
 
 	public synchronized List<AgentRunReport> latest(int limit) {
@@ -144,6 +144,35 @@ public class AgentRunReportService {
 		Collections.reverse(reports);
 		int safeLimit = limit <= 0 ? DEFAULT_LIMIT : Math.min(limit, this.maxReports);
 		return List.copyOf(reports.subList(0, Math.min(safeLimit, reports.size())));
+	}
+
+	/**
+	 * 根据筛选条件查询执行报告。
+	 * @param userId 用户 ID（可选，模糊匹配）
+	 * @param intent 意图（可选，精确匹配）
+	 * @param chainMode 链路模式（可选，精确匹配）
+	 * @param channel 渠道（可选，精确匹配）
+	 * @param limit 返回数量
+	 * @return 符合条件的报告列表
+	 * @author xyd
+	 * @date 2026-05-22 15:00:00
+	 */
+	public synchronized List<AgentRunReport> filter(String userId, String intent, String chainMode, String channel,
+			int limit) {
+		List<AgentRunReport> reports = readAll();
+		Collections.reverse(reports);
+		List<AgentRunReport> filtered = reports.stream()
+				.filter(r -> userId == null || userId.isBlank()
+						|| (r.userId() != null && r.userId().contains(userId)))
+				.filter(r -> intent == null || intent.isBlank()
+						|| (r.intent() != null && r.intent().equalsIgnoreCase(intent)))
+				.filter(r -> chainMode == null || chainMode.isBlank()
+						|| (r.chainMode() != null && r.chainMode().equalsIgnoreCase(chainMode)))
+				.filter(r -> channel == null || channel.isBlank()
+						|| (r.channel() != null && r.channel().equalsIgnoreCase(channel)))
+				.limit(limit <= 0 ? DEFAULT_LIMIT : Math.min(limit, this.maxReports))
+				.toList();
+		return List.copyOf(filtered);
 	}
 
 	public synchronized int clear() {
@@ -219,6 +248,10 @@ public class AgentRunReportService {
 
 	private String mcpMode(McpDebugInfo mcpDebugInfo) {
 		return mcpDebugInfo == null ? "NOT_USED" : mcpDebugInfo.mode();
+	}
+
+	private String channelName(Object channel) {
+		return channel == null ? "WEB" : String.valueOf(channel);
 	}
 
 	private boolean hasPendingWrite(McpDebugInfo mcpDebugInfo) {

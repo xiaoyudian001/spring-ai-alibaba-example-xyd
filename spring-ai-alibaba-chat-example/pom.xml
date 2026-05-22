@@ -37,7 +37,6 @@
 
 	<modules>
 		<module>minimax-chat</module>
-		<module>minimax-learning-mcp-server</module>
 		<module>minimax-customer-mcp-server</module>
 	</modules>
 

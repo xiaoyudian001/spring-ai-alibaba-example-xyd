@@ -192,7 +192,7 @@ CUSTOMER-SERVICE-E2E.http
 ## v1.0 边界说明
 
 - 真实订单、商品、物流等外部系统当前通过 `CustomerMcpService` 统一接入。发现真实 MCP 工具时优先调用真实工具；未发现时使用 `MockCustomerDataService` 兜底，便于本地无外部系统也能完整测试。
-- RAG 当前默认使用本地知识库高召回检索，`application-vector.yml` 提供向量库 Profile 示例，后续可把 `CustomerPolicyRagService` 的存储层替换为真实 `VectorStore`。
+- RAG 已统一到 `KnowledgeManagementService + RagSearchServiceV2`：MySQL 保存知识文档和 Chunk 元数据，本地关键词检索作为 baseline，开启向量库 Profile 后可走真实 `VectorStore` 并保留旧 RAG 接口兼容。
 - `pendingMcpWrite` 仅作为历史报告兼容字段保留，v1.0 客服主线不再使用早期学习资源写入确认流程。
 - 早期学习助手相关类、HTTP 文件和 README 已移除，避免和智能客服主线混淆。
 
@@ -253,15 +253,7 @@ MySQL 会承载 `customer_memory`、`customer_approval_task`、`operation_audit_
 
 ## v2.0 待办任务
 
-v2.0 目标是从“智能客服学习 Demo”继续升级为“可验证、可解释、可扩展的真实客服 Agent 系统”。后续开发优先围绕 RAG 知识治理、高级 Agent 编排、Memory 经验复用、工作台增强和测试闭环推进。
-
-### P1：RAG 知识治理
-
-- 待开发：客服知识库增加分组、版本、启停、更新时间和维护人字段。
-- 待开发：实现真实文档切分流程：`Document -> Chunk -> Embedding -> Retrieval`。
-- 待开发：工作台展示命中文档、命中 chunk、召回分数、召回主题和召回模式。
-- 待开发：保留本地关键词召回作为 baseline，用于和真实向量召回效果对比。
-- 待开发：优先用 MySQL 保存文档和 chunk 元数据，后续再接入真实 `VectorStore`。
+v2.0 目标是从“智能客服学习 Demo”继续升级为“可验证、可解释、可扩展的真实客服 Agent 系统”。后续开发优先围绕高级 Agent 编排、Memory 经验复用、工作台增强和测试闭环推进。
 
 ### P1：Memory 经验复用
 

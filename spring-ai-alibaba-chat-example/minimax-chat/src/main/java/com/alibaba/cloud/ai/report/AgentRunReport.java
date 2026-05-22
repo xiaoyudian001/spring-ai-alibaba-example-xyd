@@ -36,6 +36,7 @@ import java.util.List;
  * @param toolCallCount 工具调用次数
  * @param agentStepCount Agent 执行步骤数量
  * @param graphStepCount Graph 节点数量
+ * @param channel 客服渠道
  * @param memoryBefore 调用前客服长期记忆
  * @param memoryAfter 调用后客服长期记忆
  * @param agentSteps Agent 执行步骤明细
@@ -43,11 +44,12 @@ import java.util.List;
  * @param toolCalls 工具调用明细
  * @param mcpDebugInfo MCP 调试信息
  * @author xyd
- * @date 2026-05-20 09:18:00
+ * @date 2026-05-22 15:00:00
  */
 public record AgentRunReport(String id, Instant createdAt, String userId, String chainMode, String message,
 		int historySize, String intent, String answerSummary, String answerContent, String mcpMode,
-		boolean pendingMcpWrite, int toolCallCount, int agentStepCount, int graphStepCount, Object memoryBefore,
-		Object memoryAfter, List<?> agentSteps, List<?> graphSteps, List<?> toolCalls, Object mcpDebugInfo) {
+		boolean pendingMcpWrite, int toolCallCount, int agentStepCount, int graphStepCount, String channel,
+		Object memoryBefore, Object memoryAfter, List<?> agentSteps, List<?> graphSteps, List<?> toolCalls,
+		Object mcpDebugInfo) {
 
 }
